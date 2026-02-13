@@ -1,0 +1,165 @@
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Sparkles } from 'lucide-react';
+
+export function DemoSection() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+
+  const loadingSteps = [
+    "Finding businesses...",
+    "Analyzing online presence...",
+    "Evaluating lead quality..."
+  ];
+
+  const handleGenerate = () => {
+    setIsLoading(true);
+    setLoadingStep(0);
+
+    const interval = setInterval(() => {
+      setLoadingStep(prev => {
+        if (prev >= 2) {
+          clearInterval(interval);
+          setTimeout(() => setIsLoading(false), 1000);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 1500);
+  };
+
+  return (
+    <section className="max-w-4xl mx-auto px-6 py-20">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="text-center mb-12"
+      >
+        <h2 className="text-4xl font-bold mb-4">Try it now</h2>
+        <p className="text-xl text-gray-400">
+          See how LeadSignal finds quality leads in seconds
+        </p>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        className="bg-gradient-to-br from-white/10 to-white/[0.02] backdrop-blur-sm rounded-3xl p-8 border border-white/10 relative overflow-hidden"
+      >
+        {/* Glow effect */}
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/20 rounded-full blur-3xl" />
+
+        <div className="relative space-y-6">
+          {/* Business Category */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-300">
+              Business Category
+            </label>
+            <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all">
+              <option>Restaurants & Cafes</option>
+              <option>Auto Services</option>
+              <option>Home Services</option>
+              <option>Retail Stores</option>
+              <option>Professional Services</option>
+            </select>
+          </div>
+
+          {/* Location */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-300">
+              Location
+            </label>
+            <input
+              type="text"
+              placeholder="City or ZIP code"
+              className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-gray-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
+            />
+          </div>
+
+          {/* Problem Signals */}
+          <div>
+            <label className="block text-sm font-medium mb-3 text-gray-300">
+              Find businesses with these issues
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded bg-white/5 border-2 border-white/20 checked:bg-blue-500 checked:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  defaultChecked
+                />
+                <span className="text-gray-300 group-hover:text-white transition-colors">
+                  No website
+                </span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded bg-white/5 border-2 border-white/20 checked:bg-blue-500 checked:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+                <span className="text-gray-300 group-hover:text-white transition-colors">
+                  Low Google rating
+                </span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-5 h-5 rounded bg-white/5 border-2 border-white/20 checked:bg-blue-500 checked:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+                <span className="text-gray-300 group-hover:text-white transition-colors">
+                  No social presence
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          <button
+            onClick={handleGenerate}
+            disabled={isLoading}
+            className="w-full px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
+          >
+            <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+            {isLoading ? 'Analyzing...' : 'Generate leads'}
+          </button>
+
+          {/* Loading state */}
+          <AnimatePresence>
+            {isLoading && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="space-y-3 pt-4"
+              >
+                {loadingSteps.map((step, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{
+                      opacity: index <= loadingStep ? 1 : 0.3,
+                      x: 0
+                    }}
+                    className="flex items-center gap-3 text-sm"
+                  >
+                    <div className={`w-2 h-2 rounded-full ${
+                      index <= loadingStep ? 'bg-blue-400 animate-pulse' : 'bg-gray-600'
+                    }`} />
+                    <span className={index <= loadingStep ? 'text-blue-400' : 'text-gray-500'}>
+                      {step}
+                    </span>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </section>
+  );
+}

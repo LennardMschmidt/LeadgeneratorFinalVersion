@@ -1,0 +1,74 @@
+import { TIER_META } from './mockData';
+import { LeadTier } from './types';
+
+interface TierOverviewCardsProps {
+  counts: Record<LeadTier, number>;
+  activeTier: LeadTier | 'All';
+  onSelectTier: (tier: LeadTier | 'All') => void;
+}
+
+export function TierOverviewCards({ counts, activeTier, onSelectTier }: TierOverviewCardsProps) {
+  const tiers: LeadTier[] = ['Tier 1', 'Tier 2', 'Tier 3'];
+  const tierStyles: Record<
+    LeadTier,
+    {
+      chip: string;
+      borderColor: string;
+      glowRgb: string;
+    }
+  > = {
+    'Tier 1': {
+      chip: 'text-purple-300',
+      borderColor: '#c084fc',
+      glowRgb: '168,85,247',
+    },
+    'Tier 2': {
+      chip: 'text-blue-300',
+      borderColor: '#60a5fa',
+      glowRgb: '59,130,246',
+    },
+    'Tier 3': {
+      chip: 'text-cyan-300',
+      borderColor: '#67e8f9',
+      glowRgb: '34,211,238',
+    },
+  };
+
+  return (
+    <section className="grid gap-6 md:grid-cols-3">
+      {tiers.map((tier) => {
+        const isActive = activeTier === tier;
+        const glowStrength = isActive ? 0.95 : 0.45;
+        const glowRadius = isActive ? 30 : 16;
+
+        return (
+          <button
+            key={tier}
+            type="button"
+            onClick={() => onSelectTier(isActive ? 'All' : tier)}
+            style={{
+              borderColor: tierStyles[tier].borderColor,
+              boxShadow: `0 0 0 1px rgba(${tierStyles[tier].glowRgb}, ${glowStrength}), 0 0 ${glowRadius}px rgba(${tierStyles[tier].glowRgb}, ${glowStrength})`,
+            }}
+            className={`relative text-left rounded-2xl border-2 p-6 transition-all ${
+              isActive ? 'bg-white/10 animate-pulse' : 'bg-white/5 hover:bg-white/10'
+            }`}
+          >
+            <span
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-0 rounded-2xl ${
+                isActive ? 'opacity-100' : 'opacity-60'
+              }`}
+              style={{
+                boxShadow: `inset 0 0 0 1px rgba(${tierStyles[tier].glowRgb}, ${isActive ? 0.7 : 0.35})`,
+              }}
+            />
+            <p className={`relative z-10 text-sm mb-3 ${tierStyles[tier].chip}`}>{TIER_META[tier].title}</p>
+            <p className="relative z-10 text-4xl font-bold text-white mb-2">{counts[tier]}</p>
+            <p className="relative z-10 text-sm text-gray-400">{TIER_META[tier].subtitle}</p>
+          </button>
+        );
+      })}
+    </section>
+  );
+}

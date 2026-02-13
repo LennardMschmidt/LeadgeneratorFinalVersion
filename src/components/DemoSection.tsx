@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Sparkles } from 'lucide-react';
+import { ChevronDown, Sparkles } from 'lucide-react';
 
 export function DemoSection() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const dropdownSelectClass =
+    'w-full appearance-none rounded-xl border border-white/15 bg-white/5 px-4 py-3 pr-10 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all hover:border-white/25 focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20';
 
   const loadingSteps = [
     "Finding businesses...",
@@ -39,7 +41,7 @@ export function DemoSection() {
       >
         <h2 className="text-4xl font-bold mb-4">Try it now</h2>
         <p className="text-xl text-gray-400">
-          See how LeadSignal finds quality leads in seconds
+          See how Lead Generator finds quality leads in seconds
         </p>
       </motion.div>
 
@@ -60,13 +62,16 @@ export function DemoSection() {
             <label className="block text-sm font-medium mb-2 text-gray-300">
               Business Category
             </label>
-            <select className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all">
-              <option>Restaurants & Cafes</option>
-              <option>Auto Services</option>
-              <option>Home Services</option>
-              <option>Retail Stores</option>
-              <option>Professional Services</option>
-            </select>
+            <div className="relative">
+              <select className={dropdownSelectClass}>
+                <option>Restaurants & Cafes</option>
+                <option>Auto Services</option>
+                <option>Home Services</option>
+                <option>Retail Stores</option>
+                <option>Professional Services</option>
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            </div>
           </div>
 
           {/* Location */}

@@ -13,7 +13,7 @@ export function Header({ onLoginClick }: HeaderProps) {
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-semibold">LeadSignal</span>
+          <span className="text-xl font-semibold">Lead Generator</span>
         </div>
 
         {/* Navigation */}

@@ -103,7 +103,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <span className="text-sm font-medium tracking-wide text-gray-200">
-            {mode === 'login' ? 'LeadSignal Login' : 'LeadSignal Register'}
+            {mode === 'login' ? 'Lead Generator Login' : 'Lead Generator Register'}
           </span>
         </div>
 

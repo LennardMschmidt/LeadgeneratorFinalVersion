@@ -11,10 +11,10 @@ export function Footer() {
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-semibold">LeadSignal</span>
+              <span className="text-xl font-semibold">Lead Generator</span>
             </div>
             <p className="text-sm text-gray-500 max-w-md">
-              LeadSignal analyzes publicly available business information including websites, ratings, and social media presence. All data is sourced from public directories and platforms.
+              Lead Generator analyzes publicly available business information including websites, ratings, and social media presence. All data is sourced from public directories and platforms.
             </p>
           </div>
 
@@ -32,7 +32,7 @@ export function Footer() {
               </a>
             </div>
             <p className="text-sm text-gray-500">
-              © 2026 LeadSignal. All rights reserved.
+              © 2026 Lead Generator. All rights reserved.
             </p>
           </div>
         </div>

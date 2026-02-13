@@ -42,7 +42,7 @@ export function LeadManagementTable({
   const compactDropdownSelectClass =
     'appearance-none rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 pr-8 text-xs text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all hover:border-white/25 focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20';
   const exportDropdownItemClass =
-    'block w-full cursor-pointer whitespace-nowrap px-5 py-3 text-left text-base text-gray-300 transition-all duration-150';
+    'block w-full cursor-pointer whitespace-nowrap px-5 py-3 text-left text-sm text-gray-300 transition-all duration-150';
 
   const isLeadExpanded = (leadId: string) => leadExpandedStates[leadId] ?? true;
   const hasAnyExpandedLead = leads.some((lead) => isLeadExpanded(lead.id));
@@ -175,8 +175,7 @@ export function LeadManagementTable({
                   style={{
                     width: '19rem',
                     borderColor: 'rgba(255, 255, 255, 0.2)',
-                    backgroundColor: 'rgba(15, 18, 32, 0.58)',
-                    backdropFilter: 'blur(26px)',
+                    backgroundColor: 'rgba(25, 25, 28, 1)',
                     WebkitBackdropFilter: 'blur(26px)',
                   }}
                 >

@@ -80,8 +80,7 @@ export function DashboardHeader({ onNavigateHome, onNavigateDashboard, onLogout 
                 style={{
                   width: '19rem',
                   borderColor: 'rgba(255, 255, 255, 0.2)',
-                  backgroundColor: 'rgba(15, 18, 32, 0.58)',
-                  backdropFilter: 'blur(26px)',
+                  backgroundColor: 'rgba(25, 25, 28, 1)',
                   WebkitBackdropFilter: 'blur(26px)',
                 }}
               >

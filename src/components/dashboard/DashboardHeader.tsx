@@ -4,10 +4,16 @@ import { ChevronDown, Sparkles } from 'lucide-react';
 interface DashboardHeaderProps {
   onNavigateHome: () => void;
   onNavigateDashboard: () => void;
+  onNavigateBusinessProfile: () => void;
   onLogout: () => void;
 }
 
-export function DashboardHeader({ onNavigateHome, onNavigateDashboard, onLogout }: DashboardHeaderProps) {
+export function DashboardHeader({
+  onNavigateHome,
+  onNavigateDashboard,
+  onNavigateBusinessProfile,
+  onLogout,
+}: DashboardHeaderProps) {
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const dropdownItemClass =
@@ -101,8 +107,12 @@ export function DashboardHeader({ onNavigateHome, onNavigateDashboard, onLogout 
                 >
                   Dashboard
                 </button>
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => {
+                    onNavigateBusinessProfile();
+                    setIsAccountOpen(false);
+                  }}
                   className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
                   onMouseEnter={handleDropdownItemMouseEnter}
                   onMouseLeave={handleDropdownItemMouseLeave}
@@ -113,7 +123,7 @@ export function DashboardHeader({ onNavigateHome, onNavigateDashboard, onLogout 
                   }}
                 >
                   Business Profile
-                </a>
+                </button>
                 <a
                   href="#"
                   className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}

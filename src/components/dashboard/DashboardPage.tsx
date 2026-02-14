@@ -1,21 +1,38 @@
 import { useMemo, useState } from 'react';
+import { generateLeadsFromBackend } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
-import { INITIAL_LEADS, INITIAL_SAVED_SEARCHES } from './mockData';
+import { getBusinessProfile } from './businessProfileStorage';
+import { INITIAL_SAVED_SEARCHES } from './mockData';
 import { TierOverviewCards } from './TierOverviewCards';
-import { Lead, LeadFilters, LeadStatus, SavedSearch, SearchConfiguration } from './types';
+import {
+  BusinessProfile,
+  Lead,
+  LeadFilters,
+  LeadStatus,
+  SavedSearch,
+  SearchConfiguration,
+} from './types';
 
 interface DashboardPageProps {
   onNavigateHome: () => void;
   onNavigateDashboard: () => void;
+  onNavigateBusinessProfile: () => void;
   onLogout: () => void;
 }
 
-export function DashboardPage({ onNavigateHome, onNavigateDashboard, onLogout }: DashboardPageProps) {
-  const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
+export function DashboardPage({
+  onNavigateHome,
+  onNavigateDashboard,
+  onNavigateBusinessProfile,
+  onLogout,
+}: DashboardPageProps) {
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(INITIAL_SAVED_SEARCHES);
   const [selectedSavedSearchId, setSelectedSavedSearchId] = useState('');
+  const [businessProfile] = useState<BusinessProfile | null>(() => getBusinessProfile());
+  const [useBusinessProfile, setUseBusinessProfile] = useState(false);
   const [searchConfig, setSearchConfig] = useState<SearchConfiguration>({
     location: '',
     category: '',
@@ -27,6 +44,24 @@ export function DashboardPage({ onNavigateHome, onNavigateDashboard, onLogout }:
     tier: 'All',
     status: 'All',
   });
+  const [isRunningSearch, setIsRunningSearch] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+
+  const applyBusinessProfile = (enabled: boolean) => {
+    setUseBusinessProfile(enabled);
+
+    if (!enabled || !businessProfile) {
+      return;
+    }
+
+    setSearchConfig((currentConfig) => ({
+      ...currentConfig,
+      category: businessProfile.businessCategory,
+      location: businessProfile.businessLocation,
+      profileServiceDescription: businessProfile.serviceDescription,
+      profileTargetCustomerType: businessProfile.targetCustomerType,
+    }));
+  };
 
   const tierCounts = useMemo(
     () => ({
@@ -68,8 +103,28 @@ export function DashboardPage({ onNavigateHome, onNavigateDashboard, onLogout }:
     );
   };
 
-  const runSearch = () => {
-    console.log('Run Search config:', searchConfig);
+  const runSearch = async () => {
+    const location = searchConfig.location.trim();
+    const category = searchConfig.category.trim();
+
+    if (!location || !category) {
+      setSearchError('Location and business category are required.');
+      return;
+    }
+
+    setSearchError(null);
+    setIsRunningSearch(true);
+
+    try {
+      const nextLeads = await generateLeadsFromBackend(searchConfig);
+      setLeads(nextLeads);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to generate leads.';
+      setSearchError(message);
+    } finally {
+      setIsRunningSearch(false);
+    }
   };
 
   const saveSearch = () => {
@@ -134,7 +189,12 @@ export function DashboardPage({ onNavigateHome, onNavigateDashboard, onLogout }:
 
   return (
     <>
-      <DashboardHeader onNavigateHome={onNavigateHome} onNavigateDashboard={onNavigateDashboard} onLogout={onLogout} />
+      <DashboardHeader
+        onNavigateHome={onNavigateHome}
+        onNavigateDashboard={onNavigateDashboard}
+        onNavigateBusinessProfile={onNavigateBusinessProfile}
+        onLogout={onLogout}
+      />
 
       <main className="relative max-w-7xl mx-auto px-6 py-20">
         <section className="flex flex-wrap items-center justify-between gap-4">
@@ -150,12 +210,25 @@ export function DashboardPage({ onNavigateHome, onNavigateDashboard, onLogout }:
             searchConfig={searchConfig}
             savedSearches={savedSearches}
             selectedSavedSearchId={selectedSavedSearchId}
+            businessProfile={businessProfile}
+            useBusinessProfile={useBusinessProfile}
+            isRunningSearch={isRunningSearch}
             onSelectSavedSearch={selectSavedSearch}
             onUpdateSearchConfig={setSearchConfig}
+            onUseBusinessProfileChange={applyBusinessProfile}
+            onNavigateBusinessProfile={onNavigateBusinessProfile}
             onSaveSearch={saveSearch}
             onRunSearch={runSearch}
           />
         </section>
+
+        {searchError ? (
+          <section className="mt-4">
+            <div className="rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {searchError}
+            </div>
+          </section>
+        ) : null}
 
         <section className="mt-24">
           <LeadManagementTable

@@ -9,19 +9,30 @@ import { PricingSection } from './components/PricingSection';
 import { Footer } from './components/Footer';
 import { LoginModal } from './components/LoginModal';
 import { DashboardPage } from './components/dashboard/DashboardPage';
+import { BusinessProfilePage } from './components/dashboard/BusinessProfilePage';
 
-type AppRoute = '/' | '/dashboard';
+type AppRoute = '/' | '/dashboard' | '/business-profile';
+
+const getRouteFromPathname = (pathname: string): AppRoute => {
+  if (pathname === '/dashboard') {
+    return '/dashboard';
+  }
+
+  if (pathname === '/business-profile') {
+    return '/business-profile';
+  }
+
+  return '/';
+};
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [route, setRoute] = useState<AppRoute>(() =>
-    window.location.pathname === '/dashboard' ? '/dashboard' : '/',
-  );
+  const [route, setRoute] = useState<AppRoute>(() => getRouteFromPathname(window.location.pathname));
 
   useEffect(() => {
     const handlePopState = () => {
-      setRoute(window.location.pathname === '/dashboard' ? '/dashboard' : '/');
+      setRoute(getRouteFromPathname(window.location.pathname));
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -37,7 +48,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    if (route === '/dashboard' && !isAuthenticated) {
+    const isProtectedRoute = route === '/dashboard' || route === '/business-profile';
+    if (isProtectedRoute && !isAuthenticated) {
       setIsLoginOpen(true);
     }
   }, [route, isAuthenticated]);
@@ -59,6 +71,7 @@ export default function App() {
   };
 
   const showDashboard = route === '/dashboard' && isAuthenticated;
+  const showBusinessProfile = route === '/business-profile' && isAuthenticated;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -74,6 +87,14 @@ export default function App() {
         <DashboardPage
           onNavigateHome={() => navigate('/')}
           onNavigateDashboard={() => navigate('/dashboard')}
+          onNavigateBusinessProfile={() => navigate('/business-profile')}
+          onLogout={handleLogout}
+        />
+      ) : showBusinessProfile ? (
+        <BusinessProfilePage
+          onNavigateHome={() => navigate('/')}
+          onNavigateDashboard={() => navigate('/dashboard')}
+          onNavigateBusinessProfile={() => navigate('/business-profile')}
           onLogout={handleLogout}
         />
       ) : (

@@ -58,6 +58,10 @@
     server: {
       port: 3000,
       open: false,
+      watch: {
+        // Prevent random full reloads when external tools touch tsconfig mtime.
+        ignored: ['**/tsconfig.json'],
+      },
       proxy: {
         '/api': {
           target: backendProxyTarget,

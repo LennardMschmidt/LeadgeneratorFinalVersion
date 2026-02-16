@@ -45,6 +45,7 @@ const toPayload = (searchConfig: SearchConfiguration) => ({
   category: searchConfig.category.trim(),
   location: searchConfig.location.trim(),
   problemFilters: searchConfig.problemFilters,
+  maxResults: searchConfig.maxResults,
   contactPreferences:
     searchConfig.contactPreference === 'Any'
       ? []

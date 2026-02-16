@@ -38,6 +38,7 @@ export function DashboardPage({
     category: '',
     problemFilters: [],
     contactPreference: 'Any',
+    maxResults: 20,
   });
   const [activeTier, setActiveTier] = useState<LeadFilters['tier']>('All');
   const [filters, setFilters] = useState<LeadFilters>({
@@ -154,7 +155,10 @@ export function DashboardPage({
       return;
     }
 
-    setSearchConfig(savedSearch.config);
+    setSearchConfig({
+      ...savedSearch.config,
+      maxResults: savedSearch.config.maxResults ?? 20,
+    });
   };
 
   const exportCsv = () => {
@@ -202,7 +206,12 @@ export function DashboardPage({
         </section>
 
         <section className="mt-16" style={{marginBottom: "20px"}}>
-          <TierOverviewCards counts={tierCounts} activeTier={activeTier} onSelectTier={updateTierFilter} />
+          <TierOverviewCards
+            counts={tierCounts}
+            totalLeads={leads.length}
+            activeTier={activeTier}
+            onSelectTier={updateTierFilter}
+          />
         </section>
 
         <section className="mt-[10px]" style={{marginBottom: "20px"}}>

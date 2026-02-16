@@ -60,6 +60,7 @@ export interface SearchConfiguration {
   category: string;
   problemFilters: string[];
   contactPreference: ContactPreference;
+  maxResults: number;
   profileServiceDescription?: string;
   profileTargetCustomerType?: TargetCustomerType;
 }

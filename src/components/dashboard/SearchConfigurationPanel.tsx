@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { CONTACT_PREFERENCE_OPTIONS, PROBLEM_FILTER_OPTIONS } from './mockData';
+import { DashboardSelect } from './DashboardSelect';
 import { BusinessProfile, SavedSearch, SearchConfiguration } from './types';
 
 interface SearchConfigurationPanelProps {
@@ -33,8 +34,7 @@ export function SearchConfigurationPanel({
   onRunSearch,
 }: SearchConfigurationPanelProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const dropdownSelectClass =
-    'w-full appearance-none rounded-xl border border-white/15 bg-white/5 px-4 py-3 pr-10 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all hover:border-white/25 focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20';
+  const noSavedSearchValue = '__none__';
 
   const toggleProblemFilter = (problem: string) => {
     const exists = searchConfig.problemFilters.includes(problem);
@@ -47,6 +47,15 @@ export function SearchConfigurationPanel({
     });
   };
 
+  const setMaxResults = (nextValue: string) => {
+    const parsed = Number.parseInt(nextValue, 10);
+    const normalized = Number.isFinite(parsed) ? Math.max(20, Math.min(300, parsed)) : 20;
+    onUpdateSearchConfig({
+      ...searchConfig,
+      maxResults: normalized,
+    });
+  };
+
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5">
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
@@ -54,7 +63,7 @@ export function SearchConfigurationPanel({
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
-          className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
+          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-sm leading-none text-gray-300 transition-colors hover:text-white"
         >
           {isOpen ? 'Collapse' : 'Expand'}
           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -99,24 +108,20 @@ export function SearchConfigurationPanel({
               <label htmlFor="saved-searches" className="block text-sm text-gray-300">
                 Saved searches
               </label>
-              <div className="relative">
-                <select
-                  id="saved-searches"
-                  value={selectedSavedSearchId}
-                  onChange={(event) => onSelectSavedSearch(event.target.value)}
-                  className={dropdownSelectClass}
-                >
-                  <option value="" className="text-black">
-                    Choose saved search
-                  </option>
-                  {savedSearches.map((savedSearch) => (
-                    <option key={savedSearch.id} value={savedSearch.id} className="text-black">
-                      {savedSearch.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              </div>
+              <DashboardSelect
+                id="saved-searches"
+                value={selectedSavedSearchId || noSavedSearchValue}
+                onValueChange={(nextSavedSearchId) =>
+                  onSelectSavedSearch(nextSavedSearchId === noSavedSearchValue ? '' : nextSavedSearchId)
+                }
+                options={[
+                  { value: noSavedSearchValue, label: 'Choose saved search' },
+                  ...savedSearches.map((savedSearch) => ({
+                    value: savedSearch.id,
+                    label: savedSearch.name,
+                  })),
+                ]}
+              />
             </div>
           </div>
 
@@ -180,26 +185,36 @@ export function SearchConfigurationPanel({
               <label htmlFor="contact-preference" className="block text-sm text-gray-300">
                 Contact preference
               </label>
-              <div className="relative">
-                <select
-                  id="contact-preference"
-                  value={searchConfig.contactPreference}
-                  onChange={(event) =>
-                    onUpdateSearchConfig({
-                      ...searchConfig,
-                      contactPreference: event.target.value as SearchConfiguration['contactPreference'],
-                    })
-                  }
-                  className={dropdownSelectClass}
-                >
-                  {CONTACT_PREFERENCE_OPTIONS.map((option) => (
-                    <option key={option} value={option} className="text-black">
-                      {option}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              </div>
+              <DashboardSelect
+                id="contact-preference"
+                value={searchConfig.contactPreference}
+                onValueChange={(nextValue) =>
+                  onUpdateSearchConfig({
+                    ...searchConfig,
+                    contactPreference: nextValue as SearchConfiguration['contactPreference'],
+                  })
+                }
+                options={CONTACT_PREFERENCE_OPTIONS.map((option) => ({
+                  value: option,
+                  label: option,
+                }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="search-max-results" className="block text-sm text-gray-300">
+                Expected results
+              </label>
+              <input
+                id="search-max-results"
+                type="number"
+                min={20}
+                max={300}
+                value={searchConfig.maxResults}
+                onChange={(event) => setMaxResults(event.target.value)}
+                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
+              />
+              <p className="text-xs text-gray-500">Allowed range: 20-300 leads per search.</p>
             </div>
           </div>
 

@@ -1,0 +1,102 @@
+import {
+  type MouseEvent as ReactMouseEvent,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import { cn } from '../ui/utils';
+
+interface DashboardSelectOption<T extends string> {
+  value: T;
+  label: string;
+}
+
+interface DashboardSelectProps<T extends string> {
+  id?: string;
+  value: T;
+  options: Array<DashboardSelectOption<T>>;
+  onValueChange: (value: T) => void;
+  placeholder?: string;
+  size?: 'default' | 'compact';
+  triggerClassName?: string;
+  contentClassName?: string;
+}
+
+const defaultTriggerClass =
+  'h-auto w-full rounded-xl border px-5 py-3 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 data-[placeholder]:text-gray-400 [&_svg]:text-gray-400';
+
+const compactTriggerClass =
+  'h-auto rounded-lg border px-3 py-1.5 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 [&_svg]:text-gray-400';
+
+const defaultContentClass =
+  'z-[80] mt-3 overflow-hidden rounded-xl border p-0 shadow-2xl';
+
+const itemClass =
+  'w-full cursor-pointer whitespace-nowrap border-b border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.024)] px-5 py-3 text-left text-sm text-gray-300 outline-none transition-all duration-150 data-[highlighted]:text-white data-[state=checked]:text-white last:border-b-0';
+
+const triggerStyle = {
+  borderColor: 'rgba(255, 255, 255, 0.1)',
+  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  color: 'rgb(229, 231, 235)',
+} as const;
+
+const contentStyle = {
+  borderColor: 'rgba(255, 255, 255, 0.2)',
+  backgroundColor: 'rgb(25, 25, 28)',
+} as const;
+
+const handleItemMouseEnter = (event: ReactMouseEvent<HTMLElement>) => {
+  event.currentTarget.style.transform = 'scale(1.02)';
+  event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
+};
+
+const handleItemMouseLeave = (event: ReactMouseEvent<HTMLElement>) => {
+  event.currentTarget.style.transform = 'scale(1)';
+  event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.024)';
+};
+
+export function DashboardSelect<T extends string>({
+  id,
+  value,
+  options,
+  onValueChange,
+  placeholder,
+  size = 'default',
+  triggerClassName,
+  contentClassName,
+}: DashboardSelectProps<T>) {
+  return (
+    <Select value={value} onValueChange={(nextValue) => onValueChange(nextValue as T)}>
+      <SelectTrigger
+        id={id}
+        className={cn(
+          size === 'default' ? defaultTriggerClass : compactTriggerClass,
+          triggerClassName,
+        )}
+        style={triggerStyle}
+      >
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+
+      <SelectContent
+        className={cn(defaultContentClass, contentClassName)}
+        style={contentStyle}
+      >
+        {options.map((option) => (
+          <SelectItem
+            key={option.value}
+            value={option.value}
+            className={itemClass}
+            hideIndicator
+            onMouseEnter={handleItemMouseEnter}
+            onMouseLeave={handleItemMouseLeave}
+          >
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}

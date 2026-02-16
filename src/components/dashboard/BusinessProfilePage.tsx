@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { DashboardHeader } from './DashboardHeader';
+import { DashboardSelect } from './DashboardSelect';
 import {
   clearBusinessProfile,
   getBusinessProfile,
@@ -261,31 +262,24 @@ export function BusinessProfilePage({
                 <label htmlFor="target-customer-type" className="block text-sm text-gray-300">
                   Target Customer Type
                 </label>
-                <div className="relative">
-                  <select
-                    id="target-customer-type"
-                    value={form.targetCustomerType}
-                    onChange={(event) =>
-                      setForm((currentForm) => ({
-                        ...currentForm,
-                        targetCustomerType: event.target.value as TargetCustomerType | '',
-                      }))
-                    }
-                    className={`${inputClassName} appearance-none pr-10`}
-                  >
-                    <option value="" className="text-black">
-                      Select target type
-                    </option>
-                    {TARGET_CUSTOMER_TYPE_OPTIONS.map((option) => (
-                      <option key={option} value={option} className="text-black">
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                    ▼
-                  </span>
-                </div>
+                <DashboardSelect
+                  id="target-customer-type"
+                  value={form.targetCustomerType || '__none__'}
+                  onValueChange={(nextValue) =>
+                    setForm((currentForm) => ({
+                      ...currentForm,
+                      targetCustomerType:
+                        nextValue === '__none__' ? '' : (nextValue as TargetCustomerType),
+                    }))
+                  }
+                  options={[
+                    { value: '__none__', label: 'Select target type' },
+                    ...TARGET_CUSTOMER_TYPE_OPTIONS.map((option) => ({
+                      value: option,
+                      label: option,
+                    })),
+                  ]}
+                />
               </div>
 
               <div className="space-y-2 md:col-span-2">
@@ -389,4 +383,3 @@ export function BusinessProfilePage({
     </>
   );
 }
-

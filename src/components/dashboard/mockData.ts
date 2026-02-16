@@ -38,6 +38,7 @@ export const INITIAL_SAVED_SEARCHES: SavedSearch[] = [
       category: 'Cafe',
       problemFilters: ['No website', 'Low rating'],
       contactPreference: 'Email',
+      maxResults: 20,
     },
   },
   {
@@ -48,6 +49,7 @@ export const INITIAL_SAVED_SEARCHES: SavedSearch[] = [
       category: 'Dental Clinic',
       problemFilters: ['No booking system'],
       contactPreference: 'Phone',
+      maxResults: 20,
     },
   },
 ];

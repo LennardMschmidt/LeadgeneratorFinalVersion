@@ -1,5 +1,6 @@
 import { type MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from 'react';
 import { ChevronDown, Star } from 'lucide-react';
+import { DashboardSelect } from './DashboardSelect';
 import { STATUS_OPTIONS, TIER_OPTIONS } from './mockData';
 import { Lead, LeadFilters, LeadStatus } from './types';
 
@@ -37,10 +38,6 @@ export function LeadManagementTable({
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [leadExpandedStates, setLeadExpandedStates] = useState<Record<string, boolean>>({});
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
-  const dropdownSelectClass =
-    'w-full appearance-none rounded-lg border border-white/15 bg-white/5 px-3 py-2 pr-9 text-sm text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all hover:border-white/25 focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20';
-  const compactDropdownSelectClass =
-    'appearance-none rounded-lg border border-white/15 bg-white/5 px-2.5 py-1.5 pr-8 text-xs text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] outline-none transition-all hover:border-white/25 focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20';
   const exportDropdownItemClass =
     'block w-full cursor-pointer whitespace-nowrap px-5 py-3 text-left text-sm text-gray-300 transition-all duration-150';
 
@@ -96,45 +93,32 @@ export function LeadManagementTable({
             <label htmlFor="filter-tier" className="block text-xs uppercase tracking-wider text-gray-500">
               Filter by Tier
             </label>
-            <div className="relative">
-              <select
-                id="filter-tier"
-                value={filters.tier}
-                onChange={(event) => onTierFilterChange(event.target.value as LeadFilters['tier'])}
-                className={dropdownSelectClass}
-              >
-                {TIER_OPTIONS.map((tier) => (
-                  <option key={tier} value={tier} className="text-black">
-                    {tier}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            </div>
+            <DashboardSelect
+              id="filter-tier"
+              value={filters.tier}
+              onValueChange={(value) => onTierFilterChange(value as LeadFilters['tier'])}
+              options={TIER_OPTIONS.map((tier) => ({
+                value: tier,
+                label: tier,
+              }))}
+              triggerClassName="rounded-lg py-2 text-sm"
+            />
           </div>
 
           <div className="space-y-1">
             <label htmlFor="filter-status" className="block text-xs uppercase tracking-wider text-gray-500">
               Filter by Status
             </label>
-            <div className="relative">
-              <select
-                id="filter-status"
-                value={filters.status}
-                onChange={(event) => onStatusFilterChange(event.target.value as LeadFilters['status'])}
-                className={dropdownSelectClass}
-              >
-                <option value="All" className="text-black">
-                  All
-                </option>
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status} className="text-black">
-                    {status}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            </div>
+            <DashboardSelect
+              id="filter-status"
+              value={filters.status}
+              onValueChange={(value) => onStatusFilterChange(value as LeadFilters['status'])}
+              options={[
+                { value: 'All', label: 'All' },
+                ...STATUS_OPTIONS.map((status) => ({ value: status, label: status })),
+              ]}
+              triggerClassName="rounded-lg py-2 text-sm"
+            />
           </div>
         </div>
 
@@ -284,20 +268,17 @@ export function LeadManagementTable({
 
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-gray-500">Status</span>
-                      <div className="relative">
-                        <select
-                          value={lead.status}
-                          onChange={(event) => onLeadStatusChange(lead.id, event.target.value as LeadStatus)}
-                          className={compactDropdownSelectClass}
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <option key={status} value={status} className="text-black">
-                              {status}
-                            </option>
-                          ))}
-                        </select>
-                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-                      </div>
+                      <DashboardSelect
+                        value={lead.status}
+                        onValueChange={(value) => onLeadStatusChange(lead.id, value as LeadStatus)}
+                        options={STATUS_OPTIONS.map((status) => ({
+                          value: status,
+                          label: status,
+                        }))}
+                        size="compact"
+                        triggerClassName="min-w-[124px]"
+                        contentClassName="min-w-[164px]"
+                      />
                     </div>
 
                     <div className="flex flex-wrap gap-2">

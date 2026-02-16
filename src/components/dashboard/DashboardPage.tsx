@@ -120,9 +120,14 @@ export function DashboardPage({
   const runSearch = async () => {
     const location = searchConfig.location.trim();
     const category = searchConfig.category.trim();
+    const businessType = searchConfig.businessType.trim();
 
     if (!location || !category) {
       setSearchError('Location and business category are required.');
+      return;
+    }
+    if (!businessType) {
+      setSearchError('Business type is required.');
       return;
     }
 

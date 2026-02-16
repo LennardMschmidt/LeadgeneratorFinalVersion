@@ -466,11 +466,9 @@ export function LeadManagementTable({
                     <p className="text-sm text-gray-400">
                       {lead.category} • {lead.location}
                     </p>
-                    <div className="mt-2">
-                      <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] uppercase tracking-wide text-gray-300">
-                        Source: {lead.source ?? 'Google Maps'}
-                      </span>
-                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Source: <span className="text-gray-400">{lead.source ?? 'Google Maps'}</span>
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${TIER_BADGE_STYLES[lead.tier]}`}>

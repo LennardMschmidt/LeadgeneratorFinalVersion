@@ -68,6 +68,7 @@ export function SearchConfigurationPanel({
   }, [isRunningSearch, loadingSteps.length]);
 
   const activeProblemCategories = getProblemCategoriesForBusinessType(searchConfig.businessType);
+  const canRunSearch = !!searchConfig.businessType && !isRunningSearch;
 
   const setProblemCategoriesSelected = (nextProblemCategories: string[]) => {
     onUpdateSearchConfig({
@@ -433,8 +434,8 @@ export function SearchConfigurationPanel({
             <button
               type="button"
               onClick={onRunSearch}
-              disabled={isRunningSearch}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 enabled:hover:from-blue-600 enabled:hover:to-purple-700 text-sm font-medium transition-all shadow-lg shadow-blue-500/20 disabled:cursor-wait disabled:opacity-80"
+              disabled={!canRunSearch}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 enabled:hover:from-blue-600 enabled:hover:to-purple-700 text-sm font-medium transition-all shadow-lg shadow-blue-500/20 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isRunningSearch ? (
                 <>
@@ -462,6 +463,9 @@ export function SearchConfigurationPanel({
                 'Run Search'
               )}
             </button>
+            {!searchConfig.businessType && !isRunningSearch ? (
+              <p className="text-xs text-amber-300">Select a business type to run search.</p>
+            ) : null}
             {isRunningSearch ? (
               <button
                 type="button"

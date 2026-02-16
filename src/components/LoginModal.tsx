@@ -129,7 +129,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
             </span>
           </button>
 
-          <div className="relative">
+          <div className="relative mb-[10px]">
             <div className="h-px bg-white/10" />
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0f1220] px-2 text-xs uppercase tracking-widest text-gray-500">
               Or

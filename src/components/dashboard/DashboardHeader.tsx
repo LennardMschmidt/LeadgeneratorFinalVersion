@@ -17,7 +17,7 @@ export function DashboardHeader({
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const dropdownItemClass =
-    'block w-full cursor-pointer px-4 py-2.5 text-left text-sm text-gray-200 transition-all duration-150';
+    'flex w-full cursor-pointer justify-center px-4 py-2.5 text-center text-sm text-gray-200 transition-all duration-150';
   const handleDropdownItemMouseEnter = (event: ReactMouseEvent<HTMLElement>) => {
     event.currentTarget.style.transform = 'scale(1.02)';
     event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';

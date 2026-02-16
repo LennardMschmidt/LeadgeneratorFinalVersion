@@ -6,19 +6,15 @@ import {
 } from './businessTypeProblemCatalog';
 import { CONTACT_PREFERENCE_OPTIONS } from './mockData';
 import { DashboardSelect } from './DashboardSelect';
-import { BusinessProfile, SavedSearch, SearchConfiguration } from './types';
+import { SavedSearch, SearchConfiguration } from './types';
 
 interface SearchConfigurationPanelProps {
   searchConfig: SearchConfiguration;
   savedSearches: SavedSearch[];
   selectedSavedSearchId: string;
-  businessProfile: BusinessProfile | null;
-  useBusinessProfile: boolean;
   isRunningSearch: boolean;
   onSelectSavedSearch: (savedSearchId: string) => void;
   onUpdateSearchConfig: (nextConfig: SearchConfiguration) => void;
-  onUseBusinessProfileChange: (enabled: boolean) => void;
-  onNavigateBusinessProfile: () => void;
   onSaveSearch: () => void;
   onRunSearch: () => void;
 }
@@ -27,13 +23,9 @@ export function SearchConfigurationPanel({
   searchConfig,
   savedSearches,
   selectedSavedSearchId,
-  businessProfile,
-  useBusinessProfile,
   isRunningSearch,
   onSelectSavedSearch,
   onUpdateSearchConfig,
-  onUseBusinessProfileChange,
-  onNavigateBusinessProfile,
   onSaveSearch,
   onRunSearch,
 }: SearchConfigurationPanelProps) {
@@ -161,37 +153,6 @@ export function SearchConfigurationPanel({
               problem categories, contact preference, and expected results). After running the search,
               the leads are shown and evaluated.
             </p>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-            {businessProfile ? (
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <label className="inline-flex items-center gap-3 text-sm text-gray-200">
-                  <input
-                    type="checkbox"
-                    checked={useBusinessProfile}
-                    onChange={(event) => onUseBusinessProfileChange(event.target.checked)}
-                    className="h-4 w-4 rounded border border-white/20 bg-white/5"
-                  />
-                  Use Business Profile
-                </label>
-                <p className="text-xs text-gray-400">
-                  {businessProfile.businessName} • {businessProfile.businessCategory} •{' '}
-                  {businessProfile.businessLocation}
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm text-gray-300">No business profile found.</p>
-                <button
-                  type="button"
-                  onClick={onNavigateBusinessProfile}
-                  className="text-sm text-blue-300 underline underline-offset-4 transition-colors hover:text-blue-200"
-                >
-                  Create Business Profile
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

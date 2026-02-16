@@ -3,11 +3,9 @@ import { generateLeadsFromBackend } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
-import { getBusinessProfile } from './businessProfileStorage';
 import { INITIAL_SAVED_SEARCHES } from './mockData';
 import { TierOverviewCards } from './TierOverviewCards';
 import {
-  BusinessProfile,
   Lead,
   LeadFilters,
   LeadStatus,
@@ -31,8 +29,6 @@ export function DashboardPage({
   const [leads, setLeads] = useState<Lead[]>([]);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(INITIAL_SAVED_SEARCHES);
   const [selectedSavedSearchId, setSelectedSavedSearchId] = useState('');
-  const [businessProfile] = useState<BusinessProfile | null>(() => getBusinessProfile());
-  const [useBusinessProfile, setUseBusinessProfile] = useState(false);
   const [searchConfig, setSearchConfig] = useState<SearchConfiguration>({
     location: '',
     category: '',
@@ -49,22 +45,6 @@ export function DashboardPage({
   });
   const [isRunningSearch, setIsRunningSearch] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-
-  const applyBusinessProfile = (enabled: boolean) => {
-    setUseBusinessProfile(enabled);
-
-    if (!enabled || !businessProfile) {
-      return;
-    }
-
-    setSearchConfig((currentConfig) => ({
-      ...currentConfig,
-      category: businessProfile.businessCategory,
-      location: businessProfile.businessLocation,
-      profileServiceDescription: businessProfile.serviceDescription,
-      profileTargetCustomerType: businessProfile.targetCustomerType,
-    }));
-  };
 
   const tierCounts = useMemo(
     () => ({
@@ -226,13 +206,9 @@ export function DashboardPage({
             searchConfig={searchConfig}
             savedSearches={savedSearches}
             selectedSavedSearchId={selectedSavedSearchId}
-            businessProfile={businessProfile}
-            useBusinessProfile={useBusinessProfile}
             isRunningSearch={isRunningSearch}
             onSelectSavedSearch={selectSavedSearch}
             onUpdateSearchConfig={setSearchConfig}
-            onUseBusinessProfileChange={applyBusinessProfile}
-            onNavigateBusinessProfile={onNavigateBusinessProfile}
             onSaveSearch={saveSearch}
             onRunSearch={runSearch}
           />

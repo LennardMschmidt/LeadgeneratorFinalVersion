@@ -23,6 +23,7 @@ import { Lead, LeadFilters, LeadStatus } from './types';
 
 interface LeadManagementTableProps {
   leads: Lead[];
+  scoreDenominator: number;
   isLoading?: boolean;
   filters: LeadFilters;
   onTierFilterChange: (tier: LeadFilters['tier']) => void;
@@ -152,14 +153,12 @@ const truncateMapsDisplayValue = (value: string): string => {
   return `${value.slice(0, idx + marker.length)}...`;
 };
 
-const toDisplayScore = (score: number): number => {
-  if (!Number.isFinite(score)) {
+const toDisplayScore = (score: number, maxScore: number): number => {
+  if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore <= 0) {
     return 0;
   }
-  if (score <= 1) {
-    return Math.round(score * 100);
-  }
-  return Math.round(score);
+  const normalized = Math.max(0, Math.min(100, (score / maxScore) * 100));
+  return Math.round(normalized);
 };
 
 const contactMeta = (
@@ -211,6 +210,7 @@ const LOADER_KEYFRAMES = `
 
 export function LeadManagementTable({
   leads,
+  scoreDenominator,
   isLoading = false,
   filters,
   onTierFilterChange,
@@ -528,7 +528,7 @@ export function LeadManagementTable({
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="text-sm text-gray-300">
                           <span className="text-gray-500 mr-2">Score</span>
-                          <span className="font-medium text-white">{toDisplayScore(lead.score)}</span>
+                          <span className="font-medium text-white">{toDisplayScore(lead.score, scoreDenominator)}</span>
                         </div>
 
                         <div className="flex items-center gap-2">

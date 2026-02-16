@@ -21,14 +21,12 @@ interface DashboardPageProps {
   onLogout: () => void;
 }
 
-const toDisplayScore = (score: number): number => {
-  if (!Number.isFinite(score)) {
+const toDisplayScore = (score: number, maxScore: number): number => {
+  if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore <= 0) {
     return 0;
   }
-  if (score <= 1) {
-    return Math.round(score * 100);
-  }
-  return Math.round(score);
+  const normalized = Math.max(0, Math.min(100, (score / maxScore) * 100));
+  return Math.round(normalized);
 };
 
 export function DashboardPage({
@@ -57,6 +55,7 @@ export function DashboardPage({
   const [isRunningSearch, setIsRunningSearch] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchMeta, setSearchMeta] = useState<LeadSearchMeta | null>(null);
+  const [lastSearchSelectedProblemCount, setLastSearchSelectedProblemCount] = useState(0);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
 
   const tierCounts = useMemo(
@@ -77,6 +76,16 @@ export function DashboardPage({
       }),
     [leads, filters],
   );
+  const maxRawScore = useMemo(
+    () => leads.reduce((currentMax, lead) => Math.max(currentMax, lead.score), 0),
+    [leads],
+  );
+  const scoreDenominator = useMemo(() => {
+    if (lastSearchSelectedProblemCount > 0) {
+      return lastSearchSelectedProblemCount;
+    }
+    return maxRawScore;
+  }, [lastSearchSelectedProblemCount, maxRawScore]);
 
   const maxFoundNotice = useMemo(() => {
     if (!searchMeta) {
@@ -143,6 +152,10 @@ export function DashboardPage({
 
     setSearchError(null);
     setSearchMeta(null);
+    const selectedProblemCount = new Set(
+      searchConfig.problemFilters.map((item) => item.trim().toLowerCase()).filter(Boolean),
+    ).size;
+    setLastSearchSelectedProblemCount(selectedProblemCount);
     setIsRunningSearch(true);
     const controller = new AbortController();
     activeSearchAbortControllerRef.current = controller;
@@ -219,7 +232,7 @@ export function DashboardPage({
       lead.location,
       lead.category,
       lead.tier,
-      String(toDisplayScore(lead.score)),
+      String(toDisplayScore(lead.score, scoreDenominator)),
       lead.status,
       lead.contactChannels.join('|'),
     ]);
@@ -291,6 +304,7 @@ export function DashboardPage({
         <section className="mt-24">
           <LeadManagementTable
             leads={filteredLeads}
+            scoreDenominator={scoreDenominator}
             isLoading={isRunningSearch}
             filters={filters}
             onTierFilterChange={updateTierFilter}

@@ -59,8 +59,14 @@
       port: 3000,
       open: false,
       watch: {
-        // Prevent random full reloads when external tools touch tsconfig mtime.
-        ignored: ['**/tsconfig.json'],
+        // Keep watch scope tight to avoid slow startups/reloads.
+        ignored: [
+          '**/.git/**',
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/build/**',
+          '**/tsconfig.json',
+        ],
       },
       proxy: {
         '/api': {

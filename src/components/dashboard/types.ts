@@ -58,6 +58,8 @@ export interface BackendLead {
 export interface SearchConfiguration {
   location: string;
   category: string;
+  businessType: string;
+  problemCategoriesSelected: string[];
   problemFilters: string[];
   contactPreference: ContactPreference;
   maxResults: number;

@@ -1,5 +1,5 @@
+import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
 import {
-  type MouseEvent as ReactMouseEvent,
   Select,
   SelectContent,
   SelectItem,
@@ -22,6 +22,8 @@ interface DashboardSelectProps<T extends string> {
   size?: 'default' | 'compact';
   triggerClassName?: string;
   contentClassName?: string;
+  triggerStyleOverride?: CSSProperties;
+  getOptionClassName?: (value: T) => string;
 }
 
 const defaultTriggerClass =
@@ -66,6 +68,8 @@ export function DashboardSelect<T extends string>({
   size = 'default',
   triggerClassName,
   contentClassName,
+  triggerStyleOverride,
+  getOptionClassName,
 }: DashboardSelectProps<T>) {
   return (
     <Select value={value} onValueChange={(nextValue) => onValueChange(nextValue as T)}>
@@ -75,7 +79,7 @@ export function DashboardSelect<T extends string>({
           size === 'default' ? defaultTriggerClass : compactTriggerClass,
           triggerClassName,
         )}
-        style={triggerStyle}
+        style={triggerStyleOverride ?? triggerStyle}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -88,7 +92,7 @@ export function DashboardSelect<T extends string>({
           <SelectItem
             key={option.value}
             value={option.value}
-            className={itemClass}
+            className={cn(itemClass, getOptionClassName?.(option.value))}
             hideIndicator
             onMouseEnter={handleItemMouseEnter}
             onMouseLeave={handleItemMouseLeave}

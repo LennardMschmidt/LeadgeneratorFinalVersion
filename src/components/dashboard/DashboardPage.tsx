@@ -36,6 +36,8 @@ export function DashboardPage({
   const [searchConfig, setSearchConfig] = useState<SearchConfiguration>({
     location: '',
     category: '',
+    businessType: '',
+    problemCategoriesSelected: [],
     problemFilters: [],
     contactPreference: 'Any',
     maxResults: 20,
@@ -157,6 +159,11 @@ export function DashboardPage({
 
     setSearchConfig({
       ...savedSearch.config,
+      businessType: savedSearch.config.businessType ?? '',
+      problemCategoriesSelected:
+        savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],
+      problemFilters:
+        savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],
       maxResults: savedSearch.config.maxResults ?? 20,
     });
   };
@@ -236,12 +243,13 @@ export function DashboardPage({
             <div className="rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {searchError}
             </div>
+            <br/>
           </section>
         ) : null}
-
         <section className="mt-24">
           <LeadManagementTable
             leads={filteredLeads}
+            isLoading={isRunningSearch}
             filters={filters}
             onTierFilterChange={updateTierFilter}
             onStatusFilterChange={updateStatusFilter}

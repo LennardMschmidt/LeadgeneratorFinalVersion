@@ -1,13 +1,5 @@
 import { LeadStatus, LeadTier, SavedSearch } from './types';
 
-export const PROBLEM_FILTER_OPTIONS = [
-  'No website',
-  'Low rating',
-  'No social presence',
-  'Outdated website',
-  'No booking system',
-];
-
 export const CONTACT_PREFERENCE_OPTIONS = ['Any', 'Email', 'Phone', 'LinkedIn'] as const;
 
 export const STATUS_OPTIONS: LeadStatus[] = ['New', 'Pending', 'Contacted', 'Won', 'Lost', 'Archived'];
@@ -36,7 +28,9 @@ export const INITIAL_SAVED_SEARCHES: SavedSearch[] = [
     config: {
       location: 'Seattle, WA',
       category: 'Cafe',
-      problemFilters: ['No website', 'Low rating'],
+      businessType: 'Web Agencies',
+      problemCategoriesSelected: ['Website Absence', 'Website Quality & Design'],
+      problemFilters: ['Website Absence', 'Website Quality & Design'],
       contactPreference: 'Email',
       maxResults: 20,
     },
@@ -47,7 +41,9 @@ export const INITIAL_SAVED_SEARCHES: SavedSearch[] = [
     config: {
       location: 'California',
       category: 'Dental Clinic',
-      problemFilters: ['No booking system'],
+      businessType: 'Booking / Automation SaaS Providers',
+      problemCategoriesSelected: ['No Online Booking System'],
+      problemFilters: ['No Online Booking System'],
       contactPreference: 'Phone',
       maxResults: 20,
     },

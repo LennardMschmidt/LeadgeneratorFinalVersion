@@ -44,6 +44,8 @@ const toLead = (backendLead: BackendLead): Lead => ({
 const toPayload = (searchConfig: SearchConfiguration) => ({
   category: searchConfig.category.trim(),
   location: searchConfig.location.trim(),
+  businessType: searchConfig.businessType,
+  problemCategoriesSelected: searchConfig.problemCategoriesSelected,
   problemFilters: searchConfig.problemFilters,
   maxResults: searchConfig.maxResults,
   contactPreferences:
@@ -63,6 +65,22 @@ const parseBackendError = async (response: Response): Promise<string> => {
   }
 
   return `Request failed (${response.status})`;
+};
+
+const logLeadPayloads = (backendLeads: BackendLead[], mappedLeads: Lead[]): void => {
+  console.groupCollapsed(
+    `[Lead Search] Received ${backendLeads.length} backend lead(s), mapped ${mappedLeads.length} UI lead(s)`,
+  );
+
+  backendLeads.forEach((lead, index) => {
+    console.log(`[Lead Search][Backend][${index + 1}]`, JSON.stringify(lead, null, 2));
+  });
+
+  mappedLeads.forEach((lead, index) => {
+    console.log(`[Lead Search][Frontend][${index + 1}]`, JSON.stringify(lead, null, 2));
+  });
+
+  console.groupEnd();
 };
 
 export const generateLeadsFromBackend = async (
@@ -99,5 +117,7 @@ export const generateLeadsFromBackend = async (
   }
 
   const payload = (await response.json()) as BackendLead[];
-  return payload.map(toLead);
+  const mappedLeads = payload.map(toLead);
+  logLeadPayloads(payload, mappedLeads);
+  return mappedLeads;
 };

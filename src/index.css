@@ -434,6 +434,10 @@
   }
 }
 
+[data-slot="select-trigger"][data-state="open"] .select-chevron {
+  transform: rotate(180deg);
+}
+
 @layer utilities {
   .pointer-events-none {
     pointer-events: none;

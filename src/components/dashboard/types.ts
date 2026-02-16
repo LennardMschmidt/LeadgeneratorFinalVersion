@@ -25,12 +25,15 @@ export interface Lead {
   businessName: string;
   location: string;
   category: string;
+  source?: string;
   problems: string[];
   explanation: string;
   tier: LeadTier;
   score: number;
   status: LeadStatus;
   contactChannels: string[];
+  rating?: number;
+  reviewCount?: number;
 }
 
 export interface BackendProblemSignal {
@@ -48,11 +51,27 @@ export interface BackendLead {
   businessName: string;
   category: string;
   location: string;
+  source?: string;
   problems: BackendProblemSignal[];
   contactChannels: BackendContactChannel[];
   tier: BackendLeadTier;
   score: number;
   explanation: string;
+  rating?: number;
+  review_count?: number;
+}
+
+export interface LeadSearchMeta {
+  source: string;
+  max_found_leads?: number;
+  requested_max_results?: number;
+  stop_reason?: string;
+  reached_max_available?: boolean;
+}
+
+export interface BackendLeadResponse {
+  leads: BackendLead[];
+  meta?: LeadSearchMeta;
 }
 
 export interface SearchConfiguration {

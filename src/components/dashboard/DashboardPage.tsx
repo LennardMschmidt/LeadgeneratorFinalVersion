@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { generateLeadsFromBackend } from './api';
+import { useMemo, useRef, useState } from 'react';
+import { cancelBackendSearch, generateLeadsFromBackend } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
@@ -8,6 +8,7 @@ import { TierOverviewCards } from './TierOverviewCards';
 import {
   Lead,
   LeadFilters,
+  LeadSearchMeta,
   LeadStatus,
   SavedSearch,
   SearchConfiguration,
@@ -45,6 +46,8 @@ export function DashboardPage({
   });
   const [isRunningSearch, setIsRunningSearch] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchMeta, setSearchMeta] = useState<LeadSearchMeta | null>(null);
+  const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
 
   const tierCounts = useMemo(
     () => ({
@@ -64,6 +67,34 @@ export function DashboardPage({
       }),
     [leads, filters],
   );
+
+  const maxFoundNotice = useMemo(() => {
+    if (!searchMeta) {
+      return null;
+    }
+
+    const maxFound = searchMeta.max_found_leads;
+    if (typeof maxFound !== 'number') {
+      return null;
+    }
+
+    const requestedMax = searchMeta.requested_max_results;
+    const stopReason = searchMeta.stop_reason;
+    const reachedMaxAvailable =
+      searchMeta.reached_max_available === true ||
+      stopReason === 'google_maps_end_of_list' ||
+      stopReason === 'idle_limit_reached';
+
+    if (!reachedMaxAvailable) {
+      return null;
+    }
+
+    if (typeof requestedMax === 'number' && requestedMax > maxFound) {
+      return `Max found leads from ${searchMeta.source}: ${maxFound} (requested ${requestedMax}).`;
+    }
+
+    return `Max found leads from ${searchMeta.source}: ${maxFound}.`;
+  }, [searchMeta]);
 
   const updateTierFilter = (tier: LeadFilters['tier']) => {
     setActiveTier(tier);
@@ -96,18 +127,36 @@ export function DashboardPage({
     }
 
     setSearchError(null);
+    setSearchMeta(null);
     setIsRunningSearch(true);
+    const controller = new AbortController();
+    activeSearchAbortControllerRef.current = controller;
 
     try {
-      const nextLeads = await generateLeadsFromBackend(searchConfig);
-      setLeads(nextLeads);
+      const result = await generateLeadsFromBackend(searchConfig, {
+        signal: controller.signal,
+      });
+      setLeads(result.leads);
+      setSearchMeta(result.meta ?? null);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to generate leads.';
       setSearchError(message);
     } finally {
+      activeSearchAbortControllerRef.current = null;
       setIsRunningSearch(false);
     }
+  };
+
+  const cancelSearch = async () => {
+    if (!isRunningSearch) {
+      return;
+    }
+
+    activeSearchAbortControllerRef.current?.abort();
+    await cancelBackendSearch();
+    setIsRunningSearch(false);
+    setSearchError('Search cancelled.');
   };
 
   const saveSearch = () => {
@@ -198,6 +247,7 @@ export function DashboardPage({
             totalLeads={leads.length}
             activeTier={activeTier}
             onSelectTier={updateTierFilter}
+            maxFoundNotice={maxFoundNotice}
           />
         </section>
 
@@ -211,6 +261,7 @@ export function DashboardPage({
             onUpdateSearchConfig={setSearchConfig}
             onSaveSearch={saveSearch}
             onRunSearch={runSearch}
+            onCancelSearch={cancelSearch}
           />
         </section>
 

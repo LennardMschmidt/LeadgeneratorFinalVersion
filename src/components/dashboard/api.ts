@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import { BackendLead, Lead, SearchConfiguration } from './types';
+import { BackendLead, BackendLeadResponse, Lead, LeadSearchMeta, SearchConfiguration } from './types';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
 
@@ -29,13 +29,16 @@ const toLead = (backendLead: BackendLead): Lead => ({
   businessName: backendLead.businessName,
   location: backendLead.location,
   category: backendLead.category,
-  problems: backendLead.problems.map(
-    (problem) => `${problem.type} (severity ${problem.severity})`,
-  ),
+  ...(typeof backendLead.source === 'string' ? { source: backendLead.source } : {}),
+  problems: backendLead.problems.map((problem) => problem.type),
   explanation: backendLead.explanation,
   tier: mapTier(backendLead.tier),
   score: backendLead.score,
   status: 'New',
+  ...(typeof backendLead.rating === 'number' ? { rating: backendLead.rating } : {}),
+  ...(typeof backendLead.review_count === 'number'
+    ? { reviewCount: backendLead.review_count }
+    : {}),
   contactChannels: backendLead.contactChannels.map(
     (channel) => `${channel.type}: ${channel.value}`,
   ),
@@ -85,7 +88,8 @@ const logLeadPayloads = (backendLeads: BackendLead[], mappedLeads: Lead[]): void
 
 export const generateLeadsFromBackend = async (
   searchConfig: SearchConfiguration,
-): Promise<Lead[]> => {
+  options?: { signal?: AbortSignal },
+): Promise<{ leads: Lead[]; meta?: LeadSearchMeta }> => {
   const requestUrl = buildApiUrl('/api/leads/generate');
   let response: Response;
 
@@ -96,8 +100,13 @@ export const generateLeadsFromBackend = async (
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(toPayload(searchConfig)),
+      signal: options?.signal,
     });
   } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Search cancelled.');
+    }
+
     if (error instanceof TypeError) {
       const targetDescription =
         API_BASE_URL.length > 0
@@ -116,8 +125,23 @@ export const generateLeadsFromBackend = async (
     throw new Error(await parseBackendError(response));
   }
 
-  const payload = (await response.json()) as BackendLead[];
-  const mappedLeads = payload.map(toLead);
-  logLeadPayloads(payload, mappedLeads);
-  return mappedLeads;
+  const payload = (await response.json()) as BackendLead[] | BackendLeadResponse;
+  const backendLeads = Array.isArray(payload) ? payload : payload.leads;
+  const mappedLeads = backendLeads.map(toLead);
+  logLeadPayloads(backendLeads, mappedLeads);
+  return {
+    leads: mappedLeads,
+    ...(Array.isArray(payload) ? {} : { meta: payload.meta }),
+  };
+};
+
+export const cancelBackendSearch = async (): Promise<void> => {
+  const requestUrl = buildApiUrl('/api/leads/cancel');
+  try {
+    await fetch(requestUrl, {
+      method: 'POST',
+    });
+  } catch {
+    // Best-effort cancellation endpoint call.
+  }
 };

@@ -6,6 +6,7 @@ interface TierOverviewCardsProps {
   totalLeads: number;
   activeTier: LeadTier | 'All';
   onSelectTier: (tier: LeadTier | 'All') => void;
+  maxFoundNotice?: string | null;
 }
 
 export function TierOverviewCards({
@@ -13,6 +14,7 @@ export function TierOverviewCards({
   totalLeads,
   activeTier,
   onSelectTier,
+  maxFoundNotice,
 }: TierOverviewCardsProps) {
   const tiers: LeadTier[] = ['Tier 1', 'Tier 2', 'Tier 3'];
   const tierStyles: Record<
@@ -78,7 +80,12 @@ export function TierOverviewCards({
         })}
       </section>
 
-      <p className="text-sm text-gray-400">Total leads: <span className="font-semibold text-white">{totalLeads}</span></p>
+      <div>
+        <p className="text-sm text-gray-400">Total leads: <span className="font-semibold text-white">{totalLeads}</span></p>
+        {maxFoundNotice ? (
+          <p className="mt-1 text-xs text-amber-300">{maxFoundNotice}</p>
+        ) : null}
+      </div>
     </div>
   );
 }

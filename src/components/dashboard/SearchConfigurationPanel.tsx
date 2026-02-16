@@ -17,6 +17,7 @@ interface SearchConfigurationPanelProps {
   onUpdateSearchConfig: (nextConfig: SearchConfiguration) => void;
   onSaveSearch: () => void;
   onRunSearch: () => void;
+  onCancelSearch: () => void;
 }
 
 export function SearchConfigurationPanel({
@@ -28,12 +29,15 @@ export function SearchConfigurationPanel({
   onUpdateSearchConfig,
   onSaveSearch,
   onRunSearch,
+  onCancelSearch,
 }: SearchConfigurationPanelProps) {
+  const AVAILABLE_BUSINESS_TYPE = 'Web Agencies';
   const [isOpen, setIsOpen] = useState(true);
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
   const [isProblemGuideOpen, setIsProblemGuideOpen] = useState(false);
   const noSavedSearchValue = '__none__';
   const noBusinessTypeValue = '__none_business_type__';
+  const [maxResultsDraft, setMaxResultsDraft] = useState(String(searchConfig.maxResults));
   const loadingSteps = [
     'Preparing your search configuration...',
     'Connecting to the map search engine...',
@@ -45,6 +49,10 @@ export function SearchConfigurationPanel({
     'Ranking results by fit with your target group...',
     'Finalizing lead cards and refreshing your table...',
   ];
+
+  useEffect(() => {
+    setMaxResultsDraft(String(searchConfig.maxResults));
+  }, [searchConfig.maxResults]);
 
   useEffect(() => {
     if (!isRunningSearch) {
@@ -82,6 +90,13 @@ export function SearchConfigurationPanel({
     const normalizedBusinessType =
       nextBusinessType === noBusinessTypeValue ? '' : nextBusinessType;
 
+    if (
+      normalizedBusinessType &&
+      normalizedBusinessType !== AVAILABLE_BUSINESS_TYPE
+    ) {
+      return;
+    }
+
     if (normalizedBusinessType === searchConfig.businessType) {
       return;
     }
@@ -107,8 +122,25 @@ export function SearchConfigurationPanel({
   };
 
   const setMaxResults = (nextValue: string) => {
-    const parsed = Number.parseInt(nextValue, 10);
+    const digitsOnly = nextValue.replace(/[^\d]/g, '');
+    if (digitsOnly.length === 0) {
+      setMaxResultsDraft('');
+      return;
+    }
+
+    const parsed = Number.parseInt(digitsOnly, 10);
+    const normalized = Number.isFinite(parsed) ? Math.min(300, parsed) : 20;
+    setMaxResultsDraft(String(normalized));
+    onUpdateSearchConfig({
+      ...searchConfig,
+      maxResults: normalized,
+    });
+  };
+
+  const commitMaxResults = () => {
+    const parsed = Number.parseInt(maxResultsDraft, 10);
     const normalized = Number.isFinite(parsed) ? Math.max(20, Math.min(300, parsed)) : 20;
+    setMaxResultsDraft(String(normalized));
     onUpdateSearchConfig({
       ...searchConfig,
       maxResults: normalized,
@@ -228,7 +260,11 @@ export function SearchConfigurationPanel({
                   { value: noBusinessTypeValue, label: 'Select business type' },
                   ...BUSINESS_TYPE_OPTIONS.map((businessType) => ({
                     value: businessType,
-                    label: businessType,
+                    label:
+                      businessType === AVAILABLE_BUSINESS_TYPE
+                        ? businessType
+                        : `${businessType} (Coming soon...)`,
+                    disabled: businessType !== AVAILABLE_BUSINESS_TYPE,
                   })),
                 ]}
               />
@@ -377,8 +413,9 @@ export function SearchConfigurationPanel({
               type="number"
               min={20}
               max={300}
-              value={searchConfig.maxResults}
+              value={maxResultsDraft}
               onChange={(event) => setMaxResults(event.target.value)}
+              onBlur={commitMaxResults}
               className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
             />
             <p className="text-xs text-gray-500">Allowed range: 20-300 leads per search.</p>
@@ -425,6 +462,33 @@ export function SearchConfigurationPanel({
                 'Run Search'
               )}
             </button>
+            {isRunningSearch ? (
+              <button
+                type="button"
+                onClick={onCancelSearch}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-lg border text-sm font-medium transition-colors"
+                style={{
+                  borderColor: 'rgba(252, 165, 165, 0.45)',
+                  backgroundColor: 'rgba(239, 68, 68, 0.18)',
+                  color: 'rgb(254, 226, 226)',
+                  boxShadow: '0 10px 25px rgba(239, 68, 68, 0.22)',
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.28)';
+                  event.currentTarget.style.borderColor = 'rgba(254, 202, 202, 0.6)';
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.18)';
+                  event.currentTarget.style.borderColor = 'rgba(252, 165, 165, 0.45)';
+                }}
+              >
+                <span
+                  className="inline-block h-2 w-2 rounded-full bg-red-300"
+                  style={{ animation: 'searchDotPulse 900ms ease-in-out infinite' }}
+                />
+                Cancel Search
+              </button>
+            ) : null}
 
             {isRunningSearch ? (
               <div className="flex items-center gap-2 text-sm text-blue-200">

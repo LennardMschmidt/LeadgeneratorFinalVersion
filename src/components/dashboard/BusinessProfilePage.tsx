@@ -99,7 +99,7 @@ export function BusinessProfilePage({
 
   const inputClassName = useMemo(
     () =>
-      'w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition-all hover:border-white/25 focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20',
+      'w-full rounded-xl border border-white/15 bg-white/5 px-5 py-4 text-base text-white placeholder:text-gray-500 outline-none transition-all hover:border-white/25 focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20',
     [],
   );
 
@@ -193,18 +193,21 @@ export function BusinessProfilePage({
         onLogout={onLogout}
       />
 
-      <main className="relative mx-auto max-w-7xl px-6 py-20">
+      <main className="relative mx-auto max-w-7xl px-6 py-24">
         <section>
           <h1 className="text-4xl font-bold">Business Profile</h1>
-          <p className="mt-3 text-gray-400">
+          <p className="mt-4 text-gray-400">
             Tell us about your business so we can match you with better leads.
           </p>
         </section>
 
-        <section className="mt-8">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-[0_0_30px_rgba(59,130,246,0.08)] backdrop-blur-sm md:p-8">
-            <div className="grid gap-5 md:grid-cols-2">
-              <div className="space-y-2">
+        <section className="mt-10">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-[0_0_30px_rgba(59,130,246,0.08)] backdrop-blur-sm md:p-12">
+            <div
+              className="grid gap-y-10 md:grid-cols-2"
+              style={{ columnGap: '2.75rem' }}
+            >
+              <div className="space-y-4">
                 <label htmlFor="business-name" className="block text-sm text-gray-300">
                   Business Name
                 </label>
@@ -222,7 +225,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <label htmlFor="business-category" className="block text-sm text-gray-300">
                   Business Category
                 </label>
@@ -240,7 +243,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <label htmlFor="business-location" className="block text-sm text-gray-300">
                   Business Location
                 </label>
@@ -258,7 +261,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-4">
                 <label htmlFor="target-customer-type" className="block text-sm text-gray-300">
                   Target Customer Type
                 </label>
@@ -282,7 +285,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-4 md:col-span-2">
                 <label htmlFor="service-description" className="block text-sm text-gray-300">
                   Service Description
                 </label>
@@ -297,13 +300,13 @@ export function BusinessProfilePage({
                   }
                   rows={4}
                   placeholder="Describe your services and how you help customers."
-                  className={inputClassName}
+                  className={`${inputClassName} min-h-[170px]`}
                 />
               </div>
 
-              <div className="space-y-3 md:col-span-2">
+              <div className="space-y-5 md:col-span-2">
                 <p className="text-sm text-gray-300">Primary Problems You Solve</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {PRIMARY_PROBLEM_OPTIONS.map((problem) => {
                     const isSelected = form.primaryProblemsYouSolve.includes(problem);
                     return (
@@ -324,11 +327,14 @@ export function BusinessProfilePage({
                 </div>
               </div>
 
-              <div className="space-y-3 md:col-span-2">
+              <div className="mb-5 space-y-5 md:col-span-2">
                 <p className="text-sm text-gray-300">Preferred Contact Method</p>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                   {CONTACT_METHOD_OPTIONS.map((method) => (
-                    <label key={method} className="inline-flex items-center gap-2 text-sm text-gray-200">
+                    <label
+                      key={method}
+                      className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-gray-200"
+                    >
                       <input
                         type="radio"
                         name="preferred-contact-method"
@@ -350,29 +356,29 @@ export function BusinessProfilePage({
             </div>
 
             {errorMessage ? (
-              <div className="mt-6 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <div className="mt-8 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {errorMessage}
               </div>
             ) : null}
 
             {successMessage ? (
-              <div className="mt-6 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+              <div className="mt-8 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
                 {successMessage}
               </div>
             ) : null}
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-4" style={{ marginTop: '26px' }}>
               <button
                 type="button"
                 onClick={handleSaveProfile}
-                className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2 text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-purple-700"
+                className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-purple-700"
               >
                 Save Profile
               </button>
               <button
                 type="button"
                 onClick={handleResetProfile}
-                className="rounded-lg border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-white/10"
+                className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:bg-white/10"
               >
                 Reset
               </button>

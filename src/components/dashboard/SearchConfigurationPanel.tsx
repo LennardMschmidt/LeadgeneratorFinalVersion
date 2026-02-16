@@ -257,6 +257,7 @@ export function SearchConfigurationPanel({
                 id="business-type"
                 value={searchConfig.businessType || noBusinessTypeValue}
                 onValueChange={setBusinessType}
+                contentClassName="max-h-[220px]"
                 options={[
                   { value: noBusinessTypeValue, label: 'Select business type' },
                   ...BUSINESS_TYPE_OPTIONS.map((businessType) => ({

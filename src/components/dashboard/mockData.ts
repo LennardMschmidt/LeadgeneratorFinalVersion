@@ -21,31 +21,4 @@ export const TIER_META: Record<LeadTier, { title: string; subtitle: string }> = 
   },
 };
 
-export const INITIAL_SAVED_SEARCHES: SavedSearch[] = [
-  {
-    id: 'saved-1',
-    name: 'Seattle Cafes',
-    config: {
-      location: 'Seattle, WA',
-      category: 'Cafe',
-      businessType: 'Web Agencies',
-      problemCategoriesSelected: ['No Website', 'Low Google Rating (<4.2)'],
-      problemFilters: ['No Website', 'Low Google Rating (<4.2)'],
-      contactPreference: 'Email',
-      maxResults: 20,
-    },
-  },
-  {
-    id: 'saved-2',
-    name: 'Dental Prospects',
-    config: {
-      location: 'California',
-      category: 'Dental Clinic',
-      businessType: 'Web Agencies',
-      problemCategoriesSelected: ['No Phone Number', 'No Business Hours Listed'],
-      problemFilters: ['No Phone Number', 'No Business Hours Listed'],
-      contactPreference: 'Phone',
-      maxResults: 20,
-    },
-  },
-];
+export const INITIAL_SAVED_SEARCHES: SavedSearch[] = [];

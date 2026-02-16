@@ -21,6 +21,16 @@ interface DashboardPageProps {
   onLogout: () => void;
 }
 
+const toDisplayScore = (score: number): number => {
+  if (!Number.isFinite(score)) {
+    return 0;
+  }
+  if (score <= 1) {
+    return Math.round(score * 100);
+  }
+  return Math.round(score);
+};
+
 export function DashboardPage({
   onNavigateHome,
   onNavigateDashboard,
@@ -209,7 +219,7 @@ export function DashboardPage({
       lead.location,
       lead.category,
       lead.tier,
-      String(lead.score),
+      String(toDisplayScore(lead.score)),
       lead.status,
       lead.contactChannels.join('|'),
     ]);

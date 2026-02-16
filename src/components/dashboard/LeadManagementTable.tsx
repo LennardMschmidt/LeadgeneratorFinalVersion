@@ -152,6 +152,16 @@ const truncateMapsDisplayValue = (value: string): string => {
   return `${value.slice(0, idx + marker.length)}...`;
 };
 
+const toDisplayScore = (score: number): number => {
+  if (!Number.isFinite(score)) {
+    return 0;
+  }
+  if (score <= 1) {
+    return Math.round(score * 100);
+  }
+  return Math.round(score);
+};
+
 const contactMeta = (
   channel: ParsedContactChannel,
 ): { label: string; href?: string; icon: ComponentType<{ className?: string }> } => {
@@ -518,7 +528,7 @@ export function LeadManagementTable({
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="text-sm text-gray-300">
                           <span className="text-gray-500 mr-2">Score</span>
-                          <span className="font-medium text-white">{lead.score}</span>
+                          <span className="font-medium text-white">{toDisplayScore(lead.score)}</span>
                         </div>
 
                         <div className="flex items-center gap-2">

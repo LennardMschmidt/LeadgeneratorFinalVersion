@@ -22,15 +22,16 @@ const MODAL_CONTENT_STYLE: CSSProperties = {
 };
 
 const SECTION_CLASS =
-  'rounded-[28px] border border-white/24 bg-white/[0.055] px-6 py-6 sm:px-8 sm:py-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]';
-const SUB_PANEL_CLASS = 'rounded-2xl border border-white/20 bg-black/24 px-5 py-5';
+  'my-2 rounded-[28px] border border-white/24 bg-white/[0.055] px-7 py-7 sm:px-9 sm:py-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]';
+const SUB_PANEL_CLASS = 'my-3 rounded-2xl border border-white/20 bg-black/24 px-6 py-6';
 const SECTION_TITLE_CLASS = 'text-xs font-semibold uppercase tracking-[0.18em] text-slate-300';
 const BLOCK_TITLE_CLASS = 'text-sm font-semibold text-slate-100';
 const META_LABEL_CLASS = 'text-[11px] uppercase tracking-[0.14em] text-slate-300';
 
 const CONTACT_BUTTON_CLASS =
-  'flex min-w-[220px] flex-1 items-start gap-3.5 rounded-xl border border-white/24 bg-black/30 px-4 py-3.5 text-sm text-slate-100 transition-colors hover:border-white/38 hover:bg-black/40';
-const CONTACT_VALUE_CLASS = 'mt-1.5 block text-xs text-slate-300 break-all';
+  'my-1 flex min-w-[220px] flex-1 items-start gap-3.5 rounded-xl border border-white/24 bg-black/30 px-4 py-3.5 text-sm text-slate-100 transition-colors hover:border-white/38 hover:bg-black/40';
+const CONTACT_VALUE_CLASS = 'mt-2 block text-xs text-slate-300 break-all';
+const PROBLEM_CHIP_CLASS = 'px-3 py-1 rounded-lg bg-red-500/10 text-red-300 text-xs font-medium border border-red-500/20';
 
 interface ParsedContactChannel {
   type: string;
@@ -136,16 +137,16 @@ export function SavedLeadDetailModal({
         className="max-h-[92vh] overflow-y-auto border border-white/32 p-0 text-white sm:max-w-[1120px]"
         style={MODAL_CONTENT_STYLE}
       >
-        <div className="relative p-6 sm:p-8 lg:p-10">
-          <div className="space-y-7">
+        <div className="relative p-8 sm:p-10 lg:p-12">
+          <div className="space-y-10">
             <section className={SECTION_CLASS}>
-              <p className={SECTION_TITLE_CLASS}>{t('dashboard.savedLeads.columns.business')}</p>
-              <div className="mt-5 space-y-6">
-                <DialogHeader className="space-y-3 text-left">
+              <p className={`${SECTION_TITLE_CLASS} mb-3`}>{t('dashboard.savedLeads.columns.business')}</p>
+              <div className="mt-6 space-y-7">
+                <DialogHeader className="space-y-4 text-left">
                   <DialogTitle className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                     {lead.businessName}
                   </DialogTitle>
-                  <DialogDescription className="text-lg text-slate-200">
+                  <DialogDescription className="mt-1 text-lg leading-relaxed text-slate-200">
                     {lead.category} • {lead.location}
                   </DialogDescription>
                 </DialogHeader>
@@ -164,8 +165,8 @@ export function SavedLeadDetailModal({
                   </span>
                 </div>
 
-                <div className={`${SUB_PANEL_CLASS} space-y-5`}>
-                  <p className={`${SECTION_TITLE_CLASS} mb-1`}>{t('dashboard.savedLeads.detailModal.quickActions')}</p>
+                <div className={`${SUB_PANEL_CLASS} space-y-6`}>
+                  <p className={`${SECTION_TITLE_CLASS} mb-2`}>{t('dashboard.savedLeads.detailModal.quickActions')}</p>
                   <div className="flex flex-wrap items-end gap-5">
                     <div className="space-y-2.5">
                       <p className={META_LABEL_CLASS}>{t('dashboard.savedLeads.columns.status')}</p>
@@ -205,34 +206,36 @@ export function SavedLeadDetailModal({
             <section className={SECTION_CLASS}>
               <p className={`${SECTION_TITLE_CLASS} mt-2 mb-7`}>{t('dashboard.savedLeads.detailModal.contactAndLinks')}</p>
               <div className="grid gap-7 xl:grid-cols-2">
-                <div className={`${SUB_PANEL_CLASS} space-y-5`}>
+                <div className={`${SUB_PANEL_CLASS} space-y-6`}>
                   <h3 className={BLOCK_TITLE_CLASS}>{t('dashboard.savedLeads.detailModal.problemsAndReason')}</h3>
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-3">
                     {lead.problems.length > 0 ? (
                       lead.problems.map((problem) => (
                         <span
                           key={`${lead.savedLeadId}-${problem}`}
-                          className="rounded-lg border border-red-500/38 bg-red-500/16 px-3 py-1.5 text-xs font-medium text-red-100"
+                          className={PROBLEM_CHIP_CLASS}
                         >
                           {tm('problemCategories', problem)}
                         </span>
                       ))
                     ) : (
-                      <span className="text-sm text-slate-300">{t('common.notAvailable')}</span>
+                      <span className={PROBLEM_CHIP_CLASS}>
+                        {t('dashboard.savedLeads.detailModal.noProblemsDetected')}
+                      </span>
                     )}
                   </div>
-                  <div className="rounded-xl border border-white/16 bg-black/22 px-4 py-3.5">
+                  <div className="rounded-xl border border-white/16 bg-black/22 px-5 py-4">
                     <p className="text-sm leading-relaxed text-slate-100">
                       {lead.explanation || t('common.notAvailable')}
                     </p>
                   </div>
                 </div>
 
-                <div className={`${SUB_PANEL_CLASS} space-y-5`}>
+                <div className={`${SUB_PANEL_CLASS} space-y-6`}>
                   <h3 className={BLOCK_TITLE_CLASS}>{t('dashboard.savedLeads.detailModal.contactAndLinks')}</h3>
 
                   {lead.contactChannels.length > 0 ? (
-                    <div className="flex w-full flex-wrap gap-5">
+                    <div className="flex w-full flex-wrap gap-6">
                       {lead.contactChannels.map((rawChannel) => {
                         const parsed = parseContactChannel(rawChannel);
                         const channelType = parsed.type.toLowerCase();
@@ -312,11 +315,11 @@ export function SavedLeadDetailModal({
                       })}
                     </div>
                   ) : (
-                    <p className="text-sm text-slate-300">{t('common.notAvailable')}</p>
+                    <p className="mt-2 mb-1 text-sm text-slate-300">{t('common.notAvailable')}</p>
                   )}
 
                   {lead.contactChannels.length === 0 && directLinks.length > 0 ? (
-                    <div className="flex flex-wrap gap-3.5 pt-2">
+                    <div className="flex flex-wrap gap-4 pt-3">
                       {directLinks.map((link) => {
                         const Icon = link.icon;
                         return (
@@ -344,22 +347,22 @@ export function SavedLeadDetailModal({
                 <div className="space-y-5">
                   <div className={SUB_PANEL_CLASS}>
                     <p className={META_LABEL_CLASS}>{t('dashboard.savedLeads.columns.savedAt')}</p>
-                    <p className="mt-2 text-lg text-slate-100">{formatDateTime(lead.savedAt)}</p>
+                    <p className="mt-3 text-lg leading-relaxed text-slate-100">{formatDateTime(lead.savedAt)}</p>
                   </div>
                   <div className={SUB_PANEL_CLASS}>
                     <p className={META_LABEL_CLASS}>{t('dashboard.savedLeads.detailModal.updatedAt')}</p>
-                    <p className="mt-2 text-lg text-slate-100">{formatDateTime(lead.updatedAt)}</p>
+                    <p className="mt-3 text-lg leading-relaxed text-slate-100">{formatDateTime(lead.updatedAt)}</p>
                   </div>
                   <div className={SUB_PANEL_CLASS}>
                     <p className={META_LABEL_CLASS}>{t('dashboard.leadTable.source')}</p>
-                    <p className="mt-2 text-lg text-slate-100">
+                    <p className="mt-3 text-lg leading-relaxed text-slate-100">
                       {lead.source || t('dashboard.leadTable.defaultSource')}
                     </p>
                   </div>
                   {typeof lead.rating === 'number' ? (
                     <div className={SUB_PANEL_CLASS}>
                       <p className={META_LABEL_CLASS}>{t('dashboard.leadTable.rating')}</p>
-                      <p className="mt-2 text-lg text-slate-100">
+                      <p className="mt-3 text-lg leading-relaxed text-slate-100">
                         {lead.rating.toFixed(1)}
                         {typeof lead.reviewCount === 'number' ? ` (${lead.reviewCount})` : ''}
                       </p>
@@ -370,14 +373,14 @@ export function SavedLeadDetailModal({
                 <div className="space-y-5">
                   <div className={SUB_PANEL_CLASS}>
                     <p className={META_LABEL_CLASS}>{t('dashboard.savedLeads.detailModal.address')}</p>
-                    <p className="mt-2 text-lg leading-relaxed text-slate-100">
+                    <p className="mt-3 text-lg leading-relaxed text-slate-100">
                       {lead.address?.full || t('common.notAvailable')}
                     </p>
                     {lead.address?.addressLines?.length ? (
-                      <p className="mt-2 text-sm text-slate-300">{lead.address.addressLines.join(' • ')}</p>
+                      <p className="mt-3 text-sm leading-relaxed text-slate-300">{lead.address.addressLines.join(' • ')}</p>
                     ) : null}
                     {lead.geo ? (
-                      <p className="mt-2 text-sm text-slate-300">
+                      <p className="mt-3 text-sm leading-relaxed text-slate-300">
                         Lat: {lead.geo.lat.toFixed(5)} • Lng: {lead.geo.lng.toFixed(5)}
                       </p>
                     ) : null}
@@ -387,10 +390,10 @@ export function SavedLeadDetailModal({
                     <div className={SUB_PANEL_CLASS}>
                       <p className={META_LABEL_CLASS}>Reference IDs</p>
                       {lead.rawRefs.knowledgeGraphId ? (
-                        <p className="mt-2 text-sm text-slate-200 break-all">KG: {lead.rawRefs.knowledgeGraphId}</p>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-200 break-all">KG: {lead.rawRefs.knowledgeGraphId}</p>
                       ) : null}
                       {lead.rawRefs.ownerOrProfileId ? (
-                        <p className="mt-2 text-sm text-slate-200 break-all">
+                        <p className="mt-3 text-sm leading-relaxed text-slate-200 break-all">
                           Profile: {lead.rawRefs.ownerOrProfileId}
                         </p>
                       ) : null}
@@ -404,7 +407,7 @@ export function SavedLeadDetailModal({
                   {lead.hours ? (
                     <div className={SUB_PANEL_CLASS}>
                       <p className={META_LABEL_CLASS}>{t('dashboard.savedLeads.detailModal.hours')}</p>
-                      <div className="mt-3 space-y-2.5">
+                      <div className="mt-4 space-y-3">
                         {lead.hours.statusSummary ? <p className="text-sm text-slate-100">{lead.hours.statusSummary}</p> : null}
                         {lead.hours.statusText ? <p className="text-sm text-slate-300">{lead.hours.statusText}</p> : null}
                         {lead.hours.weeklyHours.map((entry, index) => (
@@ -420,7 +423,7 @@ export function SavedLeadDetailModal({
                   {lead.attributes ? (
                     <div className={SUB_PANEL_CLASS}>
                       <p className={META_LABEL_CLASS}>{t('dashboard.savedLeads.detailModal.attributes')}</p>
-                      <div className="mt-3 space-y-2.5">
+                      <div className="mt-4 space-y-3">
                         {Object.entries(lead.attributes).map(([key, values]) => (
                           <p key={`${lead.savedLeadId}-attribute-${key}`} className="text-sm text-slate-200">
                             <span className="font-medium text-slate-100">{key}: </span>

@@ -92,14 +92,14 @@ export function DashboardSelect<T extends string>({
           size === 'default' ? defaultTriggerClass : compactTriggerClass,
           triggerClassName,
         )}
-        style={triggerStyleOverride ?? triggerStyle}
+        style={triggerStyleOverride ? { ...triggerStyle, ...triggerStyleOverride } : triggerStyle}
       >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
 
       <SelectContent
         className={cn(defaultContentClass, contentClassName)}
-        style={contentStyleOverride ?? contentStyle}
+        style={contentStyleOverride ? { ...contentStyle, ...contentStyleOverride } : contentStyle}
       >
         {options.map((option) => (
           <SelectItem

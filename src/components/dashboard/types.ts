@@ -4,6 +4,7 @@ export type BackendLeadTier = 'most_valuable' | 'probable' | 'raw';
 export type LeadStatus = 'New' | 'Pending' | 'Contacted' | 'Won' | 'Lost' | 'Archived';
 
 export type ContactPreference = 'Any' | 'Email' | 'Phone' | 'LinkedIn';
+export type SearchSource = 'linkedin' | 'google_maps' | 'google' | 'instagram';
 export type TargetCustomerType =
   | 'Local Services'
   | 'Restaurants'
@@ -77,6 +78,7 @@ export interface BackendLeadResponse {
 export interface SearchConfiguration {
   location: string;
   category: string;
+  searchSource: SearchSource | '';
   businessType: string;
   problemCategoriesSelected: string[];
   problemFilters: string[];

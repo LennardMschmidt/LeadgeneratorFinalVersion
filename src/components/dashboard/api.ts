@@ -47,6 +47,7 @@ const toLead = (backendLead: BackendLead): Lead => ({
 const toPayload = (searchConfig: SearchConfiguration) => ({
   category: searchConfig.category.trim(),
   location: searchConfig.location.trim(),
+  source: searchConfig.searchSource,
   businessType: searchConfig.businessType,
   problemCategoriesSelected: searchConfig.problemCategoriesSelected,
   problemFilters: searchConfig.problemFilters,

@@ -43,6 +43,7 @@ export function DashboardPage({
   const [searchConfig, setSearchConfig] = useState<SearchConfiguration>({
     location: '',
     category: '',
+    searchSource: '',
     businessType: '',
     problemCategoriesSelected: [],
     problemFilters: [],
@@ -162,6 +163,11 @@ export function DashboardPage({
       return;
     }
 
+    if (!searchConfig.searchSource) {
+      setSearchError(t('dashboard.errors.searchSourceRequired'));
+      return;
+    }
+
     setSearchError(null);
     setSearchMeta(null);
     const selectedProblemCount = new Set(
@@ -250,6 +256,7 @@ export function DashboardPage({
 
     setSearchConfig({
       ...savedSearch.config,
+      searchSource: savedSearch.config.searchSource ?? '',
       businessType: savedSearch.config.businessType ?? '',
       problemCategoriesSelected:
         savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],

@@ -9,6 +9,20 @@ import { CONTACT_PREFERENCE_OPTIONS } from './mockData';
 import { DashboardSelect } from './DashboardSelect';
 import { SavedSearch, SearchConfiguration } from './types';
 
+const SEARCH_SOURCE_OPTIONS: Array<{
+  value: Exclude<SearchConfiguration['searchSource'], ''>;
+  labelKey:
+    | 'dashboard.searchPanel.searchSourceLinkedIn'
+    | 'dashboard.searchPanel.searchSourceGoogleMaps'
+    | 'dashboard.searchPanel.searchSourceGoogle'
+    | 'dashboard.searchPanel.searchSourceInstagram';
+}> = [
+  { value: 'linkedin', labelKey: 'dashboard.searchPanel.searchSourceLinkedIn' },
+  { value: 'google_maps', labelKey: 'dashboard.searchPanel.searchSourceGoogleMaps' },
+  { value: 'google', labelKey: 'dashboard.searchPanel.searchSourceGoogle' },
+  { value: 'instagram', labelKey: 'dashboard.searchPanel.searchSourceInstagram' },
+];
+
 interface SearchConfigurationPanelProps {
   searchConfig: SearchConfiguration;
   savedSearches: SavedSearch[];
@@ -39,6 +53,7 @@ export function SearchConfigurationPanel({
   const [isProblemGuideOpen, setIsProblemGuideOpen] = useState(false);
   const noSavedSearchValue = '__none__';
   const noBusinessTypeValue = '__none_business_type__';
+  const noSearchSourceValue = '__none_search_source__';
   const [maxResultsDraft, setMaxResultsDraft] = useState(String(searchConfig.maxResults));
   const loadingSteps = raw<string[]>('dashboard.searchPanel.loadingSteps');
 
@@ -60,7 +75,13 @@ export function SearchConfigurationPanel({
   }, [isRunningSearch, loadingSteps.length]);
 
   const activeProblemCategories = getProblemCategoriesForBusinessType(searchConfig.businessType);
-  const canRunSearch = !!searchConfig.businessType && !isRunningSearch;
+  const canRunSearch = !!searchConfig.businessType && !!searchConfig.searchSource && !isRunningSearch;
+  const missingSelectionWarning =
+    !searchConfig.businessType
+      ? t('dashboard.searchPanel.selectBusinessTypeWarning')
+      : !searchConfig.searchSource
+        ? t('dashboard.searchPanel.selectSearchSourceWarning')
+        : null;
 
   const setProblemCategoriesSelected = (nextProblemCategories: string[]) => {
     onUpdateSearchConfig({
@@ -240,7 +261,10 @@ export function SearchConfigurationPanel({
                 id="business-type"
                 value={searchConfig.businessType || noBusinessTypeValue}
                 onValueChange={setBusinessType}
-                contentClassName="max-h-[170px] overflow-y-auto"
+                contentStyleOverride={{
+                  maxHeight: '196px',
+                  overflowY: 'auto',
+                }}
                 options={[
                   { value: noBusinessTypeValue, label: t('dashboard.searchPanel.selectBusinessType') },
                   ...BUSINESS_TYPE_OPTIONS.map((businessType) => {
@@ -259,24 +283,53 @@ export function SearchConfigurationPanel({
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="contact-preference" className="block text-sm text-gray-300">
-                {t('dashboard.searchPanel.contactPreferenceLabel')}
+              <label htmlFor="search-source" className="block text-sm text-gray-300">
+                {t('dashboard.searchPanel.searchSourceLabel')}
               </label>
               <DashboardSelect
-                id="contact-preference"
-                value={searchConfig.contactPreference}
+                id="search-source"
+                value={searchConfig.searchSource || noSearchSourceValue}
                 onValueChange={(nextValue) =>
                   onUpdateSearchConfig({
                     ...searchConfig,
-                    contactPreference: nextValue as SearchConfiguration['contactPreference'],
+                    searchSource:
+                      nextValue === noSearchSourceValue
+                        ? ''
+                        : (nextValue as Exclude<SearchConfiguration['searchSource'], ''>),
                   })
                 }
-                options={CONTACT_PREFERENCE_OPTIONS.map((option) => ({
-                  value: option,
-                  label: tm('contactPreferences', option),
-                }))}
+                options={[
+                  {
+                    value: noSearchSourceValue,
+                    label: t('dashboard.searchPanel.selectSearchSource'),
+                  },
+                  ...SEARCH_SOURCE_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: t(option.labelKey),
+                  })),
+                ]}
               />
             </div>
+          </div>
+
+          <div className="space-y-2 md:max-w-md">
+            <label htmlFor="contact-preference" className="block text-sm text-gray-300">
+              {t('dashboard.searchPanel.contactPreferenceLabel')}
+            </label>
+            <DashboardSelect
+              id="contact-preference"
+              value={searchConfig.contactPreference}
+              onValueChange={(nextValue) =>
+                onUpdateSearchConfig({
+                  ...searchConfig,
+                  contactPreference: nextValue as SearchConfiguration['contactPreference'],
+                })
+              }
+              options={CONTACT_PREFERENCE_OPTIONS.map((option) => ({
+                value: option,
+                label: tm('contactPreferences', option),
+              }))}
+            />
           </div>
 
           <div className="space-y-3">
@@ -436,8 +489,8 @@ export function SearchConfigurationPanel({
                 t('dashboard.searchPanel.runSearch')
               )}
             </button>
-            {!searchConfig.businessType && !isRunningSearch ? (
-              <p className="text-xs text-amber-300">{t('dashboard.searchPanel.selectBusinessTypeWarning')}</p>
+            {missingSelectionWarning && !isRunningSearch ? (
+              <p className="text-xs text-amber-300">{missingSelectionWarning}</p>
             ) : null}
             {isRunningSearch ? (
               <button

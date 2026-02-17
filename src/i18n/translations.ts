@@ -264,6 +264,7 @@ export const translations = {
       errors: {
         locationAndCategoryRequired: 'Location and business category are required.',
         businessTypeRequired: 'Business type is required.',
+        searchSourceRequired: 'Search source is required.',
         failedGenerate: 'Failed to generate leads.',
         searchCancelled: 'Search cancelled.',
         backendUnreachable:
@@ -302,6 +303,12 @@ export const translations = {
         businessCategoryPlaceholder: 'Category',
         businessTypeLabel: 'Business Type',
         selectBusinessType: 'Select business type',
+        searchSourceLabel: 'Search source',
+        selectSearchSource: 'Select search source',
+        searchSourceLinkedIn: 'LinkedIn',
+        searchSourceGoogleMaps: 'Google Maps',
+        searchSourceGoogle: 'Google',
+        searchSourceInstagram: 'Instagram',
         contactPreferenceLabel: 'Contact preference',
         problemCategoriesLabel: 'Problem categories',
         howThisWorks: 'How this works',
@@ -324,6 +331,7 @@ export const translations = {
         runSearch: 'Run Search',
         runningSearch: 'Running Search',
         selectBusinessTypeWarning: 'Select a business type to run search.',
+        selectSearchSourceWarning: 'Select a search source to run search.',
         cancelSearch: 'Cancel Search',
         loadingSteps: [
           'Preparing your search configuration...',
@@ -819,6 +827,7 @@ export const translations = {
       errors: {
         locationAndCategoryRequired: 'Standort und Kategorie sind erforderlich.',
         businessTypeRequired: 'Bitte wähle einen Business Type aus.',
+        searchSourceRequired: 'Bitte wähle eine Suchquelle aus.',
         failedGenerate: 'Leads konnten nicht generiert werden.',
         searchCancelled: 'Suche wurde abgebrochen.',
         backendUnreachable:
@@ -857,6 +866,12 @@ export const translations = {
         businessCategoryPlaceholder: 'Kategorie',
         businessTypeLabel: 'Business Type',
         selectBusinessType: 'Business Type auswählen',
+        searchSourceLabel: 'Suchquelle',
+        selectSearchSource: 'Suchquelle auswählen',
+        searchSourceLinkedIn: 'LinkedIn',
+        searchSourceGoogleMaps: 'Google Maps',
+        searchSourceGoogle: 'Google',
+        searchSourceInstagram: 'Instagram',
         contactPreferenceLabel: 'Kontaktpräferenz',
         problemCategoriesLabel: 'Problemkategorien',
         howThisWorks: 'So funktioniert es',
@@ -879,6 +894,7 @@ export const translations = {
         runSearch: 'Suche starten',
         runningSearch: 'Suche läuft',
         selectBusinessTypeWarning: 'Wähle einen Business Type, um die Suche zu starten.',
+        selectSearchSourceWarning: 'Wähle eine Suchquelle, um die Suche zu starten.',
         cancelSearch: 'Suche abbrechen',
         loadingSteps: [
           'Suchkonfiguration wird vorbereitet...',

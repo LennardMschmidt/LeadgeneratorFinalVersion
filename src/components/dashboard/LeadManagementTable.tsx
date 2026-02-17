@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import {
   type ComponentType,
-  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   useEffect,
   useRef,
@@ -19,6 +18,7 @@ import {
 } from 'react';
 import { useI18n } from '../../i18n';
 import { DashboardSelect } from './DashboardSelect';
+import { STATUS_VISUALS, TIER_BADGE_STYLES } from './leadVisuals';
 import { STATUS_OPTIONS, TIER_OPTIONS } from './mockData';
 import { Lead, LeadFilters, LeadStatus } from './types';
 
@@ -32,70 +32,11 @@ interface LeadManagementTableProps {
   onLeadStatusChange: (leadId: string, status: LeadStatus) => void;
   onExportCsv: () => void;
   onExportPdf: () => void;
+  onSaveVisibleLeads: () => void;
+  onSaveLead: (leadId: string) => void;
+  isSavingVisibleLeads?: boolean;
+  savingLeadIds?: Record<string, boolean>;
 }
-
-const TIER_BADGE_STYLES: Record<Lead['tier'], string> = {
-  'Tier 1': 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
-  'Tier 2': 'bg-blue-500/20 text-blue-300 border border-blue-500/30',
-  'Tier 3': 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30',
-};
-
-const STATUS_VISUALS: Record<
-  LeadStatus,
-  {
-    triggerStyle: CSSProperties;
-    optionClassName: string;
-  }
-> = {
-  New: {
-    triggerStyle: {
-      borderColor: 'rgba(45, 212, 191, 0.42)',
-      backgroundColor: 'rgba(20, 184, 166, 0.16)',
-      color: 'rgb(153, 246, 228)',
-    },
-    optionClassName: '!text-teal-300',
-  },
-  Pending: {
-    triggerStyle: {
-      borderColor: 'rgba(251, 191, 36, 0.42)',
-      backgroundColor: 'rgba(245, 158, 11, 0.16)',
-      color: 'rgb(253, 230, 138)',
-    },
-    optionClassName: '!text-amber-300',
-  },
-  Contacted: {
-    triggerStyle: {
-      borderColor: 'rgba(96, 165, 250, 0.42)',
-      backgroundColor: 'rgba(59, 130, 246, 0.16)',
-      color: 'rgb(147, 197, 253)',
-    },
-    optionClassName: '!text-blue-300',
-  },
-  Won: {
-    triggerStyle: {
-      borderColor: 'rgba(74, 222, 128, 0.42)',
-      backgroundColor: 'rgba(34, 197, 94, 0.16)',
-      color: 'rgb(134, 239, 172)',
-    },
-    optionClassName: '!text-green-300',
-  },
-  Lost: {
-    triggerStyle: {
-      borderColor: 'rgba(248, 113, 113, 0.42)',
-      backgroundColor: 'rgba(239, 68, 68, 0.16)',
-      color: 'rgb(252, 165, 165)',
-    },
-    optionClassName: '!text-red-300',
-  },
-  Archived: {
-    triggerStyle: {
-      borderColor: 'rgba(196, 181, 253, 0.42)',
-      backgroundColor: 'rgba(139, 92, 246, 0.16)',
-      color: 'rgb(216, 180, 254)',
-    },
-    optionClassName: '!text-purple-300',
-  },
-};
 
 const CONTACT_BUTTON_CLASS =
   'flex min-w-[210px] flex-1 items-start gap-2 rounded-lg bg-white/5 hover:bg-white/10 px-3 py-2 text-sm text-gray-300 hover:text-white transition-colors';
@@ -183,6 +124,10 @@ export function LeadManagementTable({
   onLeadStatusChange,
   onExportCsv,
   onExportPdf,
+  onSaveVisibleLeads,
+  onSaveLead,
+  isSavingVisibleLeads = false,
+  savingLeadIds = {},
 }: LeadManagementTableProps) {
   const { t, tm } = useI18n();
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -345,6 +290,22 @@ export function LeadManagementTable({
               {hasAnyExpandedLead ? t('dashboard.leadTable.collapseAll') : t('dashboard.leadTable.expandAll')}
             </button>
 
+            <button
+              type="button"
+              onClick={onSaveVisibleLeads}
+              disabled={isLoading || isSavingVisibleLeads || leads.length === 0}
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all enabled:hover:from-blue-600 enabled:hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSavingVisibleLeads ? (
+                <>
+                  <Loader2 className="spin-loader h-4 w-4" />
+                  {t('dashboard.leadTable.savingLeads')}
+                </>
+              ) : (
+                t('dashboard.leadTable.saveLeads')
+              )}
+            </button>
+
             <div ref={exportMenuRef} className="relative">
               <button
                 type="button"
@@ -368,6 +329,7 @@ export function LeadManagementTable({
                 <div
                   className="absolute right-0 z-50 mt-3 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
                   style={{
+                    marginTop: '0.9rem',
                     width: '19rem',
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     backgroundColor: 'rgba(25, 25, 28, 1)',
@@ -496,6 +458,22 @@ export function LeadManagementTable({
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${TIER_BADGE_STYLES[lead.tier]}`}>
                       {tm('leadTierLabels', lead.tier)} ({tm('leadTiers', lead.tier)})
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => onSaveLead(lead.id)}
+                      data-no-toggle="true"
+                      disabled={!!savingLeadIds[lead.id]}
+                      className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-100 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {savingLeadIds[lead.id] ? (
+                        <>
+                          <Loader2 className="spin-loader h-3.5 w-3.5" />
+                          <span>{t('dashboard.leadTable.savingLead')}</span>
+                        </>
+                      ) : (
+                        <span>{t('dashboard.leadTable.saveLead')}</span>
+                      )}
+                    </button>
                     <button
                       type="button"
                       onClick={() => toggleLead(lead.id)}

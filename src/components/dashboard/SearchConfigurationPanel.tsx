@@ -27,8 +27,11 @@ interface SearchConfigurationPanelProps {
   searchConfig: SearchConfiguration;
   savedSearches: SavedSearch[];
   selectedSavedSearchId: string;
+  deletingSavedSearchId: string | null;
   isRunningSearch: boolean;
+  isSavingSearch: boolean;
   onSelectSavedSearch: (savedSearchId: string) => void;
+  onDeleteSavedSearch: (savedSearchId: string) => void;
   onUpdateSearchConfig: (nextConfig: SearchConfiguration) => void;
   onSaveSearch: () => void;
   onRunSearch: () => void;
@@ -39,8 +42,11 @@ export function SearchConfigurationPanel({
   searchConfig,
   savedSearches,
   selectedSavedSearchId,
+  deletingSavedSearchId,
   isRunningSearch,
+  isSavingSearch,
   onSelectSavedSearch,
+  onDeleteSavedSearch,
   onUpdateSearchConfig,
   onSaveSearch,
   onRunSearch,
@@ -76,6 +82,8 @@ export function SearchConfigurationPanel({
 
   const activeProblemCategories = getProblemCategoriesForBusinessType(searchConfig.businessType);
   const canRunSearch = !!searchConfig.businessType && !!searchConfig.searchSource && !isRunningSearch;
+  const isDeletingSelectedSavedSearch =
+    !!selectedSavedSearchId && deletingSavedSearchId === selectedSavedSearchId;
   const missingSelectionWarning =
     !searchConfig.businessType
       ? t('dashboard.searchPanel.selectBusinessTypeWarning')
@@ -193,29 +201,45 @@ export function SearchConfigurationPanel({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label htmlFor="saved-searches" className="block text-sm text-gray-300">
                 {t('dashboard.searchPanel.savedSearchesLabel')}
               </label>
-              <DashboardSelect
-                id="saved-searches"
-                value={selectedSavedSearchId || noSavedSearchValue}
-                onValueChange={(nextSavedSearchId) =>
-                  onSelectSavedSearch(nextSavedSearchId === noSavedSearchValue ? '' : nextSavedSearchId)
-                }
-                options={[
-                  { value: noSavedSearchValue, label: t('dashboard.searchPanel.chooseSavedSearch') },
-                  ...savedSearches.map((savedSearch) => ({
-                    value: savedSearch.id,
-                    label: savedSearch.name,
-                  })),
-                ]}
-              />
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <DashboardSelect
+                    id="saved-searches"
+                    value={selectedSavedSearchId || noSavedSearchValue}
+                    onValueChange={(nextSavedSearchId) =>
+                      onSelectSavedSearch(nextSavedSearchId === noSavedSearchValue ? '' : nextSavedSearchId)
+                    }
+                    options={[
+                      { value: noSavedSearchValue, label: t('dashboard.searchPanel.chooseSavedSearch') },
+                      ...savedSearches.map((savedSearch) => ({
+                        value: savedSearch.id,
+                        label: savedSearch.name,
+                      })),
+                    ]}
+                  />
+                </div>
+                {selectedSavedSearchId ? (
+                  <button
+                    type="button"
+                    onClick={() => onDeleteSavedSearch(selectedSavedSearchId)}
+                    disabled={!!deletingSavedSearchId}
+                    className="shrink-0 rounded-xl border border-red-400/35 bg-red-500/10 px-3 py-3 text-xs font-semibold text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isDeletingSelectedSavedSearch
+                      ? t('dashboard.searchPanel.removingSavedSearch')
+                      : t('dashboard.searchPanel.removeSavedSearch')}
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label htmlFor="search-location" className="block text-sm text-gray-300">
                 {t('dashboard.searchPanel.locationLabel')}
               </label>
@@ -233,7 +257,7 @@ export function SearchConfigurationPanel({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label htmlFor="search-category" className="block text-sm text-gray-300">
                 {t('dashboard.searchPanel.businessCategoryLabel')}
               </label>
@@ -253,7 +277,7 @@ export function SearchConfigurationPanel({
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label htmlFor="business-type" className="block text-sm text-gray-300">
                 {t('dashboard.searchPanel.businessTypeLabel')}
               </label>
@@ -282,7 +306,7 @@ export function SearchConfigurationPanel({
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <label htmlFor="search-source" className="block text-sm text-gray-300">
                 {t('dashboard.searchPanel.searchSourceLabel')}
               </label>
@@ -312,7 +336,7 @@ export function SearchConfigurationPanel({
             </div>
           </div>
 
-          <div className="space-y-2 md:max-w-md">
+          <div className="space-y-3 md:max-w-md">
             <label htmlFor="contact-preference" className="block text-sm text-gray-300">
               {t('dashboard.searchPanel.contactPreferenceLabel')}
             </label>
@@ -431,7 +455,7 @@ export function SearchConfigurationPanel({
             )}
           </div>
 
-          <div className="space-y-2 md:max-w-md">
+          <div className="space-y-3 md:max-w-md">
             <label htmlFor="search-max-results" className="block text-sm text-gray-300">
               {t('dashboard.searchPanel.expectedResultsLabel')}
             </label>
@@ -448,14 +472,14 @@ export function SearchConfigurationPanel({
             <p className="text-xs text-gray-500">{t('dashboard.searchPanel.expectedResultsRange')}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="mt-2 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={onSaveSearch}
-              disabled={isRunningSearch}
+              disabled={isRunningSearch || isSavingSearch}
               className="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors"
             >
-              {t('dashboard.searchPanel.saveSearch')}
+              {isSavingSearch ? 'Saving...' : t('dashboard.searchPanel.saveSearch')}
             </button>
             <button
               type="button"

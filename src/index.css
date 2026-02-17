@@ -1949,3 +1949,17 @@ html {
     opacity: .5;
   }
 }
+
+@keyframes spin-loader {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-loader {
+  animation: spin-loader .9s linear infinite;
+  transform-origin: center;
+}

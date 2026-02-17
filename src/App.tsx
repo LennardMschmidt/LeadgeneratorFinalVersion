@@ -10,10 +10,16 @@ import { Footer } from './components/Footer';
 import { LoginModal } from './components/LoginModal';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { BusinessProfilePage } from './components/dashboard/BusinessProfilePage';
+import { SavedSearchesPage } from './components/dashboard/SavedSearchesPage';
+import { restoreSupabaseSession, signOutFromSupabase } from './lib/supabaseAuth';
 
-type AppRoute = '/' | '/dashboard' | '/business-profile';
+type AppRoute = '/' | '/dashboard' | '/business-profile' | '/saved-searches' | '__protected_unknown__';
 
 const getRouteFromPathname = (pathname: string): AppRoute => {
+  if (pathname === '/') {
+    return '/';
+  }
+
   if (pathname === '/dashboard') {
     return '/dashboard';
   }
@@ -22,13 +28,38 @@ const getRouteFromPathname = (pathname: string): AppRoute => {
     return '/business-profile';
   }
 
-  return '/';
+  if (pathname === '/saved-searches') {
+    return '/saved-searches';
+  }
+
+  return '__protected_unknown__';
 };
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [route, setRoute] = useState<AppRoute>(() => getRouteFromPathname(window.location.pathname));
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadAuthState = async () => {
+      const hasSession = await restoreSupabaseSession();
+      if (!isMounted) {
+        return;
+      }
+
+      setIsAuthenticated(hasSession);
+      setIsAuthLoading(false);
+    };
+
+    void loadAuthState();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -48,11 +79,21 @@ export default function App() {
   };
 
   useEffect(() => {
-    const isProtectedRoute = route === '/dashboard' || route === '/business-profile';
+    if (isAuthLoading) {
+      return;
+    }
+
+    const isProtectedRoute = route !== '/';
     if (isProtectedRoute && !isAuthenticated) {
       setIsLoginOpen(true);
+      navigate('/');
+      return;
     }
-  }, [route, isAuthenticated]);
+
+    if (route === '__protected_unknown__' && isAuthenticated) {
+      navigate('/dashboard');
+    }
+  }, [route, isAuthenticated, isAuthLoading]);
 
   const openLoginModal = () => {
     setIsLoginOpen(true);
@@ -64,7 +105,8 @@ export default function App() {
     navigate('/dashboard');
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOutFromSupabase();
     setIsAuthenticated(false);
     setIsLoginOpen(false);
     navigate('/');
@@ -72,6 +114,7 @@ export default function App() {
 
   const showDashboard = route === '/dashboard' && isAuthenticated;
   const showBusinessProfile = route === '/business-profile' && isAuthenticated;
+  const showSavedSearches = route === '/saved-searches' && isAuthenticated;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -83,19 +126,35 @@ export default function App() {
         }}
       />
 
-      {showDashboard ? (
+      {isAuthLoading ? null : showDashboard ? (
         <DashboardPage
           onNavigateHome={() => navigate('/')}
           onNavigateDashboard={() => navigate('/dashboard')}
           onNavigateBusinessProfile={() => navigate('/business-profile')}
-          onLogout={handleLogout}
+          onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onLogout={() => {
+            void handleLogout();
+          }}
         />
       ) : showBusinessProfile ? (
         <BusinessProfilePage
           onNavigateHome={() => navigate('/')}
           onNavigateDashboard={() => navigate('/dashboard')}
           onNavigateBusinessProfile={() => navigate('/business-profile')}
-          onLogout={handleLogout}
+          onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onLogout={() => {
+            void handleLogout();
+          }}
+        />
+      ) : showSavedSearches ? (
+        <SavedSearchesPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateDashboard={() => navigate('/dashboard')}
+          onNavigateBusinessProfile={() => navigate('/business-profile')}
+          onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onLogout={() => {
+            void handleLogout();
+          }}
         />
       ) : (
         <>

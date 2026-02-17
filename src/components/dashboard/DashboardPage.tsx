@@ -1,10 +1,17 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
-import { cancelBackendSearch, generateLeadsFromBackend } from './api';
+import {
+  cancelBackendSearch,
+  createSavedSearchInBackend,
+  deleteSavedSearchFromBackend,
+  fetchSavedSearchesFromBackend,
+  generateLeadsFromBackend,
+  saveLeadToBackend,
+  saveVisibleLeadsToBackend,
+} from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
-import { INITIAL_SAVED_SEARCHES } from './mockData';
 import { TierOverviewCards } from './TierOverviewCards';
 import {
   Lead,
@@ -19,6 +26,7 @@ interface DashboardPageProps {
   onNavigateHome: () => void;
   onNavigateDashboard: () => void;
   onNavigateBusinessProfile: () => void;
+  onNavigateSavedSearches: () => void;
   onLogout: () => void;
 }
 
@@ -34,11 +42,12 @@ export function DashboardPage({
   onNavigateHome,
   onNavigateDashboard,
   onNavigateBusinessProfile,
+  onNavigateSavedSearches,
   onLogout,
 }: DashboardPageProps) {
   const { raw, t } = useI18n();
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(INITIAL_SAVED_SEARCHES);
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [selectedSavedSearchId, setSelectedSavedSearchId] = useState('');
   const [searchConfig, setSearchConfig] = useState<SearchConfiguration>({
     location: '',
@@ -59,7 +68,41 @@ export function DashboardPage({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchMeta, setSearchMeta] = useState<LeadSearchMeta | null>(null);
   const [lastSearchSelectedProblemCount, setLastSearchSelectedProblemCount] = useState(0);
+  const [isSavingSearch, setIsSavingSearch] = useState(false);
+  const [deletingSavedSearchId, setDeletingSavedSearchId] = useState<string | null>(null);
+  const [isSavingVisibleLeads, setIsSavingVisibleLeads] = useState(false);
+  const [savingLeadIds, setSavingLeadIds] = useState<Record<string, boolean>>({});
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadSavedSearches = async () => {
+      try {
+        const loadedSearches = await fetchSavedSearchesFromBackend();
+        if (!isMounted) {
+          return;
+        }
+        setSavedSearches(loadedSearches);
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (error instanceof Error) {
+          setSearchError(error.message);
+        } else {
+          setSearchError('Failed to load saved searches.');
+        }
+      }
+    };
+
+    void loadSavedSearches();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const tierCounts = useMemo(
     () => ({
@@ -224,22 +267,28 @@ export function DashboardPage({
     setSearchError(t('dashboard.errors.searchCancelled'));
   };
 
-  const saveSearch = () => {
+  const saveSearch = async () => {
     const normalizedLocation = searchConfig.location.trim();
     const normalizedCategory = searchConfig.category.trim();
-    const labelBase =
+    const name =
       normalizedCategory || normalizedLocation
         ? `${normalizedCategory || t('dashboard.saveSearch.anyCategory')} - ${normalizedLocation || t('dashboard.saveSearch.anyLocation')}`
         : t('dashboard.saveSearch.customSearch');
 
-    const newSavedSearch: SavedSearch = {
-      id: `saved-${Date.now()}`,
-      name: `${labelBase}`,
-      config: { ...searchConfig },
-    };
-
-    setSavedSearches((currentSearches) => [newSavedSearch, ...currentSearches]);
-    setSelectedSavedSearchId(newSavedSearch.id);
+    setIsSavingSearch(true);
+    try {
+      const created = await createSavedSearchInBackend(name, searchConfig);
+      setSavedSearches((currentSearches) => [created, ...currentSearches]);
+      setSelectedSavedSearchId(created.id);
+    } catch (error) {
+      if (error instanceof Error) {
+        setSearchError(error.message);
+      } else {
+        setSearchError('Failed to save search.');
+      }
+    } finally {
+      setIsSavingSearch(false);
+    }
   };
 
   const selectSavedSearch = (savedSearchId: string) => {
@@ -264,6 +313,31 @@ export function DashboardPage({
         savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],
       maxResults: savedSearch.config.maxResults ?? 20,
     });
+  };
+
+  const deleteSavedSearch = async (savedSearchId: string) => {
+    if (!savedSearchId || deletingSavedSearchId) {
+      return;
+    }
+
+    setDeletingSavedSearchId(savedSearchId);
+    try {
+      await deleteSavedSearchFromBackend(savedSearchId);
+      setSavedSearches((currentSearches) =>
+        currentSearches.filter((search) => search.id !== savedSearchId),
+      );
+      if (selectedSavedSearchId === savedSearchId) {
+        setSelectedSavedSearchId('');
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setSearchError(error.message);
+      } else {
+        setSearchError('Failed to delete saved search.');
+      }
+    } finally {
+      setDeletingSavedSearchId(null);
+    }
   };
 
   const exportCsv = () => {
@@ -296,12 +370,82 @@ export function DashboardPage({
     console.log('PDF export placeholder. Current filtered leads:', filteredLeads);
   };
 
+  const saveVisibleLeads = async () => {
+    if (isSavingVisibleLeads) {
+      return;
+    }
+
+    if (filteredLeads.length === 0) {
+      setActionNotice(null);
+      setSearchError(t('dashboard.savedLeads.noLeadsToSave'));
+      return;
+    }
+
+    setIsSavingVisibleLeads(true);
+    try {
+      const summary = await saveVisibleLeadsToBackend(filteredLeads);
+      setSearchError(null);
+      setActionNotice(
+        t('dashboard.savedLeads.bulkSavedSuccess', {
+          requested: summary.requested,
+          saved: summary.insertedOrUpdated,
+          skipped: summary.skipped,
+        }),
+      );
+    } catch (error) {
+      setActionNotice(null);
+      if (error instanceof Error) {
+        setSearchError(error.message);
+      } else {
+        setSearchError(t('dashboard.savedLeads.bulkSavedError'));
+      }
+    } finally {
+      setIsSavingVisibleLeads(false);
+    }
+  };
+
+  const saveLead = async (leadId: string) => {
+    if (!leadId || savingLeadIds[leadId]) {
+      return;
+    }
+
+    const lead = filteredLeads.find((item) => item.id === leadId);
+    if (!lead) {
+      return;
+    }
+
+    setSavingLeadIds((current) => ({ ...current, [leadId]: true }));
+    try {
+      await saveLeadToBackend(lead);
+      setSearchError(null);
+      setActionNotice(
+        t('dashboard.savedLeads.singleSavedSuccess', {
+          name: lead.businessName,
+        }),
+      );
+    } catch (error) {
+      setActionNotice(null);
+      if (error instanceof Error) {
+        setSearchError(error.message);
+      } else {
+        setSearchError(t('dashboard.savedLeads.singleSavedError'));
+      }
+    } finally {
+      setSavingLeadIds((current) => {
+        const next = { ...current };
+        delete next[leadId];
+        return next;
+      });
+    }
+  };
+
   return (
     <>
       <DashboardHeader
         onNavigateHome={onNavigateHome}
         onNavigateDashboard={onNavigateDashboard}
         onNavigateBusinessProfile={onNavigateBusinessProfile}
+        onNavigateSavedSearches={onNavigateSavedSearches}
         onLogout={onLogout}
       />
 
@@ -325,8 +469,11 @@ export function DashboardPage({
             searchConfig={searchConfig}
             savedSearches={savedSearches}
             selectedSavedSearchId={selectedSavedSearchId}
+            deletingSavedSearchId={deletingSavedSearchId}
             isRunningSearch={isRunningSearch}
+            isSavingSearch={isSavingSearch}
             onSelectSavedSearch={selectSavedSearch}
+            onDeleteSavedSearch={deleteSavedSearch}
             onUpdateSearchConfig={setSearchConfig}
             onSaveSearch={saveSearch}
             onRunSearch={runSearch}
@@ -343,6 +490,14 @@ export function DashboardPage({
           </section>
         ) : null}
 
+        {actionNotice ? (
+          <section className="mt-4">
+            <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+              {actionNotice}
+            </div>
+          </section>
+        ) : null}
+
         <section className="mt-24">
           <LeadManagementTable
             leads={filteredLeads}
@@ -354,6 +509,10 @@ export function DashboardPage({
             onLeadStatusChange={updateLeadStatus}
             onExportCsv={exportCsv}
             onExportPdf={exportPdf}
+            onSaveVisibleLeads={saveVisibleLeads}
+            onSaveLead={saveLead}
+            isSavingVisibleLeads={isSavingVisibleLeads}
+            savingLeadIds={savingLeadIds}
           />
         </section>
       </main>

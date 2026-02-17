@@ -2,6 +2,12 @@ import { FormEvent, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, X } from 'lucide-react';
 import { useI18n } from '../i18n';
+import {
+  isSupabaseAuthConfigured,
+  signInWithEmail,
+  signInWithGoogle,
+  signUpWithEmail,
+} from '../lib/supabaseAuth';
 
 interface LoginModalProps {
   open: boolean;
@@ -14,7 +20,9 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open) {
@@ -42,31 +50,81 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
       setMode('login');
       setEmail('');
       setPassword('');
+      setRememberMe(false);
       setStatusMessage(null);
     }
   }, [open]);
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!isSupabaseAuthConfigured()) {
+      setStatusMessage(t('login.authNotConfigured'));
+      return;
+    }
+
+    setIsSubmitting(true);
+
     if (mode === 'login') {
       setStatusMessage(t('login.googleLoginClicked'));
-      onAuthenticated?.();
-      return;
+    } else {
+      setStatusMessage(t('login.googleRegisterClicked'));
     }
 
-    setStatusMessage(t('login.googleRegisterClicked'));
-    onAuthenticated?.();
+    const result = await signInWithGoogle('/dashboard', { rememberMe });
+    if (!result.ok) {
+      setStatusMessage(result.message);
+      setIsSubmitting(false);
+    }
   };
 
-  const handleEmailAuth = (event: FormEvent<HTMLFormElement>) => {
+  const handleEmailAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (mode === 'login') {
-      setStatusMessage(t('login.emailLoginCaptured', { email }));
-      onAuthenticated?.();
+    if (isSubmitting) {
       return;
     }
 
-    setStatusMessage(t('login.emailRegisterCaptured', { email }));
-    onAuthenticated?.();
+    if (!isSupabaseAuthConfigured()) {
+      setStatusMessage(t('login.authNotConfigured'));
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatusMessage(null);
+
+    try {
+      if (mode === 'login') {
+        const result = await signInWithEmail(email, password, { rememberMe });
+        if (!result.ok) {
+          setStatusMessage(result.message);
+          return;
+        }
+
+        setStatusMessage(t('login.emailLoginCaptured', { email }));
+        onAuthenticated?.();
+        return;
+      }
+
+      const result = await signUpWithEmail(email, password, { rememberMe });
+      if (!result.ok) {
+        setStatusMessage(result.message);
+        return;
+      }
+
+      if (result.requiresEmailConfirmation) {
+        setStatusMessage(t('login.registerNeedsConfirmation', { email }));
+        setMode('login');
+        setPassword('');
+        return;
+      }
+
+      setStatusMessage(t('login.emailRegisterCaptured', { email }));
+      onAuthenticated?.();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!open) {
@@ -122,6 +180,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
           <button
             type="button"
             onClick={handleGoogleAuth}
+            disabled={isSubmitting}
             className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
           >
             <span className="inline-flex items-center gap-3">
@@ -146,6 +205,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                 name="email"
                 type="email"
                 required
+                disabled={isSubmitting}
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder={t('login.emailPlaceholder')}
@@ -163,6 +223,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                 type="password"
                 required
                 minLength={8}
+                disabled={isSubmitting}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder={
@@ -177,7 +238,13 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
             {mode === 'login' ? (
               <div className="flex items-center justify-between text-xs">
                 <label className="inline-flex items-center gap-2 text-gray-400">
-                  <input type="checkbox" className="h-4 w-4 rounded border border-white/20 bg-white/5" />
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
+                    disabled={isSubmitting}
+                    className="h-4 w-4 rounded border border-white/20 bg-white/5"
+                  />
                   {t('login.rememberMe')}
                 </label>
                 <a href="#" className="text-blue-300 hover:text-blue-200 transition-colors">
@@ -188,9 +255,14 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-600 hover:to-purple-700"
             >
-              {mode === 'login' ? t('login.loginWithEmail') : t('login.registerWithEmail')}
+              {isSubmitting
+                ? t('login.authenticating')
+                : mode === 'login'
+                  ? t('login.loginWithEmail')
+                  : t('login.registerWithEmail')}
             </button>
           </form>
 
@@ -200,6 +272,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
               setMode((currentMode) => (currentMode === 'login' ? 'register' : 'login'));
               setStatusMessage(null);
             }}
+            disabled={isSubmitting}
             className="w-full text-sm text-gray-300 hover:text-white transition-colors"
           >
             {mode === 'login' ? t('login.noAccount') : t('login.alreadyHaveAccount')}

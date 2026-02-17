@@ -1,4 +1,4 @@
-import type { CSSProperties, MouseEvent as ReactMouseEvent } from 'react';
+import type { CSSProperties, MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import {
   Select,
   SelectContent,
@@ -10,8 +10,10 @@ import { cn } from '../ui/utils';
 
 interface DashboardSelectOption<T extends string> {
   value: T;
-  label: string;
+  label: ReactNode;
   disabled?: boolean;
+  actionLabel?: string;
+  onActionClick?: (value: T) => void;
 }
 
 interface DashboardSelectProps<T extends string> {
@@ -35,7 +37,7 @@ const compactTriggerClass =
   'h-auto rounded-lg border px-3 py-1.5 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 [&_svg]:text-gray-400';
 
 const defaultContentClass =
-  'z-[80] mt-3 rounded-xl border p-0 shadow-2xl';
+  'z-[80] rounded-xl border p-0 shadow-2xl';
 
 const itemClass =
   'w-full cursor-pointer whitespace-nowrap border-b border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.024)] px-5 py-3 text-left text-sm text-gray-300 outline-none transition-all duration-150 data-[highlighted]:text-white data-[state=checked]:text-white last:border-b-0';
@@ -51,6 +53,7 @@ const triggerStyle = {
 const contentStyle = {
   borderColor: 'rgba(255, 255, 255, 0.2)',
   backgroundColor: 'rgb(25, 25, 28)',
+  zIndex: 260,
 } as const;
 
 const handleItemMouseEnter = (event: ReactMouseEvent<HTMLElement>) => {
@@ -115,7 +118,26 @@ export function DashboardSelect<T extends string>({
             onMouseEnter={handleItemMouseEnter}
             onMouseLeave={handleItemMouseLeave}
           >
-            {option.label}
+            <div className="flex w-full items-center justify-between gap-3">
+              <span className="truncate">{option.label}</span>
+              {option.onActionClick && !option.disabled ? (
+                <button
+                  type="button"
+                  className="shrink-0 rounded-md border border-red-400/30 bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-200 hover:bg-red-500/20"
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    option.onActionClick?.(option.value);
+                  }}
+                >
+                  {option.actionLabel ?? 'Remove'}
+                </button>
+              ) : null}
+            </div>
           </SelectItem>
         ))}
       </SelectContent>

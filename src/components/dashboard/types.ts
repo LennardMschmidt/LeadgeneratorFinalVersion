@@ -35,6 +35,44 @@ export interface Lead {
   contactChannels: string[];
   rating?: number;
   reviewCount?: number;
+  placeId?: string;
+  dataId?: string;
+  featureId?: string;
+  mapsUrl?: string;
+  websiteUrl?: string;
+  websiteDisplay?: string;
+  categories?: string[];
+  googleTypes?: string[];
+  address?: {
+    addressLines?: string[];
+    full?: string;
+    locality?: string;
+    countryCode?: string;
+    timezone?: string;
+  };
+  geo?: {
+    lat: number;
+    lng: number;
+  };
+  reviewsUrl?: string;
+  phone?: {
+    phoneLocal?: string;
+    phoneInternational?: string;
+    telUri?: string;
+  };
+  hours?: {
+    weeklyHours: Array<{
+      day?: string;
+      hours: string[];
+    }>;
+    statusSummary?: string;
+    statusText?: string;
+  };
+  attributes?: Record<string, string[]>;
+  rawRefs?: {
+    knowledgeGraphId?: string;
+    ownerOrProfileId?: string;
+  };
 }
 
 export interface BackendProblemSignal {
@@ -60,6 +98,44 @@ export interface BackendLead {
   explanation: string;
   rating?: number;
   review_count?: number;
+  place_id?: string;
+  data_id?: string;
+  feature_id?: string;
+  maps_url?: string;
+  website_url?: string;
+  website_display?: string;
+  categories?: string[];
+  google_types?: string[];
+  address?: {
+    address_lines?: string[];
+    full?: string;
+    locality?: string;
+    country_code?: string;
+    timezone?: string;
+  };
+  geo?: {
+    lat: number;
+    lng: number;
+  };
+  reviews_url?: string;
+  phone?: {
+    phone_local?: string;
+    phone_international?: string;
+    tel_uri?: string;
+  };
+  hours?: {
+    weekly_hours: Array<{
+      day?: string;
+      hours: string[];
+    }>;
+    status_summary?: string;
+    status_text?: string;
+  };
+  attributes?: Record<string, string[]>;
+  raw_refs?: {
+    knowledge_graph_id?: string;
+    owner_or_profile_id?: string;
+  };
 }
 
 export interface LeadSearchMeta {
@@ -102,6 +178,12 @@ export interface SavedSearch {
   id: string;
   name: string;
   config: SearchConfiguration;
+}
+
+export interface SavedLead extends Lead {
+  savedLeadId: string;
+  savedAt: string;
+  updatedAt: string;
 }
 
 export interface LeadFilters {

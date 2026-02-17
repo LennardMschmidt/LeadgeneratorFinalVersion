@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Check, ChevronDown, ChevronUp, Info, Loader2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { useI18n } from '../../i18n';
 import {
   BUSINESS_TYPE_OPTIONS,
   getProblemCategoriesForBusinessType,
@@ -31,6 +32,7 @@ export function SearchConfigurationPanel({
   onRunSearch,
   onCancelSearch,
 }: SearchConfigurationPanelProps) {
+  const { raw, t, tm } = useI18n();
   const AVAILABLE_BUSINESS_TYPE = 'Web Agencies';
   const [isOpen, setIsOpen] = useState(true);
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
@@ -38,17 +40,7 @@ export function SearchConfigurationPanel({
   const noSavedSearchValue = '__none__';
   const noBusinessTypeValue = '__none_business_type__';
   const [maxResultsDraft, setMaxResultsDraft] = useState(String(searchConfig.maxResults));
-  const loadingSteps = [
-    'Preparing your search configuration...',
-    'Connecting to the map search engine...',
-    'Scanning map listings for matching businesses...',
-    'Opening business profiles and collecting public details...',
-    'Extracting websites, ratings, and contact channels...',
-    'Detecting problem signals for each business...',
-    'Scoring and tiering leads for your dashboard...',
-    'Ranking results by fit with your target group...',
-    'Finalizing lead cards and refreshing your table...',
-  ];
+  const loadingSteps = raw<string[]>('dashboard.searchPanel.loadingSteps');
 
   useEffect(() => {
     setMaxResultsDraft(String(searchConfig.maxResults));
@@ -91,10 +83,7 @@ export function SearchConfigurationPanel({
     const normalizedBusinessType =
       nextBusinessType === noBusinessTypeValue ? '' : nextBusinessType;
 
-    if (
-      normalizedBusinessType &&
-      normalizedBusinessType !== AVAILABLE_BUSINESS_TYPE
-    ) {
+    if (normalizedBusinessType && normalizedBusinessType !== AVAILABLE_BUSINESS_TYPE) {
       return;
     }
 
@@ -164,13 +153,13 @@ export function SearchConfigurationPanel({
     <section className="rounded-2xl border border-white/10 bg-white/5">
       <style>{loadingAnimationStyles}</style>
       <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-        <h2 className="text-lg font-semibold text-white">Search Configuration</h2>
+        <h2 className="text-lg font-semibold text-white">{t('dashboard.searchPanel.title')}</h2>
         <button
           type="button"
           onClick={() => setIsOpen((current) => !current)}
           className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-sm leading-none text-gray-300 transition-colors hover:text-white"
         >
-          {isOpen ? 'Collapse' : 'Expand'}
+          {isOpen ? t('dashboard.searchPanel.collapse') : t('dashboard.searchPanel.expand')}
           {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
         </button>
       </div>
@@ -178,20 +167,14 @@ export function SearchConfigurationPanel({
       {isOpen ? (
         <div className="p-6 space-y-6">
           <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 p-4">
-            <p className="text-sm text-gray-100">
-              Define the exact target business group you want to evaluate.
-            </p>
-            <p className="mt-1 text-xs text-gray-300">
-              This configuration controls only the search pool (location, category, business type,
-              problem categories, contact preference, and expected results). After running the search,
-              the leads are shown and evaluated.
-            </p>
+            <p className="text-sm text-gray-100">{t('dashboard.searchPanel.intro')}</p>
+            <p className="mt-1 text-xs text-gray-300">{t('dashboard.searchPanel.introDetail')}</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="saved-searches" className="block text-sm text-gray-300">
-                Saved searches
+                {t('dashboard.searchPanel.savedSearchesLabel')}
               </label>
               <DashboardSelect
                 id="saved-searches"
@@ -200,7 +183,7 @@ export function SearchConfigurationPanel({
                   onSelectSavedSearch(nextSavedSearchId === noSavedSearchValue ? '' : nextSavedSearchId)
                 }
                 options={[
-                  { value: noSavedSearchValue, label: 'Choose saved search' },
+                  { value: noSavedSearchValue, label: t('dashboard.searchPanel.chooseSavedSearch') },
                   ...savedSearches.map((savedSearch) => ({
                     value: savedSearch.id,
                     label: savedSearch.name,
@@ -213,7 +196,7 @@ export function SearchConfigurationPanel({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="search-location" className="block text-sm text-gray-300">
-                Location
+                {t('dashboard.searchPanel.locationLabel')}
               </label>
               <input
                 id="search-location"
@@ -224,14 +207,14 @@ export function SearchConfigurationPanel({
                     location: event.target.value,
                   })
                 }
-                placeholder="City, State"
+                placeholder={t('dashboard.searchPanel.locationPlaceholder')}
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="search-category" className="block text-sm text-gray-300">
-                Business category
+                {t('dashboard.searchPanel.businessCategoryLabel')}
               </label>
               <input
                 id="search-category"
@@ -242,7 +225,7 @@ export function SearchConfigurationPanel({
                     category: event.target.value,
                   })
                 }
-                placeholder="Category"
+                placeholder={t('dashboard.searchPanel.businessCategoryPlaceholder')}
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80"
               />
             </div>
@@ -251,30 +234,33 @@ export function SearchConfigurationPanel({
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="business-type" className="block text-sm text-gray-300">
-                Business Type
+                {t('dashboard.searchPanel.businessTypeLabel')}
               </label>
               <DashboardSelect
                 id="business-type"
                 value={searchConfig.businessType || noBusinessTypeValue}
                 onValueChange={setBusinessType}
-                contentClassName="max-h-[220px]"
+                contentClassName="max-h-[170px] overflow-y-auto"
                 options={[
-                  { value: noBusinessTypeValue, label: 'Select business type' },
-                  ...BUSINESS_TYPE_OPTIONS.map((businessType) => ({
-                    value: businessType,
-                    label:
-                      businessType === AVAILABLE_BUSINESS_TYPE
-                        ? businessType
-                        : `${businessType} (Coming soon...)`,
-                    disabled: businessType !== AVAILABLE_BUSINESS_TYPE,
-                  })),
+                  { value: noBusinessTypeValue, label: t('dashboard.searchPanel.selectBusinessType') },
+                  ...BUSINESS_TYPE_OPTIONS.map((businessType) => {
+                    const isAvailable = businessType === AVAILABLE_BUSINESS_TYPE;
+                    const businessTypeLabel = tm('businessTypes', businessType);
+                    return {
+                      value: businessType,
+                      label: isAvailable
+                        ? businessTypeLabel
+                        : `${businessTypeLabel} ${t('common.comingSoonSuffix')}`,
+                      disabled: !isAvailable,
+                    };
+                  }),
                 ]}
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="contact-preference" className="block text-sm text-gray-300">
-                Contact preference
+                {t('dashboard.searchPanel.contactPreferenceLabel')}
               </label>
               <DashboardSelect
                 id="contact-preference"
@@ -287,7 +273,7 @@ export function SearchConfigurationPanel({
                 }
                 options={CONTACT_PREFERENCE_OPTIONS.map((option) => ({
                   value: option,
-                  label: option,
+                  label: tm('contactPreferences', option),
                 }))}
               />
             </div>
@@ -296,14 +282,14 @@ export function SearchConfigurationPanel({
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="text-sm text-gray-300">Problem categories</p>
+                <p className="text-sm text-gray-300">{t('dashboard.searchPanel.problemCategoriesLabel')}</p>
                 <button
                   type="button"
                   onClick={() => setIsProblemGuideOpen((current) => !current)}
                   className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors hover:bg-white/10"
                   aria-expanded={isProblemGuideOpen}
                 >
-                  How this works
+                  {t('dashboard.searchPanel.howThisWorks')}
                   {isProblemGuideOpen ? (
                     <ChevronUp className="h-3.5 w-3.5 text-gray-400" />
                   ) : (
@@ -318,40 +304,26 @@ export function SearchConfigurationPanel({
                   disabled={!searchConfig.businessType || activeProblemCategories.length === 0}
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Select All
+                  {t('dashboard.searchPanel.selectAll')}
                 </button>
                 <button
                   type="button"
                   onClick={unselectAllProblemCategories}
-                  disabled={
-                    !searchConfig.businessType ||
-                    searchConfig.problemCategoriesSelected.length === 0
-                  }
+                  disabled={!searchConfig.businessType || searchConfig.problemCategoriesSelected.length === 0}
                   className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  Unselect All
+                  {t('dashboard.searchPanel.unselectAll')}
                 </button>
               </div>
             </div>
 
             {isProblemGuideOpen ? (
               <div className="rounded-xl border border-blue-400/25 bg-blue-500/10 p-4 text-sm text-blue-100">
-                <p className="font-medium">How to configure this section</p>
-                <p className="mt-2 text-blue-100/90">
-                  1. First choose your <span className="font-medium">Location</span> and{' '}
-                  <span className="font-medium">Business category</span> to define the base search pool.
-                </p>
-                <p className="mt-1 text-blue-100/90">
-                  2. Then choose a <span className="font-medium">Business Type</span>. This loads the matching
-                  problem categories.
-                </p>
-                <p className="mt-1 text-blue-100/90">
-                  3. Tick the <span className="font-medium">problem categories</span> (pain points) you want to
-                  target.
-                </p>
-                <p className="mt-1 text-blue-100/90">
-                  These selected pain points are crucial for deciding if a lead is a strong fit or not.
-                </p>
+                <p className="font-medium">{t('dashboard.searchPanel.guideTitle')}</p>
+                <p className="mt-2 text-blue-100/90">{t('dashboard.searchPanel.guideStep1')}</p>
+                <p className="mt-1 text-blue-100/90">{t('dashboard.searchPanel.guideStep2')}</p>
+                <p className="mt-1 text-blue-100/90">{t('dashboard.searchPanel.guideStep3')}</p>
+                <p className="mt-1 text-blue-100/90">{t('dashboard.searchPanel.guideConclusion')}</p>
               </div>
             ) : null}
 
@@ -394,21 +366,21 @@ export function SearchConfigurationPanel({
                         <Check className="h-3.5 w-3.5" />
                       </span>
 
-                      <span className="text-sm text-gray-200">{problemCategory}</span>
+                      <span className="text-sm text-gray-200">{tm('problemCategories', problemCategory)}</span>
                     </label>
                   );
                 })}
               </div>
             ) : (
               <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-gray-400">
-                Select a business type first to view and choose problem categories.
+                {t('dashboard.searchPanel.selectBusinessTypeFirst')}
               </div>
             )}
           </div>
 
           <div className="space-y-2 md:max-w-md">
             <label htmlFor="search-max-results" className="block text-sm text-gray-300">
-              Expected results
+              {t('dashboard.searchPanel.expectedResultsLabel')}
             </label>
             <input
               id="search-max-results"
@@ -420,7 +392,7 @@ export function SearchConfigurationPanel({
               onBlur={commitMaxResults}
               className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
             />
-            <p className="text-xs text-gray-500">Allowed range: 20-300 leads per search.</p>
+            <p className="text-xs text-gray-500">{t('dashboard.searchPanel.expectedResultsRange')}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -430,7 +402,7 @@ export function SearchConfigurationPanel({
               disabled={isRunningSearch}
               className="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors"
             >
-              Save Search
+              {t('dashboard.searchPanel.saveSearch')}
             </button>
             <button
               type="button"
@@ -444,7 +416,7 @@ export function SearchConfigurationPanel({
                     className="h-4 w-4"
                     style={{ animation: 'searchLoaderSpin 900ms linear infinite' }}
                   />
-                  <span>Running Search</span>
+                  <span>{t('dashboard.searchPanel.runningSearch')}</span>
                   <span className="inline-flex items-center gap-1">
                     <span
                       className="h-1.5 w-1.5 rounded-full bg-white/90"
@@ -461,11 +433,11 @@ export function SearchConfigurationPanel({
                   </span>
                 </>
               ) : (
-                'Run Search'
+                t('dashboard.searchPanel.runSearch')
               )}
             </button>
             {!searchConfig.businessType && !isRunningSearch ? (
-              <p className="text-xs text-amber-300">Select a business type to run search.</p>
+              <p className="text-xs text-amber-300">{t('dashboard.searchPanel.selectBusinessTypeWarning')}</p>
             ) : null}
             {isRunningSearch ? (
               <button
@@ -491,7 +463,7 @@ export function SearchConfigurationPanel({
                   className="inline-block h-2 w-2 rounded-full bg-red-300"
                   style={{ animation: 'searchDotPulse 900ms ease-in-out infinite' }}
                 />
-                Cancel Search
+                {t('dashboard.searchPanel.cancelSearch')}
               </button>
             ) : null}
 

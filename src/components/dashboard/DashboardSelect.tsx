@@ -24,6 +24,7 @@ interface DashboardSelectProps<T extends string> {
   triggerClassName?: string;
   contentClassName?: string;
   triggerStyleOverride?: CSSProperties;
+  contentStyleOverride?: CSSProperties;
   getOptionClassName?: (value: T) => string;
 }
 
@@ -34,7 +35,7 @@ const compactTriggerClass =
   'h-auto rounded-lg border px-3 py-1.5 text-xs transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 [&_svg]:text-gray-400';
 
 const defaultContentClass =
-  'z-[80] mt-3 overflow-hidden rounded-xl border p-0 shadow-2xl';
+  'z-[80] mt-3 rounded-xl border p-0 shadow-2xl';
 
 const itemClass =
   'w-full cursor-pointer whitespace-nowrap border-b border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.024)] px-5 py-3 text-left text-sm text-gray-300 outline-none transition-all duration-150 data-[highlighted]:text-white data-[state=checked]:text-white last:border-b-0';
@@ -80,6 +81,7 @@ export function DashboardSelect<T extends string>({
   triggerClassName,
   contentClassName,
   triggerStyleOverride,
+  contentStyleOverride,
   getOptionClassName,
 }: DashboardSelectProps<T>) {
   return (
@@ -97,7 +99,7 @@ export function DashboardSelect<T extends string>({
 
       <SelectContent
         className={cn(defaultContentClass, contentClassName)}
-        style={contentStyle}
+        style={contentStyleOverride ?? contentStyle}
       >
         {options.map((option) => (
           <SelectItem

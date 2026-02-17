@@ -17,6 +17,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { useI18n } from '../../i18n';
 import { DashboardSelect } from './DashboardSelect';
 import { STATUS_OPTIONS, TIER_OPTIONS } from './mockData';
 import { Lead, LeadFilters, LeadStatus } from './types';
@@ -32,12 +33,6 @@ interface LeadManagementTableProps {
   onExportCsv: () => void;
   onExportPdf: () => void;
 }
-
-const TIER_LABELS: Record<Lead['tier'], string> = {
-  'Tier 1': 'Most Valuable',
-  'Tier 2': 'Probable',
-  'Tier 3': 'Raw',
-};
 
 const TIER_BADGE_STYLES: Record<Lead['tier'], string> = {
   'Tier 1': 'bg-purple-500/20 text-purple-300 border border-purple-500/30',
@@ -145,7 +140,7 @@ const truncateDisplayValue = (value: string, maxLength: number): string => {
 
 const truncateMapsDisplayValue = (value: string): string => {
   const lower = value.toLowerCase();
-  const marker = "google.com";
+  const marker = 'google.com';
   const idx = lower.indexOf(marker);
   if (idx === -1) {
     return truncateDisplayValue(value, 42);
@@ -159,36 +154,6 @@ const toDisplayScore = (score: number, maxScore: number): number => {
   }
   const normalized = Math.max(0, Math.min(100, (score / maxScore) * 100));
   return Math.round(normalized);
-};
-
-const contactMeta = (
-  channel: ParsedContactChannel,
-): { label: string; href?: string; icon: ComponentType<{ className?: string }> } => {
-  if (channel.type === 'email') {
-    return { label: 'Email', href: `mailto:${channel.value}`, icon: Mail };
-  }
-
-  if (channel.type === 'phone') {
-    return { label: 'Phone', href: `tel:${channel.value.replace(/\s+/g, '')}`, icon: Phone };
-  }
-
-  if (channel.type === 'website') {
-    return { label: 'Website', href: ensureUrlProtocol(channel.value), icon: Globe };
-  }
-
-  if (channel.type === 'maps') {
-    return { label: 'Maps', href: ensureUrlProtocol(channel.value), icon: MapPinned };
-  }
-
-  if (channel.type === 'linkedin') {
-    return { label: 'LinkedIn', href: ensureUrlProtocol(channel.value), icon: Linkedin };
-  }
-
-  return {
-    label: channel.type ? channel.type[0].toUpperCase() + channel.type.slice(1) : 'Contact',
-    href: channel.value ? ensureUrlProtocol(channel.value) : undefined,
-    icon: LinkIcon,
-  };
 };
 
 const LOADER_KEYFRAMES = `
@@ -219,6 +184,7 @@ export function LeadManagementTable({
   onExportCsv,
   onExportPdf,
 }: LeadManagementTableProps) {
+  const { t, tm } = useI18n();
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [leadExpandedStates, setLeadExpandedStates] = useState<Record<string, boolean>>({});
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
@@ -228,6 +194,44 @@ export function LeadManagementTable({
   const isLeadExpanded = (leadId: string) => leadExpandedStates[leadId] ?? true;
   const hasAnyExpandedLead = leads.some((lead) => isLeadExpanded(lead.id));
   const canExpandOrCollapse = !isLoading && leads.length > 0;
+
+  const contactMeta = (
+    channel: ParsedContactChannel,
+  ): { label: string; href?: string; icon: ComponentType<{ className?: string }> } => {
+    if (channel.type === 'email') {
+      return { label: t('leadCard.email'), href: `mailto:${channel.value}`, icon: Mail };
+    }
+
+    if (channel.type === 'phone') {
+      return {
+        label: t('leadCard.phone'),
+        href: `tel:${channel.value.replace(/\s+/g, '')}`,
+        icon: Phone,
+      };
+    }
+
+    if (channel.type === 'website') {
+      return {
+        label: t('leadCard.website'),
+        href: ensureUrlProtocol(channel.value),
+        icon: Globe,
+      };
+    }
+
+    if (channel.type === 'maps') {
+      return { label: 'Maps', href: ensureUrlProtocol(channel.value), icon: MapPinned };
+    }
+
+    if (channel.type === 'linkedin') {
+      return { label: 'LinkedIn', href: ensureUrlProtocol(channel.value), icon: Linkedin };
+    }
+
+    return {
+      label: channel.type ? channel.type[0].toUpperCase() + channel.type.slice(1) : t('dashboard.leadTable.contactFallback'),
+      href: channel.value ? ensureUrlProtocol(channel.value) : undefined,
+      icon: LinkIcon,
+    };
+  };
 
   const toggleAllLeads = () => {
     if (!canExpandOrCollapse) {
@@ -258,10 +262,12 @@ export function LeadManagementTable({
     }
     toggleLead(leadId);
   };
+
   const handleExportItemMouseEnter = (event: ReactMouseEvent<HTMLElement>) => {
     event.currentTarget.style.transform = 'scale(1.02)';
     event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
   };
+
   const handleExportItemMouseLeave = (event: ReactMouseEvent<HTMLElement>) => {
     event.currentTarget.style.transform = 'scale(1)';
     event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.025)';
@@ -288,7 +294,7 @@ export function LeadManagementTable({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="space-y-1">
             <label htmlFor="filter-tier" className="block text-xs uppercase tracking-wider text-gray-500">
-              Filter by Tier
+              {t('dashboard.leadTable.filterByTier')}
             </label>
             <DashboardSelect
               id="filter-tier"
@@ -296,7 +302,7 @@ export function LeadManagementTable({
               onValueChange={(value) => onTierFilterChange(value as LeadFilters['tier'])}
               options={TIER_OPTIONS.map((tier) => ({
                 value: tier,
-                label: tier,
+                label: tier === 'All' ? t('common.all') : tm('leadTiers', tier),
               }))}
               triggerClassName="rounded-lg py-2 text-sm"
             />
@@ -304,15 +310,18 @@ export function LeadManagementTable({
 
           <div className="space-y-1">
             <label htmlFor="filter-status" className="block text-xs uppercase tracking-wider text-gray-500">
-              Filter by Status
+              {t('dashboard.leadTable.filterByStatus')}
             </label>
             <DashboardSelect
               id="filter-status"
               value={filters.status}
               onValueChange={(value) => onStatusFilterChange(value as LeadFilters['status'])}
               options={[
-                { value: 'All', label: 'All' },
-                ...STATUS_OPTIONS.map((status) => ({ value: status, label: status })),
+                { value: 'All', label: t('common.all') },
+                ...STATUS_OPTIONS.map((status) => ({
+                  value: status,
+                  label: tm('leadStatuses', status),
+                })),
               ]}
               triggerClassName="rounded-lg py-2 text-sm"
             />
@@ -321,7 +330,9 @@ export function LeadManagementTable({
 
         <div className="flex items-center justify-between lg:justify-end gap-4">
           <p className="text-sm text-gray-400">
-            {isLoading ? 'Searching for leads...' : `${leads.length} visible leads`}
+            {isLoading
+              ? t('dashboard.leadTable.searchingLeads')
+              : t('dashboard.leadTable.visibleLeads', { count: leads.length })}
           </p>
 
           <div className="flex items-center gap-3">
@@ -331,7 +342,7 @@ export function LeadManagementTable({
               disabled={!canExpandOrCollapse}
               className="flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {hasAnyExpandedLead ? 'Collapse all' : 'Expand all'}
+              {hasAnyExpandedLead ? t('dashboard.leadTable.collapseAll') : t('dashboard.leadTable.expandAll')}
             </button>
 
             <div ref={exportMenuRef} className="relative">
@@ -346,7 +357,7 @@ export function LeadManagementTable({
                   color: '#e5e7eb',
                 }}
               >
-                Export
+                {t('dashboard.leadTable.export')}
                 <ChevronDown
                   className="h-4 w-4 transition-transform duration-200"
                   style={{ color: '#9ca3af', transform: isExportMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
@@ -378,7 +389,7 @@ export function LeadManagementTable({
                       borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                     }}
                   >
-                    Export CSV
+                    {t('dashboard.leadTable.exportCsv')}
                   </button>
                   <button
                     type="button"
@@ -391,7 +402,7 @@ export function LeadManagementTable({
                     className={exportDropdownItemClass}
                     style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.025)' }}
                   >
-                    Export PDF
+                    {t('dashboard.leadTable.exportPdf')}
                   </button>
                 </div>
               ) : null}
@@ -414,9 +425,9 @@ export function LeadManagementTable({
                     transformOrigin: 'center',
                   }}
                 />
-                Running search and evaluating lead quality...
+                {t('dashboard.leadTable.runningSearchLoader')}
               </p>
-              <br></br>
+              <br />
             </div>
 
             <div className="space-y-3">
@@ -455,10 +466,8 @@ export function LeadManagementTable({
           </div>
         ) : leads.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
-            <p className="text-base text-gray-200">No leads to display yet.</p>
-            <p className="mt-2 text-sm text-gray-400">
-              Configure your search above and run a search to populate the table.
-            </p>
+            <p className="text-base text-gray-200">{t('dashboard.leadTable.noLeadsTitle')}</p>
+            <p className="mt-2 text-sm text-gray-400">{t('dashboard.leadTable.noLeadsSubtitle')}</p>
           </div>
         ) : (
           leads.map((lead) => {
@@ -477,12 +486,15 @@ export function LeadManagementTable({
                       {lead.category} • {lead.location}
                     </p>
                     <p className="mt-2 text-xs text-gray-500">
-                      Source: <span className="text-gray-400">{lead.source ?? 'Google Maps'}</span>
+                      {t('dashboard.leadTable.source')}:{' '}
+                      <span className="text-gray-400">
+                        {lead.source ?? t('dashboard.leadTable.defaultSource')}
+                      </span>
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${TIER_BADGE_STYLES[lead.tier]}`}>
-                      {TIER_LABELS[lead.tier]} ({lead.tier})
+                      {tm('leadTierLabels', lead.tier)} ({tm('leadTiers', lead.tier)})
                     </span>
                     <button
                       type="button"
@@ -499,7 +511,7 @@ export function LeadManagementTable({
                         className="h-3.5 w-3.5 shrink-0 transition-transform duration-200"
                         style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
                       />
-                      <span>{isExpanded ? 'Collapse' : 'Expand'}</span>
+                      <span>{isExpanded ? t('dashboard.leadTable.collapse') : t('dashboard.leadTable.expand')}</span>
                     </button>
                   </div>
                 </div>
@@ -511,7 +523,7 @@ export function LeadManagementTable({
                           key={`${lead.id}-${problem}`}
                           className="px-3 py-1 rounded-lg bg-red-500/10 text-red-300 text-xs font-medium border border-red-500/20"
                         >
-                          {problem}
+                          {tm('problemCategories', problem)}
                         </span>
                       ))}
                     </div>
@@ -519,7 +531,7 @@ export function LeadManagementTable({
                     <div className="mb-4 p-4 rounded-lg bg-white/[0.02] border border-white/5">
                       <div className="flex items-center gap-2 mb-2">
                         <Star className="w-4 h-4 text-blue-400" />
-                        <span className="text-sm font-medium text-blue-400">Why this is a good lead</span>
+                        <span className="text-sm font-medium text-blue-400">{t('leadCard.reasonTitle')}</span>
                       </div>
                       <p className="text-sm text-gray-300 leading-relaxed">{lead.explanation}</p>
                     </div>
@@ -527,19 +539,19 @@ export function LeadManagementTable({
                     <div className="pt-4 border-t border-white/5 space-y-3">
                       <div className="flex flex-wrap items-center gap-3">
                         <div className="text-sm text-gray-300">
-                          <span className="text-gray-500 mr-2">Score</span>
+                          <span className="text-gray-500 mr-2">{t('dashboard.leadTable.score')}</span>
                           <span className="font-medium text-white">{toDisplayScore(lead.score, scoreDenominator)}</span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">Status</span>
+                          <span className="text-sm text-gray-500">{t('dashboard.leadTable.status')}</span>
                           <div data-no-toggle="true">
                             <DashboardSelect
                               value={lead.status}
                               onValueChange={(value) => onLeadStatusChange(lead.id, value as LeadStatus)}
                               options={STATUS_OPTIONS.map((status) => ({
                                 value: status,
-                                label: status,
+                                label: tm('leadStatuses', status),
                               }))}
                               size="compact"
                               triggerClassName="min-w-[124px]"
@@ -553,7 +565,7 @@ export function LeadManagementTable({
                         </div>
 
                         <div className="text-sm text-gray-300 flex items-center gap-2">
-                          <span className="text-gray-500">Rating</span>
+                          <span className="text-gray-500">{t('dashboard.leadTable.rating')}</span>
                           {typeof lead.rating === 'number' ? (
                             <span className="font-medium text-white inline-flex items-center gap-1">
                               {lead.rating.toFixed(1)}/5
@@ -563,7 +575,7 @@ export function LeadManagementTable({
                               ) : null}
                             </span>
                           ) : (
-                            <span className="text-gray-400">N/A</span>
+                            <span className="text-gray-400">{t('common.notAvailable')}</span>
                           )}
                         </div>
                       </div>
@@ -576,7 +588,7 @@ export function LeadManagementTable({
                           const valueText =
                             parsedChannel.value.trim().length > 0
                               ? parsedChannel.value
-                              : 'No value provided';
+                              : t('dashboard.leadTable.noValueProvided');
                           const displayValue =
                             parsedChannel.type === 'maps'
                               ? truncateMapsDisplayValue(valueText)

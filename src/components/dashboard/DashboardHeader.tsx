@@ -1,5 +1,7 @@
 import { type MouseEvent as ReactMouseEvent, useEffect, useRef, useState } from 'react';
 import { ChevronDown, Sparkles } from 'lucide-react';
+import { useI18n } from '../../i18n';
+import { LanguageSwitcher } from '../LanguageSwitcher';
 
 interface DashboardHeaderProps {
   onNavigateHome: () => void;
@@ -14,14 +16,17 @@ export function DashboardHeader({
   onNavigateBusinessProfile,
   onLogout,
 }: DashboardHeaderProps) {
+  const { t } = useI18n();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const dropdownItemClass =
     'flex w-full cursor-pointer justify-center px-4 py-2.5 text-center text-sm text-gray-200 transition-all duration-150';
+
   const handleDropdownItemMouseEnter = (event: ReactMouseEvent<HTMLElement>) => {
     event.currentTarget.style.transform = 'scale(1.02)';
     event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.12)';
   };
+
   const handleDropdownItemMouseLeave = (event: ReactMouseEvent<HTMLElement>) => {
     event.currentTarget.style.transform = 'scale(1)';
     event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.025)';
@@ -49,7 +54,7 @@ export function DashboardHeader({
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-semibold">Lead Generator</span>
+          <span className="text-xl font-semibold">{t('common.appName')}</span>
         </button>
 
         <div className="flex items-center gap-3 sm:gap-4">
@@ -58,8 +63,10 @@ export function DashboardHeader({
             onClick={onNavigateDashboard}
             className="hidden sm:flex px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-gray-200 transition-colors"
           >
-            Dashboard
+            {t('dashboardHeader.dashboard')}
           </button>
+
+          <LanguageSwitcher compact />
 
           <div ref={dropdownRef} className="relative">
             <button
@@ -73,7 +80,7 @@ export function DashboardHeader({
                 color: '#e5e7eb',
               }}
             >
-              Account
+              {t('dashboardHeader.account')}
               <ChevronDown
                 className="h-4 w-4 transition-transform duration-200"
                 style={{ color: '#9ca3af', transform: isAccountOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
@@ -105,8 +112,9 @@ export function DashboardHeader({
                     borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   }}
                 >
-                  Dashboard
+                  {t('dashboardHeader.dashboard')}
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -122,8 +130,9 @@ export function DashboardHeader({
                     borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   }}
                 >
-                  Business Profile
+                  {t('dashboardHeader.businessProfile')}
                 </button>
+
                 <a
                   href="#"
                   className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
@@ -135,8 +144,9 @@ export function DashboardHeader({
                     borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   }}
                 >
-                  Saved Searches
+                  {t('dashboardHeader.savedSearches')}
                 </a>
+
                 <a
                   href="#"
                   className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
@@ -148,8 +158,9 @@ export function DashboardHeader({
                     borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   }}
                 >
-                  Billing
+                  {t('dashboardHeader.billing')}
                 </a>
+
                 <a
                   href="#"
                   className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
@@ -161,8 +172,9 @@ export function DashboardHeader({
                     borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   }}
                 >
-                  Plan
+                  {t('dashboardHeader.plan')}
                 </a>
+
                 <a
                   href="#"
                   className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
@@ -174,8 +186,9 @@ export function DashboardHeader({
                     borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                   }}
                 >
-                  Account Settings
+                  {t('dashboardHeader.accountSettings')}
                 </a>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -187,7 +200,7 @@ export function DashboardHeader({
                   onMouseLeave={handleDropdownItemMouseLeave}
                   style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.025)' }}
                 >
-                  Logout
+                  {t('dashboardHeader.logout')}
                 </button>
               </div>
             ) : null}

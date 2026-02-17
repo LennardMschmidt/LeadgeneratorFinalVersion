@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useI18n } from '../../i18n';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSelect } from './DashboardSelect';
 import {
@@ -76,6 +77,7 @@ export function BusinessProfilePage({
   onNavigateBusinessProfile,
   onLogout,
 }: BusinessProfilePageProps) {
+  const { t, tm } = useI18n();
   const [form, setForm] = useState<BusinessProfileFormState>(createEmptyForm);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -130,19 +132,19 @@ export function BusinessProfilePage({
       !nextForm.businessLocation ||
       !nextForm.serviceDescription
     ) {
-      setErrorMessage('Business Name, Category, Location, and Service Description are required.');
+      setErrorMessage(t('dashboard.businessProfile.requiredFieldsError'));
       setSuccessMessage(null);
       return;
     }
 
     if (!nextForm.targetCustomerType) {
-      setErrorMessage('Please select a target customer type.');
+      setErrorMessage(t('dashboard.businessProfile.targetTypeRequired'));
       setSuccessMessage(null);
       return;
     }
 
     if (!nextForm.preferredContactMethod) {
-      setErrorMessage('Please select a preferred contact method.');
+      setErrorMessage(t('dashboard.businessProfile.preferredContactRequired'));
       setSuccessMessage(null);
       return;
     }
@@ -160,7 +162,7 @@ export function BusinessProfilePage({
     saveBusinessProfile(profileToSave);
     setForm(toFormState(profileToSave));
     setErrorMessage(null);
-    setSuccessMessage('Business profile saved.');
+    setSuccessMessage(t('dashboard.businessProfile.profileSaved'));
 
     if (successTimerRef.current) {
       window.clearTimeout(successTimerRef.current);
@@ -174,7 +176,7 @@ export function BusinessProfilePage({
     clearBusinessProfile();
     setForm(createEmptyForm());
     setErrorMessage(null);
-    setSuccessMessage('Business profile cleared.');
+    setSuccessMessage(t('dashboard.businessProfile.profileCleared'));
 
     if (successTimerRef.current) {
       window.clearTimeout(successTimerRef.current);
@@ -195,21 +197,16 @@ export function BusinessProfilePage({
 
       <main className="relative mx-auto max-w-7xl px-6 py-24">
         <section>
-          <h1 className="text-4xl font-bold">Business Profile</h1>
-          <p className="mt-4 text-gray-400">
-            Tell us about your business so we can match you with better leads.
-          </p>
+          <h1 className="text-4xl font-bold">{t('dashboard.businessProfile.title')}</h1>
+          <p className="mt-4 text-gray-400">{t('dashboard.businessProfile.subtitle')}</p>
         </section>
 
         <section className="mt-10">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-[0_0_30px_rgba(59,130,246,0.08)] backdrop-blur-sm md:p-12">
-            <div
-              className="grid gap-y-10 md:grid-cols-2"
-              style={{ columnGap: '2.75rem' }}
-            >
+            <div className="grid gap-y-10 md:grid-cols-2" style={{ columnGap: '2.75rem' }}>
               <div className="space-y-4">
                 <label htmlFor="business-name" className="block text-sm text-gray-300">
-                  Business Name
+                  {t('dashboard.businessProfile.businessNameLabel')}
                 </label>
                 <input
                   id="business-name"
@@ -220,14 +217,14 @@ export function BusinessProfilePage({
                       businessName: event.target.value,
                     }))
                   }
-                  placeholder="Your business name"
+                  placeholder={t('dashboard.businessProfile.businessNamePlaceholder')}
                   className={inputClassName}
                 />
               </div>
 
               <div className="space-y-4">
                 <label htmlFor="business-category" className="block text-sm text-gray-300">
-                  Business Category
+                  {t('dashboard.businessProfile.businessCategoryLabel')}
                 </label>
                 <input
                   id="business-category"
@@ -238,14 +235,14 @@ export function BusinessProfilePage({
                       businessCategory: event.target.value,
                     }))
                   }
-                  placeholder="Category"
+                  placeholder={t('dashboard.businessProfile.businessCategoryPlaceholder')}
                   className={inputClassName}
                 />
               </div>
 
               <div className="space-y-4">
                 <label htmlFor="business-location" className="block text-sm text-gray-300">
-                  Business Location
+                  {t('dashboard.businessProfile.businessLocationLabel')}
                 </label>
                 <input
                   id="business-location"
@@ -256,14 +253,14 @@ export function BusinessProfilePage({
                       businessLocation: event.target.value,
                     }))
                   }
-                  placeholder="City, State"
+                  placeholder={t('dashboard.businessProfile.businessLocationPlaceholder')}
                   className={inputClassName}
                 />
               </div>
 
               <div className="space-y-4">
                 <label htmlFor="target-customer-type" className="block text-sm text-gray-300">
-                  Target Customer Type
+                  {t('dashboard.businessProfile.targetCustomerTypeLabel')}
                 </label>
                 <DashboardSelect
                   id="target-customer-type"
@@ -276,10 +273,10 @@ export function BusinessProfilePage({
                     }))
                   }
                   options={[
-                    { value: '__none__', label: 'Select target type' },
+                    { value: '__none__', label: t('dashboard.businessProfile.selectTargetType') },
                     ...TARGET_CUSTOMER_TYPE_OPTIONS.map((option) => ({
                       value: option,
-                      label: option,
+                      label: tm('targetCustomerTypes', option),
                     })),
                   ]}
                 />
@@ -287,7 +284,7 @@ export function BusinessProfilePage({
 
               <div className="space-y-4 md:col-span-2">
                 <label htmlFor="service-description" className="block text-sm text-gray-300">
-                  Service Description
+                  {t('dashboard.businessProfile.serviceDescriptionLabel')}
                 </label>
                 <textarea
                   id="service-description"
@@ -299,13 +296,13 @@ export function BusinessProfilePage({
                     }))
                   }
                   rows={4}
-                  placeholder="Describe your services and how you help customers."
+                  placeholder={t('dashboard.businessProfile.serviceDescriptionPlaceholder')}
                   className={`${inputClassName} min-h-[170px]`}
                 />
               </div>
 
               <div className="space-y-5 md:col-span-2">
-                <p className="text-sm text-gray-300">Primary Problems You Solve</p>
+                <p className="text-sm text-gray-300">{t('dashboard.businessProfile.primaryProblemsLabel')}</p>
                 <div className="flex flex-wrap gap-3">
                   {PRIMARY_PROBLEM_OPTIONS.map((problem) => {
                     const isSelected = form.primaryProblemsYouSolve.includes(problem);
@@ -320,7 +317,7 @@ export function BusinessProfilePage({
                             : 'border-white/15 bg-white/5 text-gray-300 hover:border-white/30 hover:bg-white/10'
                         }`}
                       >
-                        {problem}
+                        {tm('primaryProblems', problem)}
                       </button>
                     );
                   })}
@@ -328,7 +325,7 @@ export function BusinessProfilePage({
               </div>
 
               <div className="mb-5 space-y-5 md:col-span-2">
-                <p className="text-sm text-gray-300">Preferred Contact Method</p>
+                <p className="text-sm text-gray-300">{t('dashboard.businessProfile.preferredContactMethodLabel')}</p>
                 <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                   {CONTACT_METHOD_OPTIONS.map((method) => (
                     <label
@@ -348,7 +345,7 @@ export function BusinessProfilePage({
                         }
                         className="h-4 w-4 border border-white/20 bg-white/5"
                       />
-                      {method}
+                      {tm('preferredContactMethods', method)}
                     </label>
                   ))}
                 </div>
@@ -373,14 +370,14 @@ export function BusinessProfilePage({
                 onClick={handleSaveProfile}
                 className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-purple-700"
               >
-                Save Profile
+                {t('dashboard.businessProfile.saveProfile')}
               </button>
               <button
                 type="button"
                 onClick={handleResetProfile}
                 className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:bg-white/10"
               >
-                Reset
+                {t('dashboard.businessProfile.reset')}
               </button>
             </div>
           </div>

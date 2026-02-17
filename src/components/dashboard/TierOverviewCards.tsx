@@ -1,4 +1,4 @@
-import { TIER_META } from './mockData';
+import { useI18n } from '../../i18n';
 import { LeadTier } from './types';
 
 interface TierOverviewCardsProps {
@@ -9,6 +9,30 @@ interface TierOverviewCardsProps {
   maxFoundNotice?: string | null;
 }
 
+const getTierTitleKey = (tier: LeadTier): string => {
+  if (tier === 'Tier 1') {
+    return 'dashboard.tierCards.tier1Title';
+  }
+
+  if (tier === 'Tier 2') {
+    return 'dashboard.tierCards.tier2Title';
+  }
+
+  return 'dashboard.tierCards.tier3Title';
+};
+
+const getTierSubtitleKey = (tier: LeadTier): string => {
+  if (tier === 'Tier 1') {
+    return 'dashboard.tierCards.tier1Subtitle';
+  }
+
+  if (tier === 'Tier 2') {
+    return 'dashboard.tierCards.tier2Subtitle';
+  }
+
+  return 'dashboard.tierCards.tier3Subtitle';
+};
+
 export function TierOverviewCards({
   counts,
   totalLeads,
@@ -16,6 +40,7 @@ export function TierOverviewCards({
   onSelectTier,
   maxFoundNotice,
 }: TierOverviewCardsProps) {
+  const { t } = useI18n();
   const tiers: LeadTier[] = ['Tier 1', 'Tier 2', 'Tier 3'];
   const tierStyles: Record<
     LeadTier,
@@ -72,19 +97,20 @@ export function TierOverviewCards({
                   boxShadow: `inset 0 0 0 1px rgba(${tierStyles[tier].glowRgb}, ${isActive ? 0.7 : 0.35})`,
                 }}
               />
-              <p className={`relative z-10 text-sm mb-3 ${tierStyles[tier].chip}`}>{TIER_META[tier].title}</p>
+              <p className={`relative z-10 text-sm mb-3 ${tierStyles[tier].chip}`}>{t(getTierTitleKey(tier))}</p>
               <p className="relative z-10 text-4xl font-bold text-white mb-2">{counts[tier]}</p>
-              <p className="relative z-10 text-sm text-gray-400">{TIER_META[tier].subtitle}</p>
+              <p className="relative z-10 text-sm text-gray-400">{t(getTierSubtitleKey(tier))}</p>
             </button>
           );
         })}
       </section>
 
       <div>
-        <p className="text-sm text-gray-400">Total leads: <span className="font-semibold text-white">{totalLeads}</span></p>
-        {maxFoundNotice ? (
-          <p className="mt-1 text-xs text-amber-300">{maxFoundNotice}</p>
-        ) : null}
+        <p className="text-sm text-gray-400">
+          {t('dashboard.tierCards.totalLeads')}:{' '}
+          <span className="font-semibold text-white">{totalLeads}</span>
+        </p>
+        {maxFoundNotice ? <p className="mt-1 text-xs text-amber-300">{maxFoundNotice}</p> : null}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import { useI18n } from '../../i18n';
 import { cancelBackendSearch, generateLeadsFromBackend } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { LeadManagementTable } from './LeadManagementTable';
@@ -35,6 +36,7 @@ export function DashboardPage({
   onNavigateBusinessProfile,
   onLogout,
 }: DashboardPageProps) {
+  const { raw, t } = useI18n();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>(INITIAL_SAVED_SEARCHES);
   const [selectedSavedSearchId, setSelectedSavedSearchId] = useState('');
@@ -76,10 +78,12 @@ export function DashboardPage({
       }),
     [leads, filters],
   );
+
   const maxRawScore = useMemo(
     () => leads.reduce((currentMax, lead) => Math.max(currentMax, lead.score), 0),
     [leads],
   );
+
   const scoreDenominator = useMemo(() => {
     if (lastSearchSelectedProblemCount > 0) {
       return lastSearchSelectedProblemCount;
@@ -109,11 +113,18 @@ export function DashboardPage({
     }
 
     if (typeof requestedMax === 'number' && requestedMax > maxFound) {
-      return `Max found leads from ${searchMeta.source}: ${maxFound} (requested ${requestedMax}).`;
+      return t('dashboard.maxFoundWithRequest', {
+        source: searchMeta.source,
+        maxFound,
+        requestedMax,
+      });
     }
 
-    return `Max found leads from ${searchMeta.source}: ${maxFound}.`;
-  }, [searchMeta]);
+    return t('dashboard.maxFound', {
+      source: searchMeta.source,
+      maxFound,
+    });
+  }, [searchMeta, t]);
 
   const updateTierFilter = (tier: LeadFilters['tier']) => {
     setActiveTier(tier);
@@ -142,11 +153,12 @@ export function DashboardPage({
     const businessType = searchConfig.businessType.trim();
 
     if (!location || !category) {
-      setSearchError('Location and business category are required.');
+      setSearchError(t('dashboard.errors.locationAndCategoryRequired'));
       return;
     }
+
     if (!businessType) {
-      setSearchError('Business type is required.');
+      setSearchError(t('dashboard.errors.businessTypeRequired'));
       return;
     }
 
@@ -167,9 +179,28 @@ export function DashboardPage({
       setLeads(result.leads);
       setSearchMeta(result.meta ?? null);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Failed to generate leads.';
-      setSearchError(message);
+      if (error instanceof Error) {
+        const unreachablePrefix = 'Could not reach backend at ';
+        const unreachableSuffix =
+          '. Verify the backend is running and URL settings are correct.';
+
+        if (error.message === 'Search cancelled.') {
+          setSearchError(t('dashboard.errors.searchCancelled'));
+        } else if (
+          error.message.startsWith(unreachablePrefix) &&
+          error.message.endsWith(unreachableSuffix)
+        ) {
+          const target = error.message.slice(
+            unreachablePrefix.length,
+            -unreachableSuffix.length,
+          );
+          setSearchError(t('dashboard.errors.backendUnreachable', { target }));
+        } else {
+          setSearchError(error.message);
+        }
+      } else {
+        setSearchError(t('dashboard.errors.failedGenerate'));
+      }
     } finally {
       activeSearchAbortControllerRef.current = null;
       setIsRunningSearch(false);
@@ -184,13 +215,16 @@ export function DashboardPage({
     activeSearchAbortControllerRef.current?.abort();
     await cancelBackendSearch();
     setIsRunningSearch(false);
-    setSearchError('Search cancelled.');
+    setSearchError(t('dashboard.errors.searchCancelled'));
   };
 
   const saveSearch = () => {
     const normalizedLocation = searchConfig.location.trim();
     const normalizedCategory = searchConfig.category.trim();
-    const labelBase = normalizedCategory || normalizedLocation ? `${normalizedCategory || 'Any category'} - ${normalizedLocation || 'Any location'}` : 'Custom Search';
+    const labelBase =
+      normalizedCategory || normalizedLocation
+        ? `${normalizedCategory || t('dashboard.saveSearch.anyCategory')} - ${normalizedLocation || t('dashboard.saveSearch.anyLocation')}`
+        : t('dashboard.saveSearch.customSearch');
 
     const newSavedSearch: SavedSearch = {
       id: `saved-${Date.now()}`,
@@ -226,7 +260,7 @@ export function DashboardPage({
   };
 
   const exportCsv = () => {
-    const headers = ['Business Name', 'Location', 'Category', 'Tier', 'Score', 'Status', 'Contact Channels'];
+    const headers = raw<string[]>('dashboard.csv.headers');
     const rows = filteredLeads.map((lead) => [
       lead.businessName,
       lead.location,
@@ -246,7 +280,7 @@ export function DashboardPage({
     const objectUrl = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = objectUrl;
-    anchor.download = 'lead-signal-dashboard-export.csv';
+    anchor.download = t('dashboard.csv.fileName');
     anchor.click();
     URL.revokeObjectURL(objectUrl);
   };
@@ -266,10 +300,10 @@ export function DashboardPage({
 
       <main className="relative max-w-7xl mx-auto px-6 py-20">
         <section className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-4xl font-bold">Dashboard</h1>
+          <h1 className="text-4xl font-bold">{t('dashboard.title')}</h1>
         </section>
 
-        <section className="mt-16" style={{marginBottom: "20px"}}>
+        <section className="mt-16" style={{ marginBottom: '20px' }}>
           <TierOverviewCards
             counts={tierCounts}
             totalLeads={leads.length}
@@ -279,7 +313,7 @@ export function DashboardPage({
           />
         </section>
 
-        <section className="mt-[10px]" style={{marginBottom: "20px"}}>
+        <section className="mt-[10px]" style={{ marginBottom: '20px' }}>
           <SearchConfigurationPanel
             searchConfig={searchConfig}
             savedSearches={savedSearches}
@@ -298,9 +332,10 @@ export function DashboardPage({
             <div className="rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
               {searchError}
             </div>
-            <br/>
+            <br />
           </section>
         ) : null}
+
         <section className="mt-24">
           <LeadManagementTable
             leads={filteredLeads}

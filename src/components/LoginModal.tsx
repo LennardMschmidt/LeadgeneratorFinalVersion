@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Sparkles, X } from 'lucide-react';
+import { useI18n } from '../i18n';
 
 interface LoginModalProps {
   open: boolean;
@@ -9,6 +10,7 @@ interface LoginModalProps {
 }
 
 export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) {
+  const { t } = useI18n();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,24 +48,24 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
   const handleGoogleAuth = () => {
     if (mode === 'login') {
-      setStatusMessage('Google login clicked. Connect this button to your OAuth flow when your backend is ready.');
+      setStatusMessage(t('login.googleLoginClicked'));
       onAuthenticated?.();
       return;
     }
 
-    setStatusMessage('Google register clicked. Connect this button to your OAuth flow when your backend is ready.');
+    setStatusMessage(t('login.googleRegisterClicked'));
     onAuthenticated?.();
   };
 
   const handleEmailAuth = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (mode === 'login') {
-      setStatusMessage(`Email login captured for ${email}. Connect this form to your auth endpoint next.`);
+      setStatusMessage(t('login.emailLoginCaptured', { email }));
       onAuthenticated?.();
       return;
     }
 
-    setStatusMessage(`Email registration captured for ${email}. Connect this form to your signup endpoint next.`);
+    setStatusMessage(t('login.emailRegisterCaptured', { email }));
     onAuthenticated?.();
   };
 
@@ -75,7 +77,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <button
         type="button"
-        aria-label="Close login form"
+        aria-label={t('login.closeLoginForm')}
         onClick={onClose}
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
       />
@@ -91,7 +93,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
         <button
           type="button"
-          aria-label="Close"
+          aria-label={t('login.close')}
           onClick={onClose}
           className="absolute right-5 top-5 rounded-full p-1.5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
         >
@@ -103,19 +105,17 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
             <Sparkles className="h-4 w-4 text-white" />
           </div>
           <span className="text-sm font-medium tracking-wide text-gray-200">
-            {mode === 'login' ? 'Lead Generator Login' : 'Lead Generator Register'}
+            {mode === 'login' ? t('login.loginTitle') : t('login.registerTitle')}
           </span>
         </div>
 
         <div className="relative space-y-5">
           <div>
             <h2 className="text-2xl font-semibold text-white">
-              {mode === 'login' ? 'Welcome back' : 'Create your account'}
+              {mode === 'login' ? t('login.welcomeBack') : t('login.createAccount')}
             </h2>
             <p className="mt-1 text-sm text-gray-400">
-              {mode === 'login'
-                ? 'Sign in to continue finding your next best leads.'
-                : 'Register to start finding your next best leads.'}
+              {mode === 'login' ? t('login.loginSubtitle') : t('login.registerSubtitle')}
             </p>
           </div>
 
@@ -125,21 +125,21 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
             className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
           >
             <span className="inline-flex items-center gap-3">
-              {mode === 'login' ? 'Continue with Google' : 'Register with Google'}
+              {mode === 'login' ? t('login.continueWithGoogle') : t('login.registerWithGoogle')}
             </span>
           </button>
 
-          <div className="relative mb-[10px]">
-            <div className="h-px bg-white/10" />
+          <div className="relative mb-4 mt-2 h-5">
+            <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/10" />
             <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0f1220] px-2 text-xs uppercase tracking-widest text-gray-500">
-              Or
+              {t('common.or')}
             </span>
           </div>
 
           <form className="space-y-4" onSubmit={handleEmailAuth}>
             <div className="space-y-2">
               <label htmlFor="auth-email" className="text-sm text-gray-300">
-                Email
+                {t('login.email')}
               </label>
               <input
                 id="auth-email"
@@ -148,14 +148,14 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                 required
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                placeholder="you@company.com"
+                placeholder={t('login.emailPlaceholder')}
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
 
             <div className="space-y-2">
               <label htmlFor="auth-password" className="text-sm text-gray-300">
-                Password
+                {t('login.password')}
               </label>
               <input
                 id="auth-password"
@@ -165,7 +165,11 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                 minLength={8}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                placeholder={mode === 'login' ? 'Enter your password' : 'Create a password'}
+                placeholder={
+                  mode === 'login'
+                    ? t('login.loginPasswordPlaceholder')
+                    : t('login.registerPasswordPlaceholder')
+                }
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
@@ -174,10 +178,10 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
               <div className="flex items-center justify-between text-xs">
                 <label className="inline-flex items-center gap-2 text-gray-400">
                   <input type="checkbox" className="h-4 w-4 rounded border border-white/20 bg-white/5" />
-                  Remember me
+                  {t('login.rememberMe')}
                 </label>
                 <a href="#" className="text-blue-300 hover:text-blue-200 transition-colors">
-                  Forgot password?
+                  {t('login.forgotPassword')}
                 </a>
               </div>
             ) : null}
@@ -186,7 +190,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
               type="submit"
               className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-600 hover:to-purple-700"
             >
-              {mode === 'login' ? 'Log in with Email' : 'Register with Email'}
+              {mode === 'login' ? t('login.loginWithEmail') : t('login.registerWithEmail')}
             </button>
           </form>
 
@@ -198,7 +202,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
             }}
             className="w-full text-sm text-gray-300 hover:text-white transition-colors"
           >
-            {mode === 'login' ? 'No account yet? Register' : 'Already have an account? Log in'}
+            {mode === 'login' ? t('login.noAccount') : t('login.alreadyHaveAccount')}
           </button>
 
           {statusMessage ? (

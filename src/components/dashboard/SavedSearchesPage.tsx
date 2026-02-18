@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../../i18n';
 import {
@@ -342,7 +342,7 @@ export function SavedSearchesPage({
                   type="button"
                   onClick={() => setIsBulkDeleteConfirmOpen(true)}
                   disabled={isLoading || isBulkDeleting || total === 0}
-                  className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold transition disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 rounded-lg px-5 py-3 text-xs font-semibold transition disabled:cursor-not-allowed"
                   style={{
                     border: '1px solid rgba(248, 113, 113, 0.58)',
                     backgroundColor: 'rgba(239, 68, 68, 0.14)',
@@ -508,12 +508,13 @@ export function SavedSearchesPage({
                             type="button"
                             onClick={() => deleteSavedLead(lead.savedLeadId)}
                             disabled={!!deletingIds[lead.savedLeadId]}
-                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition disabled:cursor-not-allowed"
+                            aria-label="Remove lead"
+                            title="Remove lead"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition disabled:cursor-not-allowed"
                             style={{
                               border: '1px solid rgba(248, 113, 113, 0.55)',
                               backgroundColor: 'rgba(239, 68, 68, 0.13)',
                               color: 'rgb(254, 226, 226)',
-                              lineHeight: 1.2,
                               opacity: deletingIds[lead.savedLeadId] ? 0.6 : 1,
                             }}
                             onMouseEnter={(event) => {
@@ -529,12 +530,9 @@ export function SavedSearchesPage({
                             }}
                           >
                             {deletingIds[lead.savedLeadId] ? (
-                              <>
-                                <Loader2 className="spin-loader h-3.5 w-3.5" />
-                                {t('dashboard.savedLeads.removing')}
-                              </>
+                              <Loader2 className="spin-loader h-3.5 w-3.5" />
                             ) : (
-                              <>{t('dashboard.savedLeads.remove')}</>
+                              <Trash2 className="h-3.5 w-3.5" />
                             )}
                           </button>
                         </td>

@@ -6,22 +6,9 @@ import {
   getProblemCategoriesForBusinessType,
 } from './businessTypeProblemCatalog';
 import { CONTACT_PREFERENCE_OPTIONS } from './mockData';
+import { SEARCH_SOURCE_OPTIONS } from './searchSources';
 import { DashboardSelect } from './DashboardSelect';
 import { SavedSearch, SearchConfiguration } from './types';
-
-const SEARCH_SOURCE_OPTIONS: Array<{
-  value: Exclude<SearchConfiguration['searchSource'], ''>;
-  labelKey:
-    | 'dashboard.searchPanel.searchSourceLinkedIn'
-    | 'dashboard.searchPanel.searchSourceGoogleMaps'
-    | 'dashboard.searchPanel.searchSourceGoogle'
-    | 'dashboard.searchPanel.searchSourceInstagram';
-}> = [
-  { value: 'linkedin', labelKey: 'dashboard.searchPanel.searchSourceLinkedIn' },
-  { value: 'google_maps', labelKey: 'dashboard.searchPanel.searchSourceGoogleMaps' },
-  { value: 'google', labelKey: 'dashboard.searchPanel.searchSourceGoogle' },
-  { value: 'instagram', labelKey: 'dashboard.searchPanel.searchSourceInstagram' },
-];
 
 interface SearchConfigurationPanelProps {
   searchConfig: SearchConfiguration;

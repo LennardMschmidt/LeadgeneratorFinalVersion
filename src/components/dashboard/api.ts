@@ -11,6 +11,7 @@ import {
   SavedSearch,
   SearchConfiguration,
 } from './types';
+import { canonicalizeSearchSource } from './searchSources';
 import { getSupabaseAccessToken } from '../../lib/supabaseAuth';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
@@ -174,11 +175,14 @@ const toLeadFromBackend = (backendLead: BackendLead): Lead => ({
 const toPayload = (searchConfig: SearchConfiguration) => ({
   category: searchConfig.category.trim(),
   location: searchConfig.location.trim(),
-  source: searchConfig.searchSource,
+  query: [searchConfig.category.trim(), searchConfig.location.trim()].join(' ').trim(),
+  source: canonicalizeSearchSource(searchConfig.searchSource),
   businessType: searchConfig.businessType,
+  problemCategories: searchConfig.problemCategoriesSelected,
   problemCategoriesSelected: searchConfig.problemCategoriesSelected,
   problemFilters: searchConfig.problemFilters,
   maxResults: searchConfig.maxResults,
+  max_results: searchConfig.maxResults,
   contactPreferences:
     searchConfig.contactPreference === 'Any'
       ? []
@@ -298,7 +302,7 @@ const mapSavedSearch = (item: BackendSavedSearch): SavedSearch | null => {
     config: {
       location: typeof config.location === 'string' ? config.location : '',
       category: typeof config.category === 'string' ? config.category : '',
-      searchSource: typeof config.searchSource === 'string' ? config.searchSource : '',
+      searchSource: canonicalizeSearchSource(config.searchSource),
       businessType: typeof config.businessType === 'string' ? config.businessType : '',
       problemCategoriesSelected: parseStringArray(config.problemCategoriesSelected),
       problemFilters: parseStringArray(config.problemFilters),

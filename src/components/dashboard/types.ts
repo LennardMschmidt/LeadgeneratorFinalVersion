@@ -4,7 +4,7 @@ export type BackendLeadTier = 'most_valuable' | 'probable' | 'raw';
 export type LeadStatus = 'New' | 'Pending' | 'Contacted' | 'Won' | 'Lost' | 'Archived';
 
 export type ContactPreference = 'Any' | 'Email' | 'Phone' | 'LinkedIn';
-export type SearchSource = 'linkedin' | 'google_maps' | 'google' | 'instagram';
+export type SearchSource = 'google_maps' | 'linkedin';
 export type TargetCustomerType =
   | 'Local Services'
   | 'Restaurants'

@@ -263,10 +263,27 @@ export function SavedLeadDetailModal({
               </DialogHeader>
 
               <div className="flex flex-wrap items-center" style={{ gap: '1rem' }}>
-                <span className={`rounded-full px-4 py-1.5 text-sm font-medium ${TIER_BADGE_STYLES[lead.tier]}`}>
+                <span
+                  className={`rounded-full px-4 text-sm font-medium ${TIER_BADGE_STYLES[lead.tier]}`}
+                  style={{
+                    minHeight: '2.75rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    lineHeight: 1.2,
+                  }}
+                >
                   {tm('leadTierLabels', lead.tier)} ({tm('leadTiers', lead.tier)})
                 </span>
-                <span className="rounded-full border border-white/20 bg-white/[0.08] px-4 py-1.5 text-sm text-slate-100">
+                <span
+                  className="rounded-full border border-white/20 bg-white/[0.08] px-4 text-sm text-slate-100"
+                  style={{
+                    minHeight: '2.75rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    lineHeight: 1.2,
+                    fontWeight: 500,
+                  }}
+                >
                   {t('dashboard.leadTable.score')}: {toDisplayScore(lead.score, scoreDenominator)}
                 </span>
                 <div className="min-w-[240px]">

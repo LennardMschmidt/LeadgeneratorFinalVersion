@@ -949,6 +949,31 @@ export const runWebsiteAnalysisForSavedLead = async (
   return mapped;
 };
 
+export const removeWebsiteAnalysisForSavedLead = async (
+  savedLeadId: string,
+): Promise<SavedLead> => {
+  const requestUrl = buildApiUrl(`/api/leads/${encodeURIComponent(savedLeadId)}/website-analysis`);
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'DELETE',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as SavedLeadMutationResponse;
+  const mapped = mapSavedLead(payload.savedLead as BackendSavedLead);
+  if (!mapped) {
+    throw new Error('Saved lead response is invalid.');
+  }
+
+  return mapped;
+};
+
 export const deleteSavedLeadFromBackend = async (savedLeadId: string): Promise<void> => {
   const requestUrl = buildApiUrl(
     `/api/leads/saved-leads/${encodeURIComponent(savedLeadId)}`,
@@ -999,4 +1024,227 @@ export const deleteFilteredSavedLeadsFromBackend = async (
     statusFilter: isLeadStatus(payload.statusFilter) ? payload.statusFilter : null,
     tierFilter: isLeadTier(payload.tierFilter) ? payload.tierFilter : null,
   };
+};
+
+type BackendBillingPlanCode = 'STANDARD' | 'PRO' | 'EXPERT';
+
+type BillingPlanTokenCosts = {
+  google_maps_search: number;
+  linkedin_search: number;
+  website_analysis: number;
+};
+
+export type BillingPlan = {
+  code: BackendBillingPlanCode;
+  name: string;
+  dailyTokenLimit: number;
+  tokenCosts: BillingPlanTokenCosts;
+};
+
+export type BillingUsage = {
+  plan: BackendBillingPlanCode;
+  subscriptionStatus: string;
+  dailyTokenLimit: number;
+  tokensUsedToday: number;
+  tokensRemainingToday: number;
+  usageDate: string;
+};
+
+type BillingPlansResponse = {
+  plans?: unknown;
+};
+
+type BillingUsageResponse = {
+  plan?: unknown;
+  subscriptionStatus?: unknown;
+  dailyTokenLimit?: unknown;
+  tokensUsedToday?: unknown;
+  tokensRemainingToday?: unknown;
+  usageDate?: unknown;
+};
+
+type BillingChangePlanResponse = {
+  subscription?: {
+    plan?: unknown;
+    subscriptionStatus?: unknown;
+    dailyTokenLimit?: unknown;
+  } | null;
+};
+
+type BillingMockPaymentResponse = {
+  success?: unknown;
+  subscription?: {
+    plan?: unknown;
+    subscriptionStatus?: unknown;
+    activatedAt?: unknown;
+  } | null;
+};
+
+const isBillingPlanCode = (value: unknown): value is BackendBillingPlanCode =>
+  value === 'STANDARD' || value === 'PRO' || value === 'EXPERT';
+
+const parseBillingPlan = (value: unknown): BillingPlan | null => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  const payload = value as {
+    code?: unknown;
+    name?: unknown;
+    dailyTokenLimit?: unknown;
+    tokenCosts?: unknown;
+  };
+
+  if (!isBillingPlanCode(payload.code) || typeof payload.name !== 'string') {
+    return null;
+  }
+
+  const dailyTokenLimit = toInteger(payload.dailyTokenLimit);
+  if (dailyTokenLimit === undefined) {
+    return null;
+  }
+
+  const tokenCosts = payload.tokenCosts;
+  const normalizedCosts: BillingPlanTokenCosts = {
+    google_maps_search: 1,
+    linkedin_search: 3,
+    website_analysis: 1,
+  };
+
+  if (typeof tokenCosts === 'object' && tokenCosts !== null && !Array.isArray(tokenCosts)) {
+    const costs = tokenCosts as Record<string, unknown>;
+    normalizedCosts.google_maps_search = toInteger(costs.google_maps_search) ?? 1;
+    normalizedCosts.linkedin_search = toInteger(costs.linkedin_search) ?? 3;
+    normalizedCosts.website_analysis = toInteger(costs.website_analysis) ?? 1;
+  }
+
+  return {
+    code: payload.code,
+    name: payload.name,
+    dailyTokenLimit,
+    tokenCosts: normalizedCosts,
+  };
+};
+
+export const fetchBillingPlansFromBackend = async (): Promise<BillingPlan[]> => {
+  const requestUrl = buildApiUrl('/api/billing/plans');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingPlansResponse;
+  const plans = Array.isArray(payload.plans) ? payload.plans : [];
+  return plans.map(parseBillingPlan).filter((plan): plan is BillingPlan => plan !== null);
+};
+
+export const fetchPublicBillingPlansFromBackend = async (): Promise<BillingPlan[]> => {
+  const requestUrl = buildApiUrl('/api/billing/plans');
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingPlansResponse;
+  const plans = Array.isArray(payload.plans) ? payload.plans : [];
+  return plans.map(parseBillingPlan).filter((plan): plan is BillingPlan => plan !== null);
+};
+
+export const fetchBillingUsageFromBackend = async (): Promise<BillingUsage> => {
+  const requestUrl = buildApiUrl('/api/billing/usage');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingUsageResponse;
+  if (!isBillingPlanCode(payload.plan)) {
+    throw new Error('Billing usage response is invalid.');
+  }
+
+  return {
+    plan: payload.plan,
+    subscriptionStatus: typeof payload.subscriptionStatus === 'string' ? payload.subscriptionStatus : 'inactive',
+    dailyTokenLimit: toInteger(payload.dailyTokenLimit) ?? 0,
+    tokensUsedToday: toInteger(payload.tokensUsedToday) ?? 0,
+    tokensRemainingToday: toInteger(payload.tokensRemainingToday) ?? 0,
+    usageDate: typeof payload.usageDate === 'string' ? payload.usageDate : '',
+  };
+};
+
+export const changeBillingPlanInBackend = async (
+  plan: BackendBillingPlanCode,
+): Promise<BillingUsage> => {
+  const requestUrl = buildApiUrl('/api/billing/change-plan');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authorization,
+    },
+    body: JSON.stringify({ plan }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingChangePlanResponse;
+  const subscription = payload.subscription;
+  if (!subscription || !isBillingPlanCode(subscription.plan)) {
+    throw new Error('Billing plan update response is invalid.');
+  }
+
+  const usage = await fetchBillingUsageFromBackend();
+  return usage;
+};
+
+export const mockBillingPaymentInBackend = async (input?: {
+  cardNumber?: string;
+  expiry?: string;
+  cvc?: string;
+  cardholderName?: string;
+}): Promise<void> => {
+  const requestUrl = buildApiUrl('/api/billing/mock-payment');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authorization,
+    },
+    body: JSON.stringify({
+      cardNumber: input?.cardNumber ?? '',
+      expiry: input?.expiry ?? '',
+      cvc: input?.cvc ?? '',
+      cardholderName: input?.cardholderName ?? '',
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingMockPaymentResponse;
+  if (payload.success !== true) {
+    throw new Error('Mock payment response is invalid.');
+  }
 };

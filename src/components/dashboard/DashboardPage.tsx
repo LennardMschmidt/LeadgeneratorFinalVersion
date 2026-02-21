@@ -29,6 +29,7 @@ interface DashboardPageProps {
   onNavigateDashboard: () => void;
   onNavigateBusinessProfile: () => void;
   onNavigateSavedSearches: () => void;
+  onNavigateBilling: () => void;
   onLogout: () => void;
 }
 
@@ -45,6 +46,7 @@ export function DashboardPage({
   onNavigateDashboard,
   onNavigateBusinessProfile,
   onNavigateSavedSearches,
+  onNavigateBilling,
   onLogout,
 }: DashboardPageProps) {
   const { raw, t } = useI18n();
@@ -470,6 +472,7 @@ export function DashboardPage({
         onNavigateDashboard={onNavigateDashboard}
         onNavigateBusinessProfile={onNavigateBusinessProfile}
         onNavigateSavedSearches={onNavigateSavedSearches}
+        onNavigateBilling={onNavigateBilling}
         onLogout={onLogout}
       />
 

@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Check, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import {
-  BUSINESS_TYPE_OPTIONS,
   getProblemCategoriesForBusinessType,
 } from './businessTypeProblemCatalog';
 import { CONTACT_PREFERENCE_OPTIONS } from './mockData';
@@ -50,6 +49,35 @@ export function SearchConfigurationPanel({
   const [maxResultsDraft, setMaxResultsDraft] = useState(String(searchConfig.maxResults));
   const loadingSteps = raw<string[]>('dashboard.searchPanel.loadingSteps');
   const isLinkedInSource = searchConfig.searchSource === 'linkedin';
+  const normalizedBusinessTypeValue =
+    searchConfig.businessType === AVAILABLE_BUSINESS_TYPE
+      ? searchConfig.businessType
+      : noBusinessTypeValue;
+  const searchSourceLabelByValue = useMemo(
+    () =>
+      Object.fromEntries(
+        SEARCH_SOURCE_OPTIONS.map((option) => [option.value, t(option.labelKey)]),
+      ) as Record<'google_maps' | 'linkedin', string>,
+    [t],
+  );
+  const savedSearchDropdownOptions = useMemo(
+    () => [
+      { value: noSavedSearchValue, label: t('dashboard.searchPanel.chooseSavedSearch') },
+      ...savedSearches.map((savedSearch) => {
+        const source = savedSearch.config.searchSource
+          ? searchSourceLabelByValue[savedSearch.config.searchSource]
+          : t('dashboard.searchPanel.selectSearchSource');
+        const businessType = savedSearch.config.businessType
+          ? tm('businessTypes', savedSearch.config.businessType)
+          : t('dashboard.searchPanel.selectBusinessType');
+        return {
+          value: savedSearch.id,
+          label: `${savedSearch.name} · ${source} · ${businessType}`,
+        };
+      }),
+    ],
+    [savedSearches, searchSourceLabelByValue, t, tm],
+  );
 
   useEffect(() => {
     setMaxResultsDraft(String(searchConfig.maxResults));
@@ -204,13 +232,7 @@ export function SearchConfigurationPanel({
                     onValueChange={(nextSavedSearchId) =>
                       onSelectSavedSearch(nextSavedSearchId === noSavedSearchValue ? '' : nextSavedSearchId)
                     }
-                    options={[
-                      { value: noSavedSearchValue, label: t('dashboard.searchPanel.chooseSavedSearch') },
-                      ...savedSearches.map((savedSearch) => ({
-                        value: savedSearch.id,
-                        label: savedSearch.name,
-                      })),
-                    ]}
+                    options={savedSearchDropdownOptions}
                   />
                 </div>
                 {selectedSavedSearchId ? (
@@ -274,7 +296,7 @@ export function SearchConfigurationPanel({
               </label>
               <DashboardSelect
                 id="business-type"
-                value={searchConfig.businessType || noBusinessTypeValue}
+                value={normalizedBusinessTypeValue}
                 onValueChange={setBusinessType}
                 contentStyleOverride={{
                   maxHeight: '196px',
@@ -282,17 +304,8 @@ export function SearchConfigurationPanel({
                 }}
                 options={[
                   { value: noBusinessTypeValue, label: t('dashboard.searchPanel.selectBusinessType') },
-                  ...BUSINESS_TYPE_OPTIONS.map((businessType) => {
-                    const isAvailable = businessType === AVAILABLE_BUSINESS_TYPE;
-                    const businessTypeLabel = tm('businessTypes', businessType);
-                    return {
-                      value: businessType,
-                      label: isAvailable
-                        ? businessTypeLabel
-                        : `${businessTypeLabel} ${t('common.comingSoonSuffix')}`,
-                      disabled: !isAvailable,
-                    };
-                  }),
+                  { value: AVAILABLE_BUSINESS_TYPE, label: 'Web Agency' },
+                  { value: '__more_to_come__', label: 'More to come', disabled: true },
                 ]}
               />
             </div>
@@ -551,6 +564,24 @@ export function SearchConfigurationPanel({
               </div>
             ) : null}
           </div>
+
+          {isLinkedInSource ? (
+            <div className="rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
+              <p className="text-sm font-semibold text-amber-100">Search reliability tips</p>
+              <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
+                Some websites temporarily block requests, so search wording can affect results.
+                For best reliability, use a broad category plus city first, then narrow down.
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
+                Best pattern: use terms like <span className="font-semibold">"Berlin Consulting"</span> or
+                <span className="font-semibold"> "New York Agency"</span>. Very niche or unusual names can be blocked
+                more often and may return no results.
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
+                If blocked, run the search again with a broader term first, then refine the results in your next search.
+              </p>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </section>

@@ -1,8 +1,9 @@
-import { ChevronDown, Loader2, Trash2, X } from 'lucide-react';
+import { ChevronDown, Loader2, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
 import {
   deleteFilteredSavedLeadsFromBackend,
+  removeWebsiteAnalysisForSavedLead,
   deleteSavedLeadFromBackend,
   fetchSavedLeadsFromBackend,
   runWebsiteAnalysisForSavedLead,
@@ -33,6 +34,7 @@ interface SavedSearchesPageProps {
   onNavigateDashboard: () => void;
   onNavigateBusinessProfile: () => void;
   onNavigateSavedSearches: () => void;
+  onNavigateBilling: () => void;
   onLogout: () => void;
 }
 
@@ -54,6 +56,7 @@ export function SavedSearchesPage({
   onNavigateDashboard,
   onNavigateBusinessProfile,
   onNavigateSavedSearches,
+  onNavigateBilling,
   onLogout,
 }: SavedSearchesPageProps) {
   const { t, tm } = useI18n();
@@ -80,6 +83,7 @@ export function SavedSearchesPage({
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
   const [isWebsiteBlockedDialogOpen, setIsWebsiteBlockedDialogOpen] = useState(false);
   const [websiteBlockedDialogMessage, setWebsiteBlockedDialogMessage] = useState('');
+  const [listSearchQuery, setListSearchQuery] = useState('');
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
   const canGoPrevious = offset > 0;
@@ -90,6 +94,26 @@ export function SavedSearchesPage({
     () => Math.max(1, savedLeads.reduce((currentMax, lead) => Math.max(currentMax, lead.score), 0)),
     [savedLeads],
   );
+  const filteredSavedLeads = useMemo(() => {
+    const normalizedQuery = listSearchQuery.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return savedLeads;
+    }
+    return savedLeads.filter((lead) => {
+      const haystack = [
+        lead.businessName,
+        lead.category,
+        lead.location,
+        lead.source ?? '',
+        lead.status,
+        lead.explanation,
+        lead.contactChannels.join(' '),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [savedLeads, listSearchQuery]);
 
   const tierFilterLabel =
     tierFilter === 'All'
@@ -329,6 +353,39 @@ export function SavedSearchesPage({
     }
   };
 
+  const removeWebsiteAnalysis = async (lead: SavedLead) => {
+    const savedLeadId = lead.savedLeadId;
+    if (!savedLeadId || websiteAnalysisLoadingIds[savedLeadId]) {
+      return;
+    }
+
+    setWebsiteAnalysisLoadingIds((current) => ({ ...current, [savedLeadId]: true }));
+    try {
+      const updated = await removeWebsiteAnalysisForSavedLead(savedLeadId);
+      setSavedLeads((current) =>
+        current.map((item) => (item.savedLeadId === savedLeadId ? updated : item)),
+      );
+      if (selectedLead?.savedLeadId === savedLeadId) {
+        setSelectedLead(updated);
+      }
+      setNoticeMessage(t('dashboard.websiteAnalysis.removed'));
+      setErrorMessage(null);
+    } catch (error) {
+      setNoticeMessage(null);
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage(t('dashboard.websiteAnalysis.removeFailed'));
+      }
+    } finally {
+      setWebsiteAnalysisLoadingIds((current) => {
+        const next = { ...current };
+        delete next[savedLeadId];
+        return next;
+      });
+    }
+  };
+
   const deleteFilteredLeads = async () => {
     if (isBulkDeleting || total === 0) {
       return;
@@ -437,6 +494,7 @@ export function SavedSearchesPage({
         onNavigateDashboard={onNavigateDashboard}
         onNavigateBusinessProfile={onNavigateBusinessProfile}
         onNavigateSavedSearches={onNavigateSavedSearches}
+        onNavigateBilling={onNavigateBilling}
         onLogout={onLogout}
       />
 
@@ -594,6 +652,28 @@ export function SavedSearchesPage({
             />
           </section>
 
+          <section
+            className="rounded-2xl border border-white/10 bg-white/5 p-4"
+            style={{ marginBottom: '10px' }}
+          >
+            <label
+              htmlFor="saved-lead-search"
+              className="mb-2 block text-xs uppercase tracking-wider text-gray-500"
+            >
+              {t('dashboard.savedLeads.searchLabel')}
+            </label>
+            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3">
+              <Search className="h-4 w-4 shrink-0 text-gray-500" />
+              <input
+                id="saved-lead-search"
+                value={listSearchQuery}
+                onChange={(event) => setListSearchQuery(event.target.value)}
+                placeholder={t('dashboard.savedLeads.searchPlaceholder')}
+                className="h-full w-full bg-transparent pr-1 text-sm leading-5 text-white placeholder:text-gray-500 outline-none"
+              />
+            </div>
+          </section>
+
           {errorMessage ? (
             <section style={{ marginTop: '10px', marginBottom: '10px' }}>
               <div className="rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
@@ -616,7 +696,7 @@ export function SavedSearchesPage({
                 <Loader2 className="spin-loader h-5 w-5" />
                 {t('dashboard.savedLeads.loading')}
               </div>
-            ) : savedLeads.length === 0 ? (
+            ) : filteredSavedLeads.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center">
                 <p className="text-base text-gray-200">{t('dashboard.savedLeads.emptyTitle')}</p>
                 <p className="mt-2 text-sm text-gray-400">{t('dashboard.savedLeads.emptySubtitle')}</p>
@@ -656,7 +736,7 @@ export function SavedSearchesPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {savedLeads.map((lead) => (
+                    {filteredSavedLeads.map((lead) => (
                       <tr
                         key={lead.savedLeadId}
                         className="group cursor-pointer align-top transition-colors hover:bg-white/[0.03]"
@@ -751,13 +831,22 @@ export function SavedSearchesPage({
           </section>
 
           <section className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-            <p className="text-sm text-gray-400">
-              {t('dashboard.savedLeads.paginationSummary', {
-                total,
-                page: currentPage,
-                totalPages,
-              })}
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-gray-400">
+                {t('dashboard.savedLeads.paginationSummary', {
+                  total,
+                  page: currentPage,
+                  totalPages,
+                })}
+              </p>
+              {listSearchQuery.trim() ? (
+                <p className="text-xs text-gray-500">
+                  {t('dashboard.savedLeads.searchMatchesOnPage', {
+                    count: filteredSavedLeads.length,
+                  })}
+                </p>
+              ) : null}
+            </div>
 
             <div className="flex items-center gap-2">
               <button
@@ -792,6 +881,7 @@ export function SavedSearchesPage({
         onStatusChange={changeStatus}
         onDelete={deleteSavedLead}
         onRunWebsiteAnalysis={runWebsiteAnalysis}
+        onRemoveWebsiteAnalysis={removeWebsiteAnalysis}
       />
 
       <AlertDialog open={isBulkDeleteConfirmOpen} onOpenChange={setIsBulkDeleteConfirmOpen}>

@@ -11,9 +11,16 @@ import { LoginModal } from './components/LoginModal';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { BusinessProfilePage } from './components/dashboard/BusinessProfilePage';
 import { SavedSearchesPage } from './components/dashboard/SavedSearchesPage';
+import { BillingPage } from './components/dashboard/BillingPage';
 import { restoreSupabaseSession, signOutFromSupabase } from './lib/supabaseAuth';
 
-type AppRoute = '/' | '/dashboard' | '/business-profile' | '/saved-searches' | '__protected_unknown__';
+type AppRoute =
+  | '/'
+  | '/dashboard'
+  | '/business-profile'
+  | '/saved-searches'
+  | '/billing'
+  | '__protected_unknown__';
 
 const getRouteFromPathname = (pathname: string): AppRoute => {
   if (pathname === '/') {
@@ -30,6 +37,10 @@ const getRouteFromPathname = (pathname: string): AppRoute => {
 
   if (pathname === '/saved-searches') {
     return '/saved-searches';
+  }
+
+  if (pathname === '/billing') {
+    return '/billing';
   }
 
   return '__protected_unknown__';
@@ -115,6 +126,7 @@ export default function App() {
   const showDashboard = route === '/dashboard' && isAuthenticated;
   const showBusinessProfile = route === '/business-profile' && isAuthenticated;
   const showSavedSearches = route === '/saved-searches' && isAuthenticated;
+  const showBilling = route === '/billing' && isAuthenticated;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -132,6 +144,7 @@ export default function App() {
           onNavigateDashboard={() => navigate('/dashboard')}
           onNavigateBusinessProfile={() => navigate('/business-profile')}
           onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onNavigateBilling={() => navigate('/billing')}
           onLogout={() => {
             void handleLogout();
           }}
@@ -142,6 +155,7 @@ export default function App() {
           onNavigateDashboard={() => navigate('/dashboard')}
           onNavigateBusinessProfile={() => navigate('/business-profile')}
           onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onNavigateBilling={() => navigate('/billing')}
           onLogout={() => {
             void handleLogout();
           }}
@@ -152,6 +166,18 @@ export default function App() {
           onNavigateDashboard={() => navigate('/dashboard')}
           onNavigateBusinessProfile={() => navigate('/business-profile')}
           onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onNavigateBilling={() => navigate('/billing')}
+          onLogout={() => {
+            void handleLogout();
+          }}
+        />
+      ) : showBilling ? (
+        <BillingPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateDashboard={() => navigate('/dashboard')}
+          onNavigateBusinessProfile={() => navigate('/business-profile')}
+          onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onNavigateBilling={() => navigate('/billing')}
           onLogout={() => {
             void handleLogout();
           }}

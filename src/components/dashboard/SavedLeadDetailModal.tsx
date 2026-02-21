@@ -94,6 +94,12 @@ const ANALYSIS_RUN_BUTTON_STYLE: CSSProperties = {
   color: 'rgb(219, 234, 254)',
   boxShadow: '0 12px 26px rgba(30, 64, 175, 0.34)',
 };
+const ANALYSIS_REMOVE_BUTTON_STYLE: CSSProperties = {
+  border: '1px solid rgba(248, 113, 113, 0.68)',
+  backgroundColor: 'rgba(239, 68, 68, 0.2)',
+  color: 'rgb(254, 226, 226)',
+  boxShadow: '0 12px 26px rgba(185, 28, 28, 0.32)',
+};
 const CONTACT_TEXT_STACK_STYLE: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -117,6 +123,7 @@ interface SavedLeadDetailModalProps {
   onStatusChange: (lead: SavedLead, status: LeadStatus) => void;
   onDelete: (savedLeadId: string) => void;
   onRunWebsiteAnalysis?: (lead: SavedLead) => Promise<void> | void;
+  onRemoveWebsiteAnalysis?: (lead: SavedLead) => Promise<void> | void;
 }
 
 interface DirectLink {
@@ -175,11 +182,16 @@ const setInteractiveHoverState = (element: HTMLElement, isHover: boolean): void 
 const setAnalysisButtonHoverState = (
   element: HTMLElement,
   isHover: boolean,
-  mode: 'view' | 'run',
+  mode: 'view' | 'run' | 'remove',
 ): void => {
   if (mode === 'view') {
     element.style.backgroundColor = isHover ? 'rgba(6, 182, 212, 0.34)' : 'rgba(6, 182, 212, 0.24)';
     element.style.borderColor = isHover ? 'rgba(103, 232, 249, 0.82)' : 'rgba(34, 211, 238, 0.68)';
+    return;
+  }
+  if (mode === 'remove') {
+    element.style.backgroundColor = isHover ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)';
+    element.style.borderColor = isHover ? 'rgba(252, 165, 165, 0.88)' : 'rgba(248, 113, 113, 0.68)';
     return;
   }
 
@@ -214,6 +226,7 @@ export function SavedLeadDetailModal({
   onStatusChange,
   onDelete,
   onRunWebsiteAnalysis,
+  onRemoveWebsiteAnalysis,
 }: SavedLeadDetailModalProps) {
   const { t, tm } = useI18n();
   const [isWebsiteAnalysisOpen, setIsWebsiteAnalysisOpen] = useState(false);
@@ -389,6 +402,32 @@ export function SavedLeadDetailModal({
                           </>
                         ) : (
                           t('dashboard.websiteAnalysis.rerun')
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onRemoveWebsiteAnalysis) {
+                            void onRemoveWebsiteAnalysis(lead);
+                          }
+                        }}
+                        disabled={websiteAnalysisLoading || !onRemoveWebsiteAnalysis}
+                        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                        style={ANALYSIS_REMOVE_BUTTON_STYLE}
+                        onMouseEnter={(event) =>
+                          setAnalysisButtonHoverState(event.currentTarget, true, 'remove')
+                        }
+                        onMouseLeave={(event) =>
+                          setAnalysisButtonHoverState(event.currentTarget, false, 'remove')
+                        }
+                      >
+                        {websiteAnalysisLoading ? (
+                          <>
+                            <Loader2 className="spin-loader h-3.5 w-3.5" />
+                            {t('dashboard.websiteAnalysis.removing')}
+                          </>
+                        ) : (
+                          t('dashboard.websiteAnalysis.removeAnalysis')
                         )}
                       </button>
                     </>

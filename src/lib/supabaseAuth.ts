@@ -422,7 +422,7 @@ export const getSupabaseAccessToken = async (): Promise<string | null> => {
 export const signUpWithEmail = async (
   email: string,
   password: string,
-  options?: { rememberMe?: boolean },
+  options?: { rememberMe?: boolean; name?: string },
 ): Promise<AuthActionResult> => {
   if (!hasSupabaseConfig()) {
     return {
@@ -435,7 +435,13 @@ export const signUpWithEmail = async (
   const mode = setSessionStorageMode(rememberMe);
 
   const response = await authRequest('signup', {
-    body: { email, password },
+    body: {
+      email,
+      password,
+      ...(options?.name && options.name.trim().length > 0
+        ? { data: { full_name: options.name.trim() } }
+        : {}),
+    },
   });
 
   if (!response.ok) {

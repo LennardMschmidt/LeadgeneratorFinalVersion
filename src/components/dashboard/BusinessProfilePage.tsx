@@ -19,6 +19,7 @@ interface BusinessProfilePageProps {
   onNavigateDashboard: () => void;
   onNavigateBusinessProfile: () => void;
   onNavigateSavedSearches: () => void;
+  onNavigateBilling: () => void;
   onLogout: () => void;
 }
 
@@ -77,6 +78,7 @@ export function BusinessProfilePage({
   onNavigateDashboard,
   onNavigateBusinessProfile,
   onNavigateSavedSearches,
+  onNavigateBilling,
   onLogout,
 }: BusinessProfilePageProps) {
   const { t, tm } = useI18n();
@@ -195,6 +197,7 @@ export function BusinessProfilePage({
         onNavigateDashboard={onNavigateDashboard}
         onNavigateBusinessProfile={onNavigateBusinessProfile}
         onNavigateSavedSearches={onNavigateSavedSearches}
+        onNavigateBilling={onNavigateBilling}
         onLogout={onLogout}
       />
 

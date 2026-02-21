@@ -469,10 +469,34 @@ export function WebsiteAnalysisModal({
         </DialogClose>
 
         <DialogHeader>
-          <DialogTitle className="pr-14 text-[2.05rem] font-semibold leading-tight">
-            Website Analysis{businessName ? ` - ${businessName}` : ''}
+          <DialogTitle className="pr-14 leading-tight">
+            <span
+              className="block font-semibold text-slate-200"
+              style={{ fontSize: '3rem', lineHeight: 1.08 }}
+            >
+              {currentLanguage === 'de' ? 'Website-Analyse' : 'Website Analysis'}
+            </span>
+            {businessName ? (
+              <span
+                className="mt-2 block font-bold text-white"
+                style={{ fontSize: '3.2rem', lineHeight: 1.06 }}
+              >
+                {businessName}
+              </span>
+            ) : null}
           </DialogTitle>
         </DialogHeader>
+
+        <section className="rounded-xl border border-amber-300/35 bg-amber-500/10 px-6 py-4">
+          <p className="text-base font-semibold text-amber-100">
+            {currentLanguage === 'de' ? 'Wichtiger Hinweis' : 'Important note'}
+          </p>
+          <p className="mt-1 text-sm leading-relaxed text-amber-50/95">
+            {currentLanguage === 'de'
+              ? 'Diese Auswertung basiert nur auf der Startseite (Homepage). Weitere Unterseiten wie Kontakt, Leistungen, Impressum oder Datenschutz wurden hier nicht mitgeprüft.'
+              : 'This analysis is based on the homepage only. Other pages such as contact, services, legal notice, or privacy policy pages are not included in this result.'}
+          </p>
+        </section>
 
         <section
           className="rounded-2xl px-8 pb-10 pt-14"

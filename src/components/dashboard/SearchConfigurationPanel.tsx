@@ -49,6 +49,7 @@ export function SearchConfigurationPanel({
   const noSearchSourceValue = '__none_search_source__';
   const [maxResultsDraft, setMaxResultsDraft] = useState(String(searchConfig.maxResults));
   const loadingSteps = raw<string[]>('dashboard.searchPanel.loadingSteps');
+  const isLinkedInSource = searchConfig.searchSource === 'linkedin';
 
   useEffect(() => {
     setMaxResultsDraft(String(searchConfig.maxResults));
@@ -68,15 +69,18 @@ export function SearchConfigurationPanel({
   }, [isRunningSearch, loadingSteps.length]);
 
   const activeProblemCategories = getProblemCategoriesForBusinessType(searchConfig.businessType);
-  const canRunSearch = !!searchConfig.businessType && !!searchConfig.searchSource && !isRunningSearch;
+  const canRunSearch =
+    !!searchConfig.searchSource &&
+    (isLinkedInSource || !!searchConfig.businessType) &&
+    !isRunningSearch;
   const isDeletingSelectedSavedSearch =
     !!selectedSavedSearchId && deletingSavedSearchId === selectedSavedSearchId;
   const missingSelectionWarning =
-    !searchConfig.businessType
+    !searchConfig.searchSource
+      ? t('dashboard.searchPanel.selectSearchSourceWarning')
+      : !isLinkedInSource && !searchConfig.businessType
       ? t('dashboard.searchPanel.selectBusinessTypeWarning')
-      : !searchConfig.searchSource
-        ? t('dashboard.searchPanel.selectSearchSourceWarning')
-        : null;
+      : null;
 
   const setProblemCategoriesSelected = (nextProblemCategories: string[]) => {
     onUpdateSearchConfig({
@@ -361,24 +365,26 @@ export function SearchConfigurationPanel({
                   )}
                 </button>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={selectAllProblemCategories}
-                  disabled={!searchConfig.businessType || activeProblemCategories.length === 0}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {t('dashboard.searchPanel.selectAll')}
-                </button>
-                <button
-                  type="button"
-                  onClick={unselectAllProblemCategories}
-                  disabled={!searchConfig.businessType || searchConfig.problemCategoriesSelected.length === 0}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {t('dashboard.searchPanel.unselectAll')}
-                </button>
-              </div>
+              {!isLinkedInSource ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={selectAllProblemCategories}
+                    disabled={!searchConfig.businessType || activeProblemCategories.length === 0}
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {t('dashboard.searchPanel.selectAll')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={unselectAllProblemCategories}
+                    disabled={!searchConfig.businessType || searchConfig.problemCategoriesSelected.length === 0}
+                    className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {t('dashboard.searchPanel.unselectAll')}
+                  </button>
+                </div>
+              ) : null}
             </div>
 
             {isProblemGuideOpen ? (
@@ -391,7 +397,11 @@ export function SearchConfigurationPanel({
               </div>
             ) : null}
 
-            {searchConfig.businessType ? (
+            {isLinkedInSource ? (
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-gray-400">
+                {t('dashboard.searchPanel.linkedinProblemCategoriesUnavailable')}
+              </div>
+            ) : searchConfig.businessType ? (
               <div className="grid gap-3 sm:grid-cols-2">
                 {activeProblemCategories.map((problemCategory) => {
                   const isSelected =

@@ -1,14 +1,16 @@
-import { Loader2, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, Loader2, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
 import {
   deleteFilteredSavedLeadsFromBackend,
   deleteSavedLeadFromBackend,
   fetchSavedLeadsFromBackend,
+  runWebsiteAnalysisForSavedLead,
   updateSavedLeadStatusInBackend,
 } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSelect } from './DashboardSelect';
+import { exportRowsToExcel, exportRowsToPdf } from './exportUtils';
 import { SavedLeadDetailModal } from './SavedLeadDetailModal';
 import { STATUS_VISUALS, TIER_BADGE_STYLES } from './leadVisuals';
 import { STATUS_OPTIONS } from './mockData';
@@ -43,6 +45,9 @@ const formatSavedAt = (value: string): string => {
   return parsed.toLocaleString();
 };
 
+const SAVED_ACTION_BUTTON_CLASS =
+  'inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-xs font-semibold transition disabled:cursor-not-allowed';
+
 export function SavedSearchesPage({
   onNavigateHome,
   onNavigateDashboard,
@@ -64,12 +69,15 @@ export function SavedSearchesPage({
   const [isLoading, setIsLoading] = useState(false);
   const [statusUpdatingIds, setStatusUpdatingIds] = useState<Record<string, boolean>>({});
   const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
+  const [websiteAnalysisLoadingIds, setWebsiteAnalysisLoadingIds] = useState<Record<string, boolean>>({});
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<SavedLead | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
   const canGoPrevious = offset > 0;
   const canGoNext = offset + savedLeads.length < total;
@@ -150,6 +158,21 @@ export function SavedSearchesPage({
   useEffect(() => {
     void loadSavedLeads(offset, statusFilter, tierFilter);
   }, [offset, statusFilter, tierFilter]);
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!exportMenuRef.current) {
+        return;
+      }
+
+      if (!exportMenuRef.current.contains(event.target as Node)) {
+        setIsExportMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
 
   const statusOptions = useMemo(
     () => [
@@ -262,6 +285,39 @@ export function SavedSearchesPage({
     }
   };
 
+  const runWebsiteAnalysis = async (lead: SavedLead) => {
+    const savedLeadId = lead.savedLeadId;
+    if (!savedLeadId || websiteAnalysisLoadingIds[savedLeadId]) {
+      return;
+    }
+
+    setWebsiteAnalysisLoadingIds((current) => ({ ...current, [savedLeadId]: true }));
+    try {
+      const updated = await runWebsiteAnalysisForSavedLead(savedLeadId);
+      setSavedLeads((current) =>
+        current.map((item) => (item.savedLeadId === savedLeadId ? updated : item)),
+      );
+      if (selectedLead?.savedLeadId === savedLeadId) {
+        setSelectedLead(updated);
+      }
+      setNoticeMessage(t('dashboard.websiteAnalysis.completed'));
+      setErrorMessage(null);
+    } catch (error) {
+      setNoticeMessage(null);
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage(t('dashboard.websiteAnalysis.failed'));
+      }
+    } finally {
+      setWebsiteAnalysisLoadingIds((current) => {
+        const next = { ...current };
+        delete next[savedLeadId];
+        return next;
+      });
+    }
+  };
+
   const deleteFilteredLeads = async () => {
     if (isBulkDeleting || total === 0) {
       return;
@@ -297,6 +353,70 @@ export function SavedSearchesPage({
       setIsBulkDeleting(false);
       setIsBulkDeleteConfirmOpen(false);
     }
+  };
+
+  const exportSavedLeadsExcel = () => {
+    if (savedLeads.length === 0) {
+      return;
+    }
+
+    const headers = [
+      t('dashboard.savedLeads.columns.business'),
+      t('dashboard.savedLeads.columns.category'),
+      t('dashboard.savedLeads.columns.location'),
+      t('dashboard.savedLeads.columns.source'),
+      t('dashboard.savedLeads.columns.tier'),
+      t('dashboard.savedLeads.columns.score'),
+      t('dashboard.savedLeads.columns.status'),
+      t('dashboard.savedLeads.columns.contactChannels'),
+      t('dashboard.savedLeads.columns.savedAt'),
+    ];
+
+    const rows = savedLeads.map((lead) => [
+      lead.businessName,
+      lead.category,
+      lead.location,
+      lead.source || t('dashboard.leadTable.defaultSource'),
+      `${tm('leadTierLabels', lead.tier)} (${tm('leadTiers', lead.tier)})`,
+      String(lead.score),
+      tm('leadStatuses', lead.status),
+      lead.contactChannels.join(' ; '),
+      formatSavedAt(lead.savedAt),
+    ]);
+
+    exportRowsToExcel(headers, rows, 'saved-leads-current-view.xlsx');
+  };
+
+  const exportSavedLeadsPdf = () => {
+    if (savedLeads.length === 0) {
+      return;
+    }
+
+    const headers = [
+      t('dashboard.savedLeads.columns.business'),
+      t('dashboard.savedLeads.columns.category'),
+      t('dashboard.savedLeads.columns.location'),
+      t('dashboard.savedLeads.columns.source'),
+      t('dashboard.savedLeads.columns.tier'),
+      t('dashboard.savedLeads.columns.score'),
+      t('dashboard.savedLeads.columns.status'),
+      t('dashboard.savedLeads.columns.contactChannels'),
+      t('dashboard.savedLeads.columns.savedAt'),
+    ];
+
+    const rows = savedLeads.map((lead) => [
+      lead.businessName,
+      lead.category,
+      lead.location,
+      lead.source || t('dashboard.leadTable.defaultSource'),
+      `${tm('leadTierLabels', lead.tier)} (${tm('leadTiers', lead.tier)})`,
+      String(lead.score),
+      tm('leadStatuses', lead.status),
+      lead.contactChannels.join(' ; '),
+      formatSavedAt(lead.savedAt),
+    ]);
+
+    exportRowsToPdf(t('dashboard.savedLeads.title'), headers, rows);
   };
 
   return (
@@ -338,11 +458,86 @@ export function SavedSearchesPage({
                   />
                 </div>
 
+                <div ref={exportMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsExportMenuOpen((current) => !current)}
+                    aria-expanded={isExportMenuOpen}
+                    disabled={isLoading || total === 0}
+                    className={SAVED_ACTION_BUTTON_CLASS}
+                    style={{
+                      border: '1px solid rgba(96, 165, 250, 0.48)',
+                      backgroundColor: 'rgba(37, 99, 235, 0.16)',
+                      color: 'rgb(219, 234, 254)',
+                      boxShadow: '0 10px 24px rgba(37, 99, 235, 0.16)',
+                      lineHeight: 1.2,
+                      opacity: isLoading || total === 0 ? 0.55 : 1,
+                    }}
+                    onMouseEnter={(event) => {
+                      if (isLoading || total === 0) {
+                        return;
+                      }
+                      event.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.26)';
+                      event.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.7)';
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.16)';
+                      event.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.48)';
+                    }}
+                  >
+                    {t('dashboard.leadTable.export')}
+                    <ChevronDown
+                      className="h-4 w-4 transition-transform duration-200"
+                      style={{ transform: isExportMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                    />
+                  </button>
+
+                  {isExportMenuOpen ? (
+                    <div
+                      className="absolute right-0 z-50 mt-3 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
+                      style={{
+                        marginTop: '0.9rem',
+                        width: '19rem',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                        backgroundColor: 'rgba(25, 25, 28, 1)',
+                        WebkitBackdropFilter: 'blur(26px)',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportSavedLeadsExcel();
+                          setIsExportMenuOpen(false);
+                        }}
+                        className="block w-full cursor-pointer whitespace-nowrap px-5 py-3 text-left text-sm text-gray-300 transition-all duration-150"
+                        style={{
+                          cursor: 'pointer',
+                          backgroundColor: 'rgba(255, 255, 255, 0.025)',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                        }}
+                      >
+                        {t('dashboard.leadTable.exportExcel')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          exportSavedLeadsPdf();
+                          setIsExportMenuOpen(false);
+                        }}
+                        className="block w-full cursor-pointer whitespace-nowrap px-5 py-3 text-left text-sm text-gray-300 transition-all duration-150"
+                        style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.025)' }}
+                      >
+                        {t('dashboard.leadTable.exportPdf')}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+
                 <button
                   type="button"
                   onClick={() => setIsBulkDeleteConfirmOpen(true)}
                   disabled={isLoading || isBulkDeleting || total === 0}
-                  className="inline-flex items-center gap-2 rounded-lg px-5 py-3 text-xs font-semibold transition disabled:cursor-not-allowed"
+                  className={SAVED_ACTION_BUTTON_CLASS}
                   style={{
                     border: '1px solid rgba(248, 113, 113, 0.58)',
                     backgroundColor: 'rgba(239, 68, 68, 0.14)',
@@ -581,9 +776,11 @@ export function SavedSearchesPage({
         scoreDenominator={scoreDenominator}
         statusUpdating={!!(selectedLead && statusUpdatingIds[selectedLead.savedLeadId])}
         deleting={!!(selectedLead && deletingIds[selectedLead.savedLeadId])}
+        websiteAnalysisLoading={!!(selectedLead && websiteAnalysisLoadingIds[selectedLead.savedLeadId])}
         onClose={closeLeadDetail}
         onStatusChange={changeStatus}
         onDelete={deleteSavedLead}
+        onRunWebsiteAnalysis={runWebsiteAnalysis}
       />
 
       <AlertDialog open={isBulkDeleteConfirmOpen} onOpenChange={setIsBulkDeleteConfirmOpen}>

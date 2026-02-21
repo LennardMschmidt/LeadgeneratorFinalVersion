@@ -1,10 +1,11 @@
-import type { CSSProperties } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { Globe, Link as LinkIcon, Linkedin, Loader2, Mail, MapPinned, Phone, Star } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { DashboardSelect } from './DashboardSelect';
 import { STATUS_VISUALS, TIER_BADGE_STYLES } from './leadVisuals';
 import { STATUS_OPTIONS } from './mockData';
+import { WebsiteAnalysisModal } from './WebsiteAnalysisModal';
 import { LeadStatus, SavedLead } from './types';
 
 const MODAL_OVERLAY_STYLE: CSSProperties = {
@@ -81,6 +82,18 @@ const INTERACTIVE_BUTTON_STYLE: CSSProperties = {
   transform: 'translateY(0)',
   transition: 'background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease',
 };
+const ANALYSIS_VIEW_BUTTON_STYLE: CSSProperties = {
+  border: '1px solid rgba(34, 211, 238, 0.68)',
+  backgroundColor: 'rgba(6, 182, 212, 0.24)',
+  color: 'rgb(207, 250, 254)',
+  boxShadow: '0 12px 26px rgba(8, 145, 178, 0.34)',
+};
+const ANALYSIS_RUN_BUTTON_STYLE: CSSProperties = {
+  border: '1px solid rgba(96, 165, 250, 0.72)',
+  backgroundColor: 'rgba(37, 99, 235, 0.26)',
+  color: 'rgb(219, 234, 254)',
+  boxShadow: '0 12px 26px rgba(30, 64, 175, 0.34)',
+};
 const CONTACT_TEXT_STACK_STYLE: CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
@@ -99,9 +112,11 @@ interface SavedLeadDetailModalProps {
   scoreDenominator: number;
   statusUpdating: boolean;
   deleting: boolean;
+  websiteAnalysisLoading?: boolean;
   onClose: () => void;
   onStatusChange: (lead: SavedLead, status: LeadStatus) => void;
   onDelete: (savedLeadId: string) => void;
+  onRunWebsiteAnalysis?: (lead: SavedLead) => Promise<void> | void;
 }
 
 interface DirectLink {
@@ -157,6 +172,20 @@ const setInteractiveHoverState = (element: HTMLElement, isHover: boolean): void 
     : '0 10px 24px rgba(15, 23, 42, 0.28)';
   element.style.transform = isHover ? 'translateY(-1px)' : 'translateY(0)';
 };
+const setAnalysisButtonHoverState = (
+  element: HTMLElement,
+  isHover: boolean,
+  mode: 'view' | 'run',
+): void => {
+  if (mode === 'view') {
+    element.style.backgroundColor = isHover ? 'rgba(6, 182, 212, 0.34)' : 'rgba(6, 182, 212, 0.24)';
+    element.style.borderColor = isHover ? 'rgba(103, 232, 249, 0.82)' : 'rgba(34, 211, 238, 0.68)';
+    return;
+  }
+
+  element.style.backgroundColor = isHover ? 'rgba(37, 99, 235, 0.35)' : 'rgba(37, 99, 235, 0.26)';
+  element.style.borderColor = isHover ? 'rgba(147, 197, 253, 0.86)' : 'rgba(96, 165, 250, 0.72)';
+};
 
 const toDisplayScore = (score: number, maxScore: number): number => {
   if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore <= 0) {
@@ -180,11 +209,14 @@ export function SavedLeadDetailModal({
   scoreDenominator,
   statusUpdating,
   deleting,
+  websiteAnalysisLoading = false,
   onClose,
   onStatusChange,
   onDelete,
+  onRunWebsiteAnalysis,
 }: SavedLeadDetailModalProps) {
   const { t, tm } = useI18n();
+  const [isWebsiteAnalysisOpen, setIsWebsiteAnalysisOpen] = useState(false);
 
   if (!lead) {
     return null;
@@ -297,6 +329,81 @@ export function SavedLeadDetailModal({
               </div>
               {statusUpdating ? (
                 <p className="text-base text-slate-300">{t('dashboard.savedLeads.updatingStatus')}</p>
+              ) : null}
+              {lead.websiteUrl ? (
+                <div className="flex items-center gap-3">
+                  {lead.websiteAnalysis ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setIsWebsiteAnalysisOpen(true)}
+                        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition"
+                        style={ANALYSIS_VIEW_BUTTON_STYLE}
+                        onMouseEnter={(event) =>
+                          setAnalysisButtonHoverState(event.currentTarget, true, 'view')
+                        }
+                        onMouseLeave={(event) =>
+                          setAnalysisButtonHoverState(event.currentTarget, false, 'view')
+                        }
+                      >
+                        {t('dashboard.websiteAnalysis.view')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onRunWebsiteAnalysis) {
+                            void onRunWebsiteAnalysis(lead);
+                          }
+                        }}
+                        disabled={websiteAnalysisLoading || !onRunWebsiteAnalysis}
+                        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                        style={ANALYSIS_RUN_BUTTON_STYLE}
+                        onMouseEnter={(event) =>
+                          setAnalysisButtonHoverState(event.currentTarget, true, 'run')
+                        }
+                        onMouseLeave={(event) =>
+                          setAnalysisButtonHoverState(event.currentTarget, false, 'run')
+                        }
+                      >
+                        {websiteAnalysisLoading ? (
+                          <>
+                            <Loader2 className="spin-loader h-3.5 w-3.5" />
+                            {t('dashboard.websiteAnalysis.running')}
+                          </>
+                        ) : (
+                          t('dashboard.websiteAnalysis.rerun')
+                        )}
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onRunWebsiteAnalysis) {
+                          void onRunWebsiteAnalysis(lead);
+                        }
+                      }}
+                      disabled={websiteAnalysisLoading || !onRunWebsiteAnalysis}
+                      className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                      style={ANALYSIS_RUN_BUTTON_STYLE}
+                      onMouseEnter={(event) =>
+                        setAnalysisButtonHoverState(event.currentTarget, true, 'run')
+                      }
+                      onMouseLeave={(event) =>
+                        setAnalysisButtonHoverState(event.currentTarget, false, 'run')
+                      }
+                    >
+                      {websiteAnalysisLoading ? (
+                        <>
+                          <Loader2 className="spin-loader h-3.5 w-3.5" />
+                          {t('dashboard.websiteAnalysis.running')}
+                        </>
+                      ) : (
+                        t('dashboard.websiteAnalysis.run')
+                      )}
+                    </button>
+                  )}
+                </div>
               ) : null}
             </section>
 
@@ -534,6 +641,12 @@ export function SavedLeadDetailModal({
           </div>
         </div>
       </DialogContent>
+      <WebsiteAnalysisModal
+        open={isWebsiteAnalysisOpen}
+        onClose={() => setIsWebsiteAnalysisOpen(false)}
+        analysis={lead.websiteAnalysis ?? null}
+        businessName={lead.businessName}
+      />
     </Dialog>
   );
 }

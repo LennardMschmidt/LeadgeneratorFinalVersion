@@ -77,13 +77,20 @@ const toInteger = (value: unknown): number | undefined => {
 const toStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
 
+const LINKEDIN_NO_PROBLEMS_MESSAGE = 'No problem categories available for LinkedIn leads.';
+
 const toLeadFromBackend = (backendLead: BackendLead): Lead => ({
   id: backendLead.id,
   businessName: backendLead.businessName,
   location: backendLead.location,
   category: backendLead.category,
   ...(typeof backendLead.source === 'string' ? { source: backendLead.source } : {}),
-  problems: backendLead.problems.map((problem) => problem.type),
+  problems:
+    backendLead.problems.length === 0 &&
+    typeof backendLead.source === 'string' &&
+    backendLead.source.toLowerCase().includes('linkedin')
+      ? [LINKEDIN_NO_PROBLEMS_MESSAGE]
+      : backendLead.problems.map((problem) => problem.type),
   explanation: backendLead.explanation,
   tier: mapTier(backendLead.tier),
   score: backendLead.score,
@@ -98,6 +105,7 @@ const toLeadFromBackend = (backendLead: BackendLead): Lead => ({
   ...(typeof backendLead.place_id === 'string' ? { placeId: backendLead.place_id } : {}),
   ...(typeof backendLead.data_id === 'string' ? { dataId: backendLead.data_id } : {}),
   ...(typeof backendLead.feature_id === 'string' ? { featureId: backendLead.feature_id } : {}),
+  ...(typeof backendLead.linkedin_url === 'string' ? { linkedinUrl: backendLead.linkedin_url } : {}),
   ...(typeof backendLead.maps_url === 'string' ? { mapsUrl: backendLead.maps_url } : {}),
   ...(typeof backendLead.website_url === 'string' ? { websiteUrl: backendLead.website_url } : {}),
   ...(typeof backendLead.website_display === 'string'
@@ -172,22 +180,29 @@ const toLeadFromBackend = (backendLead: BackendLead): Lead => ({
     : {}),
 });
 
-const toPayload = (searchConfig: SearchConfiguration) => ({
-  category: searchConfig.category.trim(),
-  location: searchConfig.location.trim(),
-  query: [searchConfig.category.trim(), searchConfig.location.trim()].join(' ').trim(),
-  source: canonicalizeSearchSource(searchConfig.searchSource),
-  businessType: searchConfig.businessType,
-  problemCategories: searchConfig.problemCategoriesSelected,
-  problemCategoriesSelected: searchConfig.problemCategoriesSelected,
-  problemFilters: searchConfig.problemFilters,
-  maxResults: searchConfig.maxResults,
-  max_results: searchConfig.maxResults,
-  contactPreferences:
-    searchConfig.contactPreference === 'Any'
-      ? []
-      : [searchConfig.contactPreference.toLowerCase()],
-});
+const toPayload = (searchConfig: SearchConfiguration) => {
+  const normalizedSource = canonicalizeSearchSource(searchConfig.searchSource);
+  const linkedinSource = normalizedSource === 'linkedin';
+  const problemCategories = linkedinSource ? [] : searchConfig.problemCategoriesSelected;
+  const problemFilters = linkedinSource ? [] : searchConfig.problemFilters;
+
+  return {
+    category: searchConfig.category.trim(),
+    location: searchConfig.location.trim(),
+    query: [searchConfig.category.trim(), searchConfig.location.trim()].join(' ').trim(),
+    source: normalizedSource,
+    businessType: searchConfig.businessType,
+    problemCategories,
+    problemCategoriesSelected: problemCategories,
+    problemFilters,
+    maxResults: searchConfig.maxResults,
+    max_results: searchConfig.maxResults,
+    contactPreferences:
+      searchConfig.contactPreference === 'Any'
+        ? []
+        : [searchConfig.contactPreference.toLowerCase()],
+  };
+};
 
 type BackendSavedSearch = {
   id: unknown;
@@ -214,8 +229,11 @@ type SavedSearchCreateResponse = {
 
 type BackendSavedLead = {
   id?: unknown;
+  saved_lead_id?: unknown;
   sourceLeadId?: unknown;
+  source_lead_id?: unknown;
   businessName?: unknown;
+  business_name?: unknown;
   category?: unknown;
   location?: unknown;
   source?: unknown;
@@ -224,11 +242,20 @@ type BackendSavedLead = {
   status?: unknown;
   explanation?: unknown;
   problems?: unknown;
+  contact_channels?: unknown;
   contactChannels?: unknown;
   rating?: unknown;
+  review_count?: unknown;
   reviewCount?: unknown;
+  raw_payload?: unknown;
   rawPayload?: unknown;
+  website_analysis?: unknown;
+  websiteAnalysis?: unknown;
+  website_analysis_created_at?: unknown;
+  websiteAnalysisCreatedAt?: unknown;
+  saved_at?: unknown;
   savedAt?: unknown;
+  updated_at?: unknown;
   updatedAt?: unknown;
 };
 
@@ -318,27 +345,45 @@ const mapSavedSearch = (item: BackendSavedSearch): SavedSearch | null => {
 };
 
 const mapSavedLead = (item: BackendSavedLead): SavedLead | null => {
-  if (typeof item.id !== 'string') {
+  const idCandidate =
+    typeof item.id === 'string'
+      ? item.id
+      : typeof item.saved_lead_id === 'string'
+        ? item.saved_lead_id
+        : null;
+  if (!idCandidate) {
     return null;
   }
 
+  const businessName =
+    typeof item.businessName === 'string'
+      ? item.businessName
+      : typeof item.business_name === 'string'
+        ? item.business_name
+        : null;
   if (
-    typeof item.businessName !== 'string' ||
+    typeof businessName !== 'string' ||
     typeof item.category !== 'string' ||
     typeof item.location !== 'string'
   ) {
     return null;
   }
 
-  const savedLeadId = item.id;
-  const sourceLeadId = typeof item.sourceLeadId === 'string' && item.sourceLeadId.length > 0
-    ? item.sourceLeadId
+  const savedLeadId = idCandidate;
+  const sourceLeadIdRaw =
+    typeof item.sourceLeadId === 'string'
+      ? item.sourceLeadId
+      : typeof item.source_lead_id === 'string'
+        ? item.source_lead_id
+        : null;
+  const sourceLeadId = sourceLeadIdRaw && sourceLeadIdRaw.length > 0
+    ? sourceLeadIdRaw
     : savedLeadId;
 
   const mapped: SavedLead = {
     savedLeadId,
     id: sourceLeadId,
-    businessName: item.businessName,
+    businessName,
     category: item.category,
     location: item.location,
     source: typeof item.source === 'string' ? item.source : '',
@@ -347,14 +392,33 @@ const mapSavedLead = (item: BackendSavedLead): SavedLead | null => {
     status: normalizeLeadStatus(item.status),
     explanation: typeof item.explanation === 'string' ? item.explanation : '',
     problems: toStringArray(item.problems),
-    contactChannels: toStringArray(item.contactChannels),
+    contactChannels: toStringArray(item.contactChannels ?? item.contact_channels),
     ...(toFiniteNumber(item.rating) !== undefined ? { rating: toFiniteNumber(item.rating) } : {}),
-    ...(toInteger(item.reviewCount) !== undefined ? { reviewCount: toInteger(item.reviewCount) } : {}),
-    savedAt: typeof item.savedAt === 'string' ? item.savedAt : new Date().toISOString(),
-    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+    ...(toInteger(item.reviewCount ?? item.review_count) !== undefined
+      ? { reviewCount: toInteger(item.reviewCount ?? item.review_count) }
+      : {}),
+    ...(typeof (item.websiteAnalysis ?? item.website_analysis) === 'object' &&
+    (item.websiteAnalysis ?? item.website_analysis) !== null &&
+    !Array.isArray(item.websiteAnalysis ?? item.website_analysis)
+      ? { websiteAnalysis: (item.websiteAnalysis ?? item.website_analysis) as Record<string, unknown> }
+      : {}),
+    ...(typeof (item.websiteAnalysisCreatedAt ?? item.website_analysis_created_at) === 'string'
+      ? {
+          websiteAnalysisCreatedAt: item.websiteAnalysisCreatedAt ??
+            (item.website_analysis_created_at as string),
+        }
+      : {}),
+    savedAt:
+      typeof (item.savedAt ?? item.saved_at) === 'string'
+        ? (item.savedAt ?? item.saved_at) as string
+        : new Date().toISOString(),
+    updatedAt:
+      typeof (item.updatedAt ?? item.updated_at) === 'string'
+        ? (item.updatedAt ?? item.updated_at) as string
+        : new Date().toISOString(),
   };
 
-  const raw = item.rawPayload;
+  const raw = item.rawPayload ?? item.raw_payload;
   if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
     const rawPayload = raw as Record<string, unknown>;
     const optionalString = (...keys: string[]): string | undefined => {
@@ -845,6 +909,31 @@ export const updateSavedLeadStatusInBackend = async (
       Authorization: authorization,
     },
     body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as SavedLeadMutationResponse;
+  const mapped = mapSavedLead(payload.savedLead as BackendSavedLead);
+  if (!mapped) {
+    throw new Error('Saved lead response is invalid.');
+  }
+
+  return mapped;
+};
+
+export const runWebsiteAnalysisForSavedLead = async (
+  savedLeadId: string,
+): Promise<SavedLead> => {
+  const requestUrl = buildApiUrl(`/api/leads/${encodeURIComponent(savedLeadId)}/website-analysis`);
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: authorization,
+    },
   });
 
   if (!response.ok) {

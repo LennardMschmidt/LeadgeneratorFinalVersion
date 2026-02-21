@@ -23,6 +23,7 @@ export type PrimaryProblem =
 
 export interface Lead {
   id: string;
+  savedLeadId?: string;
   businessName: string;
   location: string;
   category: string;
@@ -38,6 +39,7 @@ export interface Lead {
   placeId?: string;
   dataId?: string;
   featureId?: string;
+  linkedinUrl?: string;
   mapsUrl?: string;
   websiteUrl?: string;
   websiteDisplay?: string;
@@ -73,6 +75,8 @@ export interface Lead {
     knowledgeGraphId?: string;
     ownerOrProfileId?: string;
   };
+  websiteAnalysis?: Record<string, unknown>;
+  websiteAnalysisCreatedAt?: string;
 }
 
 export interface BackendProblemSignal {
@@ -101,6 +105,7 @@ export interface BackendLead {
   place_id?: string;
   data_id?: string;
   feature_id?: string;
+  linkedin_url?: string;
   maps_url?: string;
   website_url?: string;
   website_display?: string;

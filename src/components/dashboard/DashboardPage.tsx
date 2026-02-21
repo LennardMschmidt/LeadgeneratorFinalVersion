@@ -10,9 +10,11 @@ import {
   saveVisibleLeadsToBackend,
 } from './api';
 import { DashboardHeader } from './DashboardHeader';
+import { exportRowsToExcel, exportRowsToPdf } from './exportUtils';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
 import { TierOverviewCards } from './TierOverviewCards';
+import { WebsiteAnalysisModal } from './WebsiteAnalysisModal';
 import {
   Lead,
   LeadFilters,
@@ -72,6 +74,7 @@ export function DashboardPage({
   const [deletingSavedSearchId, setDeletingSavedSearchId] = useState<string | null>(null);
   const [isSavingVisibleLeads, setIsSavingVisibleLeads] = useState(false);
   const [savingLeadIds, setSavingLeadIds] = useState<Record<string, boolean>>({});
+  const [websiteAnalysisModalLeadId, setWebsiteAnalysisModalLeadId] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -195,13 +198,14 @@ export function DashboardPage({
     const location = searchConfig.location.trim();
     const category = searchConfig.category.trim();
     const businessType = searchConfig.businessType.trim();
+    const isGoogleMapsSource = searchConfig.searchSource === 'google_maps';
 
     if (!location || !category) {
       setSearchError(t('dashboard.errors.locationAndCategoryRequired'));
       return;
     }
 
-    if (!businessType) {
+    if (isGoogleMapsSource && !businessType) {
       setSearchError(t('dashboard.errors.businessTypeRequired'));
       return;
     }
@@ -213,9 +217,11 @@ export function DashboardPage({
 
     setSearchError(null);
     setSearchMeta(null);
-    const selectedProblemCount = new Set(
-      searchConfig.problemFilters.map((item) => item.trim().toLowerCase()).filter(Boolean),
-    ).size;
+    const selectedProblemCount = isGoogleMapsSource
+      ? new Set(
+          searchConfig.problemFilters.map((item) => item.trim().toLowerCase()).filter(Boolean),
+        ).size
+      : 0;
     setLastSearchSelectedProblemCount(selectedProblemCount);
     setIsRunningSearch(true);
     const controller = new AbortController();
@@ -340,7 +346,7 @@ export function DashboardPage({
     }
   };
 
-  const exportCsv = () => {
+  const exportExcel = () => {
     const headers = raw<string[]>('dashboard.csv.headers');
     const rows = filteredLeads.map((lead) => [
       lead.businessName,
@@ -349,25 +355,23 @@ export function DashboardPage({
       lead.tier,
       String(toDisplayScore(lead.score, scoreDenominator)),
       lead.status,
-      lead.contactChannels.join('|'),
+      lead.contactChannels.join(' ; '),
     ]);
-
-    const escapeCsvValue = (value: string) => `"${value.replace(/"/g, '""')}"`;
-    const csvText = [headers, ...rows]
-      .map((row) => row.map((cell) => escapeCsvValue(cell)).join(','))
-      .join('\n');
-
-    const blob = new Blob([csvText], { type: 'text/csv;charset=utf-8;' });
-    const objectUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = objectUrl;
-    anchor.download = t('dashboard.csv.fileName');
-    anchor.click();
-    URL.revokeObjectURL(objectUrl);
+    exportRowsToExcel(headers, rows, t('dashboard.csv.fileName').replace('.csv', '.xlsx'));
   };
 
   const exportPdf = () => {
-    console.log('PDF export placeholder. Current filtered leads:', filteredLeads);
+    const headers = raw<string[]>('dashboard.csv.headers');
+    const rows = filteredLeads.map((lead) => [
+      lead.businessName,
+      lead.location,
+      lead.category,
+      lead.tier,
+      String(toDisplayScore(lead.score, scoreDenominator)),
+      lead.status,
+      lead.contactChannels.join(' ; '),
+    ]);
+    exportRowsToPdf(t('dashboard.title'), headers, rows);
   };
 
   const saveVisibleLeads = async () => {
@@ -416,7 +420,19 @@ export function DashboardPage({
 
     setSavingLeadIds((current) => ({ ...current, [leadId]: true }));
     try {
-      await saveLeadToBackend(lead);
+      const savedLead = await saveLeadToBackend(lead);
+      setLeads((current) =>
+        current.map((item) =>
+          item.id === leadId
+            ? {
+                ...item,
+                savedLeadId: savedLead.savedLeadId,
+                websiteAnalysis: savedLead.websiteAnalysis,
+                websiteAnalysisCreatedAt: savedLead.websiteAnalysisCreatedAt,
+              }
+            : item,
+        ),
+      );
       setSearchError(null);
       setActionNotice(
         t('dashboard.savedLeads.singleSavedSuccess', {
@@ -438,6 +454,14 @@ export function DashboardPage({
       });
     }
   };
+
+  const viewWebsiteAnalysis = (leadId: string) => {
+    setWebsiteAnalysisModalLeadId(leadId);
+  };
+
+  const selectedWebsiteAnalysisLead = websiteAnalysisModalLeadId
+    ? leads.find((lead) => lead.id === websiteAnalysisModalLeadId) ?? null
+    : null;
 
   return (
     <>
@@ -507,15 +531,22 @@ export function DashboardPage({
             onTierFilterChange={updateTierFilter}
             onStatusFilterChange={updateStatusFilter}
             onLeadStatusChange={updateLeadStatus}
-            onExportCsv={exportCsv}
+            onExportExcel={exportExcel}
             onExportPdf={exportPdf}
             onSaveVisibleLeads={saveVisibleLeads}
             onSaveLead={saveLead}
+            onViewWebsiteAnalysis={viewWebsiteAnalysis}
             isSavingVisibleLeads={isSavingVisibleLeads}
             savingLeadIds={savingLeadIds}
           />
         </section>
       </main>
+      <WebsiteAnalysisModal
+        open={!!selectedWebsiteAnalysisLead}
+        onClose={() => setWebsiteAnalysisModalLeadId(null)}
+        analysis={selectedWebsiteAnalysisLead?.websiteAnalysis ?? null}
+        businessName={selectedWebsiteAnalysisLead?.businessName}
+      />
     </>
   );
 }

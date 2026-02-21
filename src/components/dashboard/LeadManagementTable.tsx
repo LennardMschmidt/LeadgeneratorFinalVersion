@@ -30,10 +30,11 @@ interface LeadManagementTableProps {
   onTierFilterChange: (tier: LeadFilters['tier']) => void;
   onStatusFilterChange: (status: LeadFilters['status']) => void;
   onLeadStatusChange: (leadId: string, status: LeadStatus) => void;
-  onExportCsv: () => void;
+  onExportExcel: () => void;
   onExportPdf: () => void;
   onSaveVisibleLeads: () => void;
   onSaveLead: (leadId: string) => void;
+  onViewWebsiteAnalysis: (leadId: string) => void;
   isSavingVisibleLeads?: boolean;
   savingLeadIds?: Record<string, boolean>;
 }
@@ -122,10 +123,11 @@ export function LeadManagementTable({
   onTierFilterChange,
   onStatusFilterChange,
   onLeadStatusChange,
-  onExportCsv,
+  onExportExcel,
   onExportPdf,
   onSaveVisibleLeads,
   onSaveLead,
+  onViewWebsiteAnalysis,
   isSavingVisibleLeads = false,
   savingLeadIds = {},
 }: LeadManagementTableProps) {
@@ -311,7 +313,7 @@ export function LeadManagementTable({
                 type="button"
                 onClick={() => setIsExportMenuOpen((current) => !current)}
                 aria-expanded={isExportMenuOpen}
-                className="flex items-center gap-3 rounded-xl border px-5 py-3 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="inline-flex items-center gap-2 rounded-lg border px-5 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 style={{
                   borderColor: 'rgba(255, 255, 255, 0.1)',
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -339,7 +341,7 @@ export function LeadManagementTable({
                   <button
                     type="button"
                     onClick={() => {
-                      onExportCsv();
+                      onExportExcel();
                       setIsExportMenuOpen(false);
                     }}
                     onMouseEnter={handleExportItemMouseEnter}
@@ -351,7 +353,7 @@ export function LeadManagementTable({
                       borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                     }}
                   >
-                    {t('dashboard.leadTable.exportCsv')}
+                    {t('dashboard.leadTable.exportExcel')}
                   </button>
                   <button
                     type="button"
@@ -474,6 +476,16 @@ export function LeadManagementTable({
                         <span>{t('dashboard.leadTable.saveLead')}</span>
                       )}
                     </button>
+                    {lead.websiteUrl && lead.websiteAnalysis ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewWebsiteAnalysis(lead.id)}
+                          data-no-toggle="true"
+                          className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-cyan-400/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-semibold text-cyan-100 shadow-sm shadow-cyan-900/30 transition-colors hover:bg-cyan-500/25"
+                        >
+                          {t('dashboard.websiteAnalysis.view')}
+                        </button>
+                      ) : null}
                     <button
                       type="button"
                       onClick={() => toggleLead(lead.id)}

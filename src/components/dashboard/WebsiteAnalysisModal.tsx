@@ -37,24 +37,40 @@ const INFO_EXCLUDED_KEYS = new Set(['final_url', 'total_transfer_kb', 'domain_cr
 const ATTRIBUTE_INFO_EN: Partial<Record<SectionKey, Record<string, { what: string; ideal: string }>>> = {
   accessibility: {
     reachable: {
-      what: 'Shows if the homepage can be opened. If this fails, potential customers may fail too.',
+      what: 'Means the website could actually be reached during this check. In practical terms: the domain is live and users can open the homepage in a browser.',
       ideal: 'Yes',
     },
     status_code: {
-      what: 'The server response code for the homepage.',
+      what: 'The HTTP response code from the homepage. It tells whether the page was delivered successfully or blocked/errored.',
       ideal: '200',
     },
     uses_https: {
-      what: 'Checks whether the site uses a secure HTTPS connection.',
+      what: 'Checks if the site uses HTTPS (secure connection). HTTPS protects user data and is a trust/SEO baseline.',
       ideal: 'Yes',
     },
     valid_ssl: {
-      what: 'Checks if the SSL certificate is valid and trusted.',
+      what: 'SSL is the security certificate behind HTTPS. This checks whether that certificate is valid and trusted. Invalid SSL can show browser warnings and reduce trust.',
       ideal: 'Yes',
     },
     load_time_ms: {
-      what: 'How long the homepage needed to respond in this check.',
+      what: 'How long the homepage needed to respond in this scan. Higher values usually mean slower user experience.',
       ideal: 'Below 1000 ms',
+    },
+    proxy_used: {
+      what: 'Shows whether the request used a proxy server. A proxy is an intermediate server/IP used to fetch the page when direct requests may be blocked.',
+      ideal: 'Informational (either is acceptable)',
+    },
+    proxy_endpoint: {
+      what: 'The proxy endpoint used for this run (if any). Helpful for debugging blocked requests and comparing proxy performance.',
+      ideal: 'Informational',
+    },
+    request_attempts: {
+      what: 'How many tries were needed to get a response. Multiple attempts can indicate instability or anti-bot protection.',
+      ideal: '1',
+    },
+    blocked_or_forbidden: {
+      what: 'Indicates the site refused access (for example 403, challenge page, or anti-bot block).',
+      ideal: 'No',
     },
   },
   seo: {
@@ -87,7 +103,7 @@ const ATTRIBUTE_INFO_EN: Partial<Record<SectionKey, Record<string, { what: strin
       ideal: 'Yes',
     },
     has_robots_txt: {
-      what: 'Checks if robots.txt exists to guide crawlers.',
+      what: 'robots.txt is a small file for search engines. It tells crawlers which parts of the site may or may not be crawled.',
       ideal: 'Yes',
     },
     has_structured_data: {

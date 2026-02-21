@@ -1,4 +1,4 @@
-import { ChevronDown, Loader2, Trash2 } from 'lucide-react';
+import { ChevronDown, Loader2, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
 import {
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 interface SavedSearchesPageProps {
   onNavigateHome: () => void;
@@ -77,6 +78,8 @@ export function SavedSearchesPage({
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
+  const [isWebsiteBlockedDialogOpen, setIsWebsiteBlockedDialogOpen] = useState(false);
+  const [websiteBlockedDialogMessage, setWebsiteBlockedDialogMessage] = useState('');
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
   const canGoPrevious = offset > 0;
@@ -305,6 +308,14 @@ export function SavedSearchesPage({
     } catch (error) {
       setNoticeMessage(null);
       if (error instanceof Error) {
+        const blockedPattern =
+          /blocked|forbidden|did not allow|didn't allow|access denied|captcha|challenge|security/i;
+        if (blockedPattern.test(error.message)) {
+          setWebsiteBlockedDialogMessage(
+            "Sorry, I couldn't reach this website. Its security was too strong and it didn't allow me in.",
+          );
+          setIsWebsiteBlockedDialogOpen(true);
+        }
         setErrorMessage(error.message);
       } else {
         setErrorMessage(t('dashboard.websiteAnalysis.failed'));
@@ -571,7 +582,7 @@ export function SavedSearchesPage({
             </div>
           </section>
 
-          <section>
+          <section style={{ marginTop: '20px' }}>
             <TierOverviewCards
               counts={tierCounts}
               totalLeads={tierCounts['Tier 1'] + tierCounts['Tier 2'] + tierCounts['Tier 3']}
@@ -584,7 +595,7 @@ export function SavedSearchesPage({
           </section>
 
           {errorMessage ? (
-            <section>
+            <section style={{ marginTop: '10px', marginBottom: '10px' }}>
               <div className="rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {errorMessage}
               </div>
@@ -847,6 +858,63 @@ export function SavedSearchesPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isWebsiteBlockedDialogOpen} onOpenChange={setIsWebsiteBlockedDialogOpen}>
+        <DialogContent
+          hideCloseButton
+          overlayStyle={{
+            zIndex: 500,
+            backgroundColor: 'rgba(2, 6, 23, 0.72)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+          }}
+          style={{
+            zIndex: 510,
+            width: 'min(420px, calc(100% - 2rem))',
+            maxHeight: '260px',
+            borderRadius: '1rem',
+            border: 'none',
+            padding: '0.75rem',
+            background: 'rgba(3, 8, 23, 0.94)',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+          className="overflow-hidden text-white sm:max-w-[420px]"
+        >
+          <button
+            type="button"
+            onClick={() => setIsWebsiteBlockedDialogOpen(false)}
+            aria-label="Close blocked modal"
+            className="absolute text-cyan-100/90 transition-colors hover:text-cyan-50"
+            style={{ right: '10px', top: '10px', marginRight: '10px', marginTop: '10px' }}
+          >
+            <X
+              className="h-6 w-6 transition-transform duration-300 ease-out"
+              onMouseEnter={(event) => {
+                event.currentTarget.style.transform = 'rotate(90deg) scale(1.08)';
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.transform = 'rotate(0deg) scale(1)';
+              }}
+            />
+          </button>
+          <div className="mx-auto flex w-full flex-col items-center justify-center gap-2 text-center">
+            <DialogHeader className="space-y-4 text-center">
+              <DialogTitle className="pr-8 text-xl font-semibold text-cyan-100">
+                Oops. Website blocked me.
+              </DialogTitle>
+              <p className="text-sm text-slate-300">{websiteBlockedDialogMessage}</p>
+            </DialogHeader>
+
+            <img
+              src="/images/website-blocked-neon-face.png"
+              alt="Sad neon face"
+              className="rounded-2xl"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

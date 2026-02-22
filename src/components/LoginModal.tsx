@@ -9,6 +9,7 @@ import {
   signInWithGoogle,
   signUpWithEmail,
 } from '../lib/supabaseAuth';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 import {
   BillingPlan,
   changeBillingPlanInBackend,
@@ -22,7 +23,7 @@ interface LoginModalProps {
   onAuthenticated?: () => void;
 }
 
-type AuthView = 'login' | 'register';
+type AuthView = 'login' | 'register' | 'forgot-password';
 type BillingPlanCode = 'STANDARD' | 'PRO' | 'EXPERT';
 type RegisterStep = 1 | 2 | 3;
 
@@ -31,18 +32,21 @@ const FALLBACK_PLANS: BillingPlan[] = [
     code: 'STANDARD',
     name: 'Standard',
     dailyTokenLimit: 180,
+    aiTokensPerMonth: 200,
     tokenCosts: { google_maps_search: 1, linkedin_search: 3, website_analysis: 1 },
   },
   {
     code: 'PRO',
     name: 'Pro',
     dailyTokenLimit: 380,
+    aiTokensPerMonth: 500,
     tokenCosts: { google_maps_search: 1, linkedin_search: 3, website_analysis: 1 },
   },
   {
     code: 'EXPERT',
     name: 'Expert',
     dailyTokenLimit: 700,
+    aiTokensPerMonth: 1200,
     tokenCosts: { google_maps_search: 1, linkedin_search: 3, website_analysis: 1 },
   },
 ];
@@ -145,6 +149,22 @@ const getPasswordStrength = (value: string): { label: string; color: string; wid
   return { label: 'Very strong', color: 'rgb(16, 185, 129)', width: '100%' };
 };
 
+const EMAIL_REGEX = /.+@.+\..+/;
+const REGISTER_SIGNUP_RETRY_MESSAGE =
+  'Could not create account with these details. Please review and try again.';
+const REGISTER_SIGNUP_FAILED_MESSAGE =
+  'Could not create account right now. Please check your details and try again.';
+
+const isExistingAccountError = (message: string): boolean => {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('already registered') ||
+    normalized.includes('already exists') ||
+    normalized.includes('user already') ||
+    normalized.includes('email already')
+  );
+};
+
 const getAuthFailureMessage = (result: unknown): string => {
   if (
     result &&
@@ -181,6 +201,18 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [inlineErrors, setInlineErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailConfirmationNotice, setEmailConfirmationNotice] = useState<{ email: string } | null>(null);
+
+  const clearExistingAccountInlineError = () => {
+    setInlineErrors((current) => {
+      if (current.confirmPassword !== REGISTER_SIGNUP_RETRY_MESSAGE) {
+        return current;
+      }
+
+      const { confirmPassword: _unused, ...rest } = current;
+      return rest;
+    });
+  };
 
   useEffect(() => {
     if (!open) {
@@ -228,6 +260,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     setStatusMessage(null);
     setInlineErrors({});
     setIsSubmitting(false);
+    setEmailConfirmationNotice(null);
   }, [open]);
 
   useEffect(() => {
@@ -277,12 +310,36 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
   const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
-  const stepOneValid =
-    fullName.trim().length >= 2 &&
-    /.+@.+\..+/.test(email.trim()) &&
-    password.length >= 8 &&
-    confirmPassword.length > 0 &&
-    password === confirmPassword;
+  const stepOneBlockingMessage = useMemo(() => {
+    if (fullName.trim().length < 2) {
+      return 'Please enter your name.';
+    }
+    if (!EMAIL_REGEX.test(email.trim())) {
+      return 'Please enter a valid email address.';
+    }
+    if (password.length === 0) {
+      return 'Please enter a password.';
+    }
+    if (password.length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (passwordStrength.label === 'Weak') {
+      return 'Password is too weak. Use uppercase, number, or symbol.';
+    }
+    if (confirmPassword.length === 0) {
+      return 'Please confirm your password.';
+    }
+    if (password !== confirmPassword) {
+      return 'Passwords do not match.';
+    }
+
+    return null;
+  }, [confirmPassword, email, fullName, password, passwordStrength.label]);
+
+  const hasExistingAccountInlineError =
+    inlineErrors.confirmPassword === REGISTER_SIGNUP_RETRY_MESSAGE;
+
+  const stepOneValid = stepOneBlockingMessage === null && !hasExistingAccountInlineError;
 
   const stepTwoValid = selectedPlan !== null;
 
@@ -298,19 +355,47 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     if (fullName.trim().length < 2) {
       nextErrors.fullName = 'Please enter your name.';
     }
-    if (!/.+@.+\..+/.test(email.trim())) {
+    if (!EMAIL_REGEX.test(email.trim())) {
       nextErrors.email = 'Please enter a valid email address.';
     }
-    if (password.length < 8) {
+    if (password.length === 0) {
+      nextErrors.password = 'Please enter a password.';
+    } else if (password.length < 8) {
       nextErrors.password = 'Password must be at least 8 characters.';
+    } else if (passwordStrength.label === 'Weak') {
+      nextErrors.password = 'Password is too weak. Use uppercase, number, or symbol.';
     }
-    if (confirmPassword !== password) {
+    if (confirmPassword.length === 0) {
+      nextErrors.confirmPassword = 'Please confirm your password.';
+    } else if (confirmPassword !== password) {
       nextErrors.confirmPassword = 'Passwords do not match.';
     }
 
     setInlineErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
+
+  const stepOneDisabledMessage = useMemo(() => {
+    if (registerStep !== 1) {
+      return null;
+    }
+
+    if (hasExistingAccountInlineError) {
+      return inlineErrors.confirmPassword;
+    }
+
+    if (stepOneValid) {
+      return null;
+    }
+
+    return (
+      inlineErrors.confirmPassword ||
+      inlineErrors.password ||
+      inlineErrors.email ||
+      inlineErrors.fullName ||
+      stepOneBlockingMessage
+    );
+  }, [hasExistingAccountInlineError, inlineErrors, registerStep, stepOneBlockingMessage, stepOneValid]);
 
   const validateStepThree = (): boolean => {
     const nextErrors: Record<string, string> = {};
@@ -409,18 +494,26 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
       });
 
       if (!result.ok) {
-        setStatusMessage(getAuthFailureMessage(result));
+        const failureMessage = getAuthFailureMessage(result);
+
+        if (isExistingAccountError(failureMessage)) {
+          setRegisterStep(1);
+          setStatusMessage(null);
+          setInlineErrors((current) => ({
+            ...current,
+            confirmPassword: REGISTER_SIGNUP_RETRY_MESSAGE,
+          }));
+          return;
+        }
+
+        setStatusMessage(REGISTER_SIGNUP_FAILED_MESSAGE);
         return;
       }
 
       if (result.requiresEmailConfirmation) {
-        setStatusMessage(
-          `Your account was created for ${email}. Please confirm your email, then sign in to activate your subscription.`,
-        );
-        setView('login');
-        setRegisterStep(1);
-        setPassword('');
-        setConfirmPassword('');
+        setEmailConfirmationNotice({ email: email.trim() });
+        setStatusMessage(null);
+        setInlineErrors({});
         return;
       }
 
@@ -485,6 +578,13 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   const fieldWrapperStyle = { marginBottom: '20px' };
   const fieldLabelStyle = { display: 'block', marginBottom: '8px' };
   const errorTextStyle = { color: 'rgb(251, 113, 133)' };
+  const gradientTextLinkStyle = {
+    backgroundImage: 'linear-gradient(90deg, #ffffff 0%, #a855f7 100%)',
+    backgroundClip: 'text' as const,
+    WebkitBackgroundClip: 'text' as const,
+    color: 'transparent',
+    WebkitTextFillColor: 'transparent',
+  };
 
   return createPortal(
     <AnimatePresence>
@@ -496,7 +596,12 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0"
-            onClick={onClose}
+            onClick={() => {
+              if (view === 'forgot-password') {
+                return;
+              }
+              onClose();
+            }}
             style={{
               zIndex: 9998,
               background: 'rgba(2, 6, 23, 0.72)',
@@ -606,7 +711,14 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                         </label>
                         <button
                           type="button"
-                          className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-sm text-transparent transition-all hover:from-blue-300 hover:to-purple-300"
+                          onClick={() => {
+                            setView('forgot-password');
+                            setStatusMessage(null);
+                            setInlineErrors({});
+                          }}
+                          disabled={isSubmitting}
+                          className="text-sm transition-opacity hover:opacity-85"
+                          style={gradientTextLinkStyle}
                         >
                           {t('login.forgotPassword')}
                         </button>
@@ -684,7 +796,8 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                           setInlineErrors({});
                         }}
                         disabled={isSubmitting}
-                        className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-sm text-transparent transition-all hover:from-blue-300 hover:to-purple-300 disabled:opacity-60"
+                        className="text-sm transition-opacity hover:opacity-85 disabled:opacity-60"
+                        style={gradientTextLinkStyle}
                       >
                         Register
                       </button>
@@ -697,7 +810,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                     ) : null}
                   </div>
                 </motion.div>
-              ) : (
+              ) : view === 'register' ? (
                 <motion.div
                   key="register"
                   initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -744,6 +857,39 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                     >
                       <X className="h-5 w-5" />
                     </button>
+
+                    {emailConfirmationNotice ? (
+                      <div
+                        className="absolute inset-0 z-20 flex items-center justify-center p-4 sm:p-6"
+                        style={{ background: 'rgba(6, 8, 18, 0.68)', backdropFilter: 'blur(4px)' }}
+                      >
+                        <div
+                          className="relative w-full max-w-xl rounded-2xl border p-6 sm:p-7"
+                          style={{
+                            background: 'linear-gradient(145deg, rgba(20, 18, 33, 0.92), rgba(15, 23, 42, 0.88))',
+                            borderColor: 'rgba(96, 165, 250, 0.45)',
+                            boxShadow:
+                              '0 0 0 1px rgba(96, 165, 250, 0.35), 0 0 42px rgba(59, 130, 246, 0.28)',
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={onClose}
+                            aria-label={t('login.close')}
+                            className="absolute text-gray-300 transition-colors hover:text-white"
+                            style={{ right: '1rem', top: '1rem' }}
+                          >
+                            <X className="h-5 w-5" />
+                          </button>
+                          <h3 className="mb-2 pr-8 text-2xl font-semibold text-white">You're almost there</h3>
+                          <p className="text-sm leading-relaxed text-gray-200">
+                            Just confirm your account by clicking the link we sent to{' '}
+                            <span className="font-medium text-blue-200">{emailConfirmationNotice.email}</span>.
+                          </p>
+                          <p className="mt-3 text-sm text-gray-300">After confirming, you can log in right away.</p>
+                        </div>
+                      </div>
+                    ) : null}
 
                     <div className="mb-6">
                       <h2 className="mb-2 text-2xl text-white">Create your account</h2>
@@ -831,6 +977,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                 type="text"
                                 value={fullName}
                                 onChange={(event) => {
+                                  clearExistingAccountInlineError();
                                   setFullName(event.target.value);
                                   if (inlineErrors.fullName) {
                                     setInlineErrors((current) => ({ ...current, fullName: '' }));
@@ -857,6 +1004,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                 type="email"
                                 value={email}
                                 onChange={(event) => {
+                                  clearExistingAccountInlineError();
                                   setEmail(event.target.value);
                                   if (inlineErrors.email) {
                                     setInlineErrors((current) => ({ ...current, email: '' }));
@@ -883,6 +1031,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                 type="password"
                                 value={password}
                                 onChange={(event) => {
+                                  clearExistingAccountInlineError();
                                   setPassword(event.target.value);
                                   if (inlineErrors.password) {
                                     setInlineErrors((current) => ({ ...current, password: '' }));
@@ -936,6 +1085,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(event) => {
+                                  clearExistingAccountInlineError();
                                   setConfirmPassword(event.target.value);
                                   if (inlineErrors.confirmPassword) {
                                     setInlineErrors((current) => ({ ...current, confirmPassword: '' }));
@@ -950,14 +1100,9 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                 }
                                 required
                               />
-                              {confirmPassword && password !== confirmPassword ? (
+                              {stepOneDisabledMessage ? (
                                 <p className="text-xs" style={errorTextStyle}>
-                                  Passwords do not match
-                                </p>
-                              ) : null}
-                              {inlineErrors.confirmPassword ? (
-                                <p className="text-xs" style={errorTextStyle}>
-                                  {inlineErrors.confirmPassword}
+                                  {stepOneDisabledMessage}
                                 </p>
                               ) : null}
                             </div>
@@ -983,6 +1128,10 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                   const isCurrent = selectedPlan === code;
                                   const isPro = code === 'PRO';
                                   const isExpert = code === 'EXPERT';
+                                  const planFeatures = [
+                                    `${plan.aiTokensPerMonth} AI evaluation tokens/month`,
+                                    ...visual.features,
+                                  ];
                                   const scaledCardStyle = {
                                     zoom: 0.51,
                                     fontSize: '182%',
@@ -1117,7 +1266,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                         </button>
 
                                         <ul className="space-y-4">
-                                          {visual.features.map((feature) => (
+                                          {planFeatures.map((feature) => (
                                             <li key={`${plan.code}-${feature}`} className="flex items-start gap-3">
                                               <div
                                                 className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -1235,7 +1384,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                               ) : null}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-5">
+                            <div className="grid grid-cols-2 gap-5" style={{ marginBottom: '20px' }}>
                               <div>
                                 <label htmlFor="card-expiry" className="text-gray-300" style={fieldLabelStyle}>
                                   Expiry date
@@ -1372,7 +1521,8 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                           setInlineErrors({});
                         }}
                         disabled={isSubmitting}
-                        className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-sm text-transparent transition-all hover:from-blue-300 hover:to-purple-300 disabled:opacity-60"
+                        className="text-sm transition-opacity hover:opacity-85 disabled:opacity-60"
+                        style={gradientTextLinkStyle}
                       >
                         Log in
                       </button>
@@ -1385,6 +1535,27 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                     ) : null}
                   </div>
                 </motion.div>
+              ) : (
+                <div
+                  key="forgot-password"
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <ForgotPasswordModal
+                    onClose={onClose}
+                    onBack={() => {
+                      setView('login');
+                      setStatusMessage(null);
+                      setInlineErrors({});
+                    }}
+                    defaultEmail={email}
+                    onEmailChange={(nextEmail) => {
+                      setEmail(nextEmail);
+                    }}
+                  />
+                </div>
               )}
             </AnimatePresence>
           </div>

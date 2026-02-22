@@ -8,6 +8,10 @@ interface WebsiteAnalysisModalProps {
   onClose: () => void;
   analysis: Record<string, unknown> | null;
   businessName?: string;
+  aiSummary?: string;
+  onGenerateAiSummary?: () => Promise<void> | void;
+  aiSummaryLoading?: boolean;
+  onNavigateBilling?: () => void;
 }
 
 const SECTION_KEYS = [
@@ -420,13 +424,18 @@ export function WebsiteAnalysisModal({
   onClose,
   analysis,
   businessName,
+  aiSummary,
+  onGenerateAiSummary,
+  aiSummaryLoading = false,
+  onNavigateBilling,
 }: WebsiteAnalysisModalProps) {
   const { language } = useI18n();
   const currentLanguage = language === 'de' ? 'de' : 'en';
 
   const [openInfoKey, setOpenInfoKey] = useState<string | null>(null);
   const [isSummaryOpen, setIsSummaryOpen] = useState(true);
-  const [summaryGenerated, setSummaryGenerated] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   const overlayStyle: CSSProperties = {
     zIndex: 340,
@@ -442,15 +451,37 @@ export function WebsiteAnalysisModal({
   const normalizedAnalysis =
     analysis && typeof analysis === 'object' && !Array.isArray(analysis) ? analysis : null;
 
-  const summaryData = useMemo(
-    () => buildSummary(normalizedAnalysis, businessName, currentLanguage),
-    [normalizedAnalysis, businessName, currentLanguage],
-  );
-
   useEffect(() => {
-    setSummaryGenerated(false);
     setIsSummaryOpen(true);
-  }, [normalizedAnalysis, businessName, currentLanguage]);
+    setSummaryError(null);
+    setShowUpgradePrompt(false);
+  }, [normalizedAnalysis, businessName, currentLanguage, aiSummary]);
+
+  const canGenerateSummary = !!normalizedAnalysis && !!onGenerateAiSummary;
+  const missingAnalysisMessage =
+    currentLanguage === 'de'
+      ? 'Führe zuerst eine Website-Analyse aus.'
+      : 'Run website analysis first.';
+
+  const handleGenerateSummary = async () => {
+    if (!onGenerateAiSummary || !normalizedAnalysis || aiSummaryLoading) {
+      return;
+    }
+
+    setSummaryError(null);
+    setShowUpgradePrompt(false);
+    try {
+      await onGenerateAiSummary();
+      setIsSummaryOpen(true);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : currentLanguage === 'de' ? 'Fehlgeschlagen.' : 'Failed.';
+      setSummaryError(message);
+      if (/insufficient|remaining|token|limit/i.test(message)) {
+        setShowUpgradePrompt(true);
+      }
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
@@ -510,7 +541,7 @@ export function WebsiteAnalysisModal({
         >
           <div className="flex items-center justify-between gap-8" style={{ marginTop: '20px', marginBottom: '20px' }}>
             <h3 className="text-2xl font-semibold text-cyan-50">AI Summary</h3>
-            {summaryGenerated ? (
+            {typeof aiSummary === 'string' && aiSummary.trim().length > 0 ? (
               <button
                 type="button"
                 onClick={() => setIsSummaryOpen((current) => !current)}
@@ -526,54 +557,78 @@ export function WebsiteAnalysisModal({
             ) : null}
           </div>
 
-          {!summaryGenerated ? (
-            <div className="ml-1" style={{ marginTop: '20px', marginBottom: '20px' }}>
+          <div className="ml-1" style={{ marginTop: '20px', marginBottom: '20px' }}>
+            <button
+              type="button"
+              onClick={() => {
+                void handleGenerateSummary();
+              }}
+              disabled={!canGenerateSummary || aiSummaryLoading}
+              title={!canGenerateSummary ? missingAnalysisMessage : undefined}
+              className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+              style={{
+                border: '1px solid rgba(103, 232, 249, 0.86)',
+                backgroundColor: 'rgba(34, 211, 238, 0.2)',
+                color: 'rgba(240, 253, 250, 1)',
+                boxShadow: '0 0 0 1px rgba(34,211,238,0.35), 0 0 18px rgba(34,211,238,0.28)',
+              }}
+              onMouseEnter={(event) => {
+                if (!canGenerateSummary || aiSummaryLoading) {
+                  return;
+                }
+                event.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.32)';
+                event.currentTarget.style.borderColor = 'rgba(165, 243, 252, 0.98)';
+                event.currentTarget.style.boxShadow =
+                  '0 0 0 1px rgba(34,211,238,0.55), 0 0 24px rgba(34,211,238,0.48)';
+              }}
+              onMouseLeave={(event) => {
+                event.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.2)';
+                event.currentTarget.style.borderColor = 'rgba(103, 232, 249, 0.86)';
+                event.currentTarget.style.boxShadow =
+                  '0 0 0 1px rgba(34,211,238,0.35), 0 0 18px rgba(34,211,238,0.28)';
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              {aiSummaryLoading
+                ? currentLanguage === 'de'
+                  ? 'Generiere...'
+                  : 'Generating...'
+                : currentLanguage === 'de'
+                  ? 'AI-Zusammenfassung generieren'
+                  : 'Generate AI Summary'}
+            </button>
+          </div>
+
+          {summaryError ? (
+            <div className="mt-4 rounded-lg border border-rose-300/30 bg-rose-500/15 px-4 py-3 text-sm text-rose-100">
+              {summaryError}
+            </div>
+          ) : null}
+
+          {showUpgradePrompt && onNavigateBilling ? (
+            <div className="mt-4">
               <button
                 type="button"
-                onClick={() => {
-                  setSummaryGenerated(true);
-                  setIsSummaryOpen(true);
-                }}
-                className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition"
-                style={{
-                  border: '1px solid rgba(103, 232, 249, 0.86)',
-                  backgroundColor: 'rgba(34, 211, 238, 0.2)',
-                  color: 'rgba(240, 253, 250, 1)',
-                  boxShadow: '0 0 0 1px rgba(34,211,238,0.35), 0 0 18px rgba(34,211,238,0.28)',
-                }}
-                onMouseEnter={(event) => {
-                  event.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.32)';
-                  event.currentTarget.style.borderColor = 'rgba(165, 243, 252, 0.98)';
-                  event.currentTarget.style.boxShadow =
-                    '0 0 0 1px rgba(34,211,238,0.55), 0 0 24px rgba(34,211,238,0.48)';
-                }}
-                onMouseLeave={(event) => {
-                  event.currentTarget.style.backgroundColor = 'rgba(34, 211, 238, 0.2)';
-                  event.currentTarget.style.borderColor = 'rgba(103, 232, 249, 0.86)';
-                  event.currentTarget.style.boxShadow =
-                    '0 0 0 1px rgba(34,211,238,0.35), 0 0 18px rgba(34,211,238,0.28)';
-                }}
+                onClick={onNavigateBilling}
+                className="rounded-lg border border-cyan-300/55 bg-cyan-400/15 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/25"
               >
-                <Sparkles className="h-4 w-4" />
-                {currentLanguage === 'de' ? 'AI-Zusammenfassung generieren' : 'Generate AI Summary'}
+                {currentLanguage === 'de' ? 'Upgrade für mehr AI-Tokens' : 'Upgrade for more AI tokens'}
               </button>
             </div>
           ) : null}
 
-          {summaryGenerated && isSummaryOpen ? (
+          {isSummaryOpen ? (
             <div className="mt-8 mb-2 pr-1">
               <div className="space-y-4 rounded-xl border border-cyan-200/35 bg-slate-950/30 px-6 py-6">
-                <p className="text-lg leading-relaxed text-slate-50">{summaryData.overview}</p>
-                <div className="space-y-2">
-                  <p className="text-base font-semibold text-cyan-100">
-                  {currentLanguage === 'de' ? 'Empfohlene Verbesserungen:' : 'Recommended improvements:'}
+                {typeof aiSummary === 'string' && aiSummary.trim().length > 0 ? (
+                  <p className="whitespace-pre-wrap text-lg leading-relaxed text-slate-50">{aiSummary}</p>
+                ) : (
+                  <p className="text-base text-slate-200">
+                    {currentLanguage === 'de'
+                      ? 'Noch keine AI-Zusammenfassung vorhanden.'
+                      : 'No AI summary generated yet.'}
                   </p>
-                  {summaryData.improvements.map((point, index) => (
-                    <p key={`summary-${index}`} className="text-base text-slate-100">
-                      {index + 1}. {point}
-                    </p>
-                  ))}
-                </div>
+                )}
               </div>
             </div>
           ) : null}

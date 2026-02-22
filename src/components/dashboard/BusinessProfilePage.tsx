@@ -3,6 +3,11 @@ import { useI18n } from '../../i18n';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSelect } from './DashboardSelect';
 import {
+  clearBusinessProfileInBackend,
+  fetchBusinessProfileFromBackend,
+  saveBusinessProfileToBackend,
+} from './api';
+import {
   clearBusinessProfile,
   getBusinessProfile,
   saveBusinessProfile,
@@ -87,13 +92,46 @@ export function BusinessProfilePage({
   const [form, setForm] = useState<BusinessProfileFormState>(createEmptyForm);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isResettingProfile, setIsResettingProfile] = useState(false);
   const successTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const existingProfile = getBusinessProfile();
-    if (existingProfile) {
-      setForm(toFormState(existingProfile));
+    const localProfile = getBusinessProfile();
+    if (localProfile) {
+      setForm(toFormState(localProfile));
     }
+
+    let isMounted = true;
+    const loadProfile = async () => {
+      try {
+        const backendProfile = await fetchBusinessProfileFromBackend();
+        if (!isMounted) {
+          return;
+        }
+
+        if (backendProfile) {
+          setForm(toFormState(backendProfile));
+          saveBusinessProfile(backendProfile);
+          return;
+        }
+
+        if (localProfile) {
+          try {
+            await saveBusinessProfileToBackend(localProfile);
+          } catch {
+            // Best effort sync for existing local users.
+          }
+        }
+      } catch {
+        // Silent fallback to local profile.
+      }
+    };
+
+    void loadProfile();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(
@@ -123,7 +161,11 @@ export function BusinessProfilePage({
     });
   };
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
+    if (isSavingProfile) {
+      return;
+    }
+
     const nextForm = {
       ...form,
       businessName: form.businessName.trim(),
@@ -165,31 +207,61 @@ export function BusinessProfilePage({
       preferredContactMethod: nextForm.preferredContactMethod,
     };
 
-    saveBusinessProfile(profileToSave);
-    setForm(toFormState(profileToSave));
-    setErrorMessage(null);
-    setSuccessMessage(t('dashboard.businessProfile.profileSaved'));
+    setIsSavingProfile(true);
+    try {
+      const persistedProfile = await saveBusinessProfileToBackend(profileToSave);
+      saveBusinessProfile(persistedProfile);
+      setForm(toFormState(persistedProfile));
+      setErrorMessage(null);
+      setSuccessMessage(t('dashboard.businessProfile.profileSaved'));
 
-    if (successTimerRef.current) {
-      window.clearTimeout(successTimerRef.current);
-    }
-    successTimerRef.current = window.setTimeout(() => {
+      if (successTimerRef.current) {
+        window.clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = window.setTimeout(() => {
+        setSuccessMessage(null);
+      }, 2500);
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage(t('dashboard.businessProfile.requiredFieldsError'));
+      }
       setSuccessMessage(null);
-    }, 2500);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
-  const handleResetProfile = () => {
-    clearBusinessProfile();
-    setForm(createEmptyForm());
-    setErrorMessage(null);
-    setSuccessMessage(t('dashboard.businessProfile.profileCleared'));
-
-    if (successTimerRef.current) {
-      window.clearTimeout(successTimerRef.current);
+  const handleResetProfile = async () => {
+    if (isResettingProfile) {
+      return;
     }
-    successTimerRef.current = window.setTimeout(() => {
+
+    setIsResettingProfile(true);
+    try {
+      await clearBusinessProfileInBackend();
+      clearBusinessProfile();
+      setForm(createEmptyForm());
+      setErrorMessage(null);
+      setSuccessMessage(t('dashboard.businessProfile.profileCleared'));
+
+      if (successTimerRef.current) {
+        window.clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = window.setTimeout(() => {
+        setSuccessMessage(null);
+      }, 2500);
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage(t('dashboard.businessProfile.requiredFieldsError'));
+      }
       setSuccessMessage(null);
-    }, 2500);
+    } finally {
+      setIsResettingProfile(false);
+    }
   };
 
   return (
@@ -378,17 +450,23 @@ export function BusinessProfilePage({
             <div className="flex flex-wrap gap-4" style={{ marginTop: '26px' }}>
               <button
                 type="button"
-                onClick={handleSaveProfile}
-                className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-purple-700"
+                onClick={() => {
+                  void handleSaveProfile();
+                }}
+                disabled={isSavingProfile || isResettingProfile}
+                className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {t('dashboard.businessProfile.saveProfile')}
+                {isSavingProfile ? t('common.loading') : t('dashboard.businessProfile.saveProfile')}
               </button>
               <button
                 type="button"
-                onClick={handleResetProfile}
-                className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:bg-white/10"
+                onClick={() => {
+                  void handleResetProfile();
+                }}
+                disabled={isSavingProfile || isResettingProfile}
+                className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {t('dashboard.businessProfile.reset')}
+                {isResettingProfile ? t('common.loading') : t('dashboard.businessProfile.reset')}
               </button>
             </div>
           </div>

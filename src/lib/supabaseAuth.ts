@@ -293,7 +293,7 @@ const isSessionNearExpiry = (session: StoredSession): boolean =>
 const authRequest = async (
   path: string,
   options: {
-    method?: 'GET' | 'POST';
+    method?: 'GET' | 'POST' | 'PUT';
     body?: Record<string, unknown>;
     accessToken?: string;
   } = {},
@@ -536,6 +536,70 @@ export const signInWithGoogle = async (
   authorizeUrl.searchParams.set('redirect_to', redirectTo);
 
   window.location.assign(authorizeUrl.toString());
+
+  return { ok: true };
+};
+
+export const sendPasswordResetEmail = async (
+  email: string,
+  options?: { redirectPath?: string },
+): Promise<AuthActionResult> => {
+  if (!hasSupabaseConfig()) {
+    return {
+      ok: false,
+      message: 'Supabase Auth is not configured in this frontend.',
+    };
+  }
+
+  const requestedPath = options?.redirectPath ?? '/reset-password';
+  const normalizedPath = requestedPath.startsWith('/') ? requestedPath : '/reset-password';
+  const redirectTo = isBrowser ? `${window.location.origin}${normalizedPath}` : undefined;
+
+  const response = await authRequest('recover', {
+    body: {
+      email,
+      ...(redirectTo ? { redirect_to: redirectTo } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      message: parseErrorMessage(response.payload),
+    };
+  }
+
+  return { ok: true };
+};
+
+export const updateSupabasePassword = async (newPassword: string): Promise<AuthActionResult> => {
+  if (!hasSupabaseConfig()) {
+    return {
+      ok: false,
+      message: 'Supabase Auth is not configured in this frontend.',
+    };
+  }
+
+  const token = await getSupabaseAccessToken();
+  if (!token) {
+    return {
+      ok: false,
+      message: 'Your reset link is invalid or expired. Request a new password reset email.',
+    };
+  }
+
+  const response = await authRequest('user', {
+    method: 'PUT',
+    accessToken: token,
+    body: { password: newPassword },
+  });
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      message: parseErrorMessage(response.payload),
+    };
+  }
 
   return { ok: true };
 };

@@ -8,6 +8,7 @@ import { ValuePropSection } from './components/ValuePropSection';
 import { PricingSection } from './components/PricingSection';
 import { Footer } from './components/Footer';
 import { LoginModal } from './components/LoginModal';
+import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { BusinessProfilePage } from './components/dashboard/BusinessProfilePage';
 import { SavedSearchesPage } from './components/dashboard/SavedSearchesPage';
@@ -22,6 +23,7 @@ type AppRoute =
   | '/saved-searches'
   | '/billing'
   | '/account-settings'
+  | '/reset-password'
   | '__protected_unknown__';
 
 const getRouteFromPathname = (pathname: string): AppRoute => {
@@ -49,14 +51,50 @@ const getRouteFromPathname = (pathname: string): AppRoute => {
     return '/account-settings';
   }
 
+  if (pathname === '/reset-password') {
+    return '/reset-password';
+  }
+
   return '__protected_unknown__';
+};
+
+const normalizeRecoveryRouteFromHash = (): string => {
+  if (typeof window === 'undefined') {
+    return '/';
+  }
+
+  const pathname = window.location.pathname;
+  if (pathname !== '/') {
+    return pathname;
+  }
+
+  const hashRaw = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash;
+  const hashParams = new URLSearchParams(hashRaw);
+  const recoveryType = hashParams.get('type');
+  const hasAccessToken = typeof hashParams.get('access_token') === 'string';
+  const hasRefreshToken = typeof hashParams.get('refresh_token') === 'string';
+
+  if (recoveryType === 'recovery' && hasAccessToken && hasRefreshToken) {
+    window.history.replaceState(
+      {},
+      '',
+      `/reset-password${window.location.search}${window.location.hash}`,
+    );
+    return '/reset-password';
+  }
+
+  return pathname;
 };
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [route, setRoute] = useState<AppRoute>(() => getRouteFromPathname(window.location.pathname));
+  const [route, setRoute] = useState<AppRoute>(() =>
+    getRouteFromPathname(normalizeRecoveryRouteFromHash()),
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +138,7 @@ export default function App() {
       return;
     }
 
-    const isProtectedRoute = route !== '/';
+    const isProtectedRoute = route !== '/' && route !== '/reset-password';
     if (isProtectedRoute && !isAuthenticated) {
       setIsLoginOpen(true);
       navigate('/');
@@ -129,11 +167,17 @@ export default function App() {
     navigate('/');
   };
 
+  const handleReturnToLoginFromReset = () => {
+    navigate('/');
+    setIsLoginOpen(true);
+  };
+
   const showDashboard = route === '/dashboard' && isAuthenticated;
   const showBusinessProfile = route === '/business-profile' && isAuthenticated;
   const showSavedSearches = route === '/saved-searches' && isAuthenticated;
   const showBilling = route === '/billing' && isAuthenticated;
   const showAccountSettings = route === '/account-settings' && isAuthenticated;
+  const showResetPassword = route === '/reset-password';
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -205,6 +249,11 @@ export default function App() {
             void handleLogout();
           }}
         />
+      ) : showResetPassword ? (
+        <ResetPasswordPage
+          onBackHome={() => navigate('/')}
+          onBackToLogin={handleReturnToLoginFromReset}
+        />
       ) : (
         <>
           <Header onLoginClick={openLoginModal} />
@@ -222,7 +271,11 @@ export default function App() {
         </>
       )}
 
-      <LoginModal open={isLoginOpen} onClose={() => setIsLoginOpen(false)} onAuthenticated={handleAuthenticated} />
+      <LoginModal
+        open={isLoginOpen && !showResetPassword}
+        onClose={() => setIsLoginOpen(false)}
+        onAuthenticated={handleAuthenticated}
+      />
     </div>
   );
 }

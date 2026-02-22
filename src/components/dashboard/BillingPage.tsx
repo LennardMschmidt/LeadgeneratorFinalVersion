@@ -126,6 +126,15 @@ export function BillingPage({
     return Math.max(0, Math.min(100, Math.round(ratio)));
   }, [usage]);
 
+  const aiProgressValue = useMemo(() => {
+    if (!usage || usage.aiTokensTotal <= 0) {
+      return 0;
+    }
+
+    const ratio = (usage.aiTokensUsed / usage.aiTokensTotal) * 100;
+    return Math.max(0, Math.min(100, Math.round(ratio)));
+  }, [usage]);
+
   const loadBillingData = async () => {
     setIsLoading(true);
     setErrorMessage(null);
@@ -269,6 +278,46 @@ export function BillingPage({
               </div>
               <Progress value={progressValue} className="h-2 bg-white/10" />
             </div>
+
+            <div className="mt-8 rounded-xl border border-white/10 bg-black/20 p-4">
+              <p className="text-xs uppercase tracking-wider text-gray-500">
+                {t('billingPage.currentPlan.aiTokensTitle')}
+              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-xs uppercase tracking-wider text-gray-500">
+                    {t('billingPage.currentPlan.aiTotal')}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-white">{usage?.aiTokensTotal ?? 0}</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-xs uppercase tracking-wider text-gray-500">
+                    {t('billingPage.currentPlan.aiUsed')}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-white">{usage?.aiTokensUsed ?? 0}</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-xs uppercase tracking-wider text-gray-500">
+                    {t('billingPage.currentPlan.aiRemaining')}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-white">{usage?.aiTokensRemaining ?? 0}</p>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="mb-2 flex items-center justify-between text-xs text-gray-400">
+                  <span>{t('billingPage.currentPlan.aiUsageProgress')}</span>
+                  <span>{aiProgressValue}%</span>
+                </div>
+                <Progress value={aiProgressValue} className="h-2 bg-white/10" />
+              </div>
+
+              {usage?.aiPeriodEnd ? (
+                <p className="mt-3 text-xs text-gray-400">
+                  {t('billingPage.currentPlan.aiPeriodEnds')}: {new Date(usage.aiPeriodEnd).toLocaleString()}
+                </p>
+              ) : null}
+            </div>
           </section>
 
           <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
@@ -282,6 +331,10 @@ export function BillingPage({
                 const visual = billingPlanVisuals[plan.code as 'STANDARD' | 'PRO' | 'EXPERT'];
                 const isPro = plan.code === 'PRO';
                 const isExpert = plan.code === 'EXPERT';
+                const planFeatures = [
+                  `${plan.aiTokensPerMonth} AI evaluation tokens/month`,
+                  ...visual.features,
+                ];
 
                 return (
                   <div
@@ -364,7 +417,7 @@ export function BillingPage({
                     </button>
 
                     <ul className="space-y-4">
-                      {visual.features.map((feature) => (
+                      {planFeatures.map((feature) => (
                         <li key={`${plan.code}-${feature}`} className="flex items-start gap-3">
                           <div
                             className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${

@@ -3,6 +3,7 @@
 import {
   BackendLead,
   BackendLeadResponse,
+  BusinessProfile,
   Lead,
   LeadSearchMeta,
   LeadStatus,
@@ -25,6 +26,14 @@ const buildApiUrl = (path: string): string => {
   }
 
   return path;
+};
+
+const createRequestId = (): string => {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `req-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
 const mapTier = (tier: BackendLead['tier']): Lead['tier'] => {
@@ -76,6 +85,21 @@ const toInteger = (value: unknown): number | undefined => {
 
 const toStringArray = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const toStringRecord = (value: unknown): Record<string, string> | undefined => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return undefined;
+  }
+
+  const normalized: Record<string, string> = {};
+  Object.entries(value as Record<string, unknown>).forEach(([key, raw]) => {
+    if (typeof raw === 'string') {
+      normalized[key] = raw;
+    }
+  });
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+};
 
 const LINKEDIN_NO_PROBLEMS_MESSAGE = 'No problem categories available for LinkedIn leads.';
 
@@ -253,6 +277,14 @@ type BackendSavedLead = {
   websiteAnalysis?: unknown;
   website_analysis_created_at?: unknown;
   websiteAnalysisCreatedAt?: unknown;
+  website_ai_summary?: unknown;
+  websiteAiSummary?: unknown;
+  website_ai_generated_at?: unknown;
+  websiteAiGeneratedAt?: unknown;
+  contact_ai_suggestions?: unknown;
+  contactAiSuggestions?: unknown;
+  contact_ai_generated_at?: unknown;
+  contactAiGeneratedAt?: unknown;
   saved_at?: unknown;
   savedAt?: unknown;
   updated_at?: unknown;
@@ -379,6 +411,9 @@ const mapSavedLead = (item: BackendSavedLead): SavedLead | null => {
   const sourceLeadId = sourceLeadIdRaw && sourceLeadIdRaw.length > 0
     ? sourceLeadIdRaw
     : savedLeadId;
+  const contactAiSuggestions = toStringRecord(
+    item.contactAiSuggestions ?? item.contact_ai_suggestions,
+  );
 
   const mapped: SavedLead = {
     savedLeadId,
@@ -406,6 +441,24 @@ const mapSavedLead = (item: BackendSavedLead): SavedLead | null => {
       ? {
           websiteAnalysisCreatedAt: item.websiteAnalysisCreatedAt ??
             (item.website_analysis_created_at as string),
+        }
+      : {}),
+    ...(typeof (item.websiteAiSummary ?? item.website_ai_summary) === 'string'
+      ? {
+          websiteAiSummary: (item.websiteAiSummary ?? item.website_ai_summary) as string,
+        }
+      : {}),
+    ...(typeof (item.websiteAiGeneratedAt ?? item.website_ai_generated_at) === 'string'
+      ? {
+          websiteAiGeneratedAt: (item.websiteAiGeneratedAt ??
+            item.website_ai_generated_at) as string,
+        }
+      : {}),
+    ...(contactAiSuggestions ? { contactAiSuggestions } : {}),
+    ...(typeof (item.contactAiGeneratedAt ?? item.contact_ai_generated_at) === 'string'
+      ? {
+          contactAiGeneratedAt: (item.contactAiGeneratedAt ??
+            item.contact_ai_generated_at) as string,
         }
       : {}),
     savedAt:
@@ -615,6 +668,56 @@ const parseBackendError = async (response: Response): Promise<string> => {
   return `Request failed (${response.status})`;
 };
 
+type BusinessProfileApiResponse = {
+  profile?: unknown;
+};
+
+const parseBusinessProfilePayload = (value: unknown): BusinessProfile | null => {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  const payload = value as Record<string, unknown>;
+  const businessName =
+    typeof payload.businessName === 'string' ? payload.businessName.trim() : '';
+  const businessCategory =
+    typeof payload.businessCategory === 'string' ? payload.businessCategory.trim() : '';
+  const businessLocation =
+    typeof payload.businessLocation === 'string' ? payload.businessLocation.trim() : '';
+  const serviceDescription =
+    typeof payload.serviceDescription === 'string' ? payload.serviceDescription.trim() : '';
+  const targetCustomerType =
+    typeof payload.targetCustomerType === 'string' ? payload.targetCustomerType.trim() : '';
+  const preferredContactMethod =
+    typeof payload.preferredContactMethod === 'string'
+      ? payload.preferredContactMethod.trim()
+      : '';
+  const primaryProblemsYouSolve = toStringArray(payload.primaryProblemsYouSolve);
+
+  if (
+    !businessName ||
+    !businessCategory ||
+    !businessLocation ||
+    !serviceDescription ||
+    !targetCustomerType ||
+    !preferredContactMethod
+  ) {
+    return null;
+  }
+
+  return {
+    businessName,
+    businessCategory,
+    businessLocation,
+    serviceDescription,
+    targetCustomerType: targetCustomerType as BusinessProfile['targetCustomerType'],
+    primaryProblemsYouSolve:
+      primaryProblemsYouSolve as BusinessProfile['primaryProblemsYouSolve'],
+    preferredContactMethod:
+      preferredContactMethod as BusinessProfile['preferredContactMethod'],
+  };
+};
+
 const getAuthorizationHeader = async (): Promise<string> => {
   const accessToken = await getSupabaseAccessToken();
   if (!accessToken) {
@@ -622,6 +725,66 @@ const getAuthorizationHeader = async (): Promise<string> => {
   }
 
   return `Bearer ${accessToken}`;
+};
+
+export const fetchBusinessProfileFromBackend = async (): Promise<BusinessProfile | null> => {
+  const requestUrl = buildApiUrl('/api/business-profile');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BusinessProfileApiResponse;
+  return parseBusinessProfilePayload(payload.profile);
+};
+
+export const saveBusinessProfileToBackend = async (
+  profile: BusinessProfile,
+): Promise<BusinessProfile> => {
+  const requestUrl = buildApiUrl('/api/business-profile');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authorization,
+    },
+    body: JSON.stringify(profile),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BusinessProfileApiResponse;
+  const parsed = parseBusinessProfilePayload(payload.profile);
+  if (!parsed) {
+    throw new Error('Business profile response is invalid.');
+  }
+
+  return parsed;
+};
+
+export const clearBusinessProfileInBackend = async (): Promise<void> => {
+  const requestUrl = buildApiUrl('/api/business-profile');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'DELETE',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
 };
 
 const logLeadPayloads = (backendLeads: BackendLead[], mappedLeads: Lead[]): void => {
@@ -974,6 +1137,65 @@ export const removeWebsiteAnalysisForSavedLead = async (
   return mapped;
 };
 
+export type AiContactSuggestionChannel = 'email' | 'linkedin' | 'phone';
+
+export const generateAiSummaryForSavedLead = async (
+  savedLeadId: string,
+): Promise<SavedLead> => {
+  const requestUrl = buildApiUrl(`/api/leads/${encodeURIComponent(savedLeadId)}/ai-summary`);
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: authorization,
+      'X-Request-Id': createRequestId(),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as SavedLeadMutationResponse;
+  const mapped = mapSavedLead(payload.savedLead as BackendSavedLead);
+  if (!mapped) {
+    throw new Error('Saved lead response is invalid.');
+  }
+
+  return mapped;
+};
+
+export const generateAiContactSuggestionForSavedLead = async (
+  savedLeadId: string,
+  channel: AiContactSuggestionChannel,
+): Promise<SavedLead> => {
+  const requestUrl = buildApiUrl(
+    `/api/leads/${encodeURIComponent(savedLeadId)}/ai-contact-suggestion`,
+  );
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authorization,
+      'X-Request-Id': createRequestId(),
+    },
+    body: JSON.stringify({ channel }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as SavedLeadMutationResponse;
+  const mapped = mapSavedLead(payload.savedLead as BackendSavedLead);
+  if (!mapped) {
+    throw new Error('Saved lead response is invalid.');
+  }
+
+  return mapped;
+};
+
 export const deleteSavedLeadFromBackend = async (savedLeadId: string): Promise<void> => {
   const requestUrl = buildApiUrl(
     `/api/leads/saved-leads/${encodeURIComponent(savedLeadId)}`,
@@ -1038,6 +1260,7 @@ export type BillingPlan = {
   code: BackendBillingPlanCode;
   name: string;
   dailyTokenLimit: number;
+  aiTokensPerMonth: number;
   tokenCosts: BillingPlanTokenCosts;
 };
 
@@ -1048,6 +1271,11 @@ export type BillingUsage = {
   tokensUsedToday: number;
   tokensRemainingToday: number;
   usageDate: string;
+  aiTokensTotal: number;
+  aiTokensUsed: number;
+  aiTokensRemaining: number;
+  aiPeriodStart: string | null;
+  aiPeriodEnd: string | null;
 };
 
 export type AccountDetails = {
@@ -1069,6 +1297,11 @@ type BillingUsageResponse = {
   tokensUsedToday?: unknown;
   tokensRemainingToday?: unknown;
   usageDate?: unknown;
+  aiTokensTotal?: unknown;
+  aiTokensUsed?: unknown;
+  aiTokensRemaining?: unknown;
+  aiPeriodStart?: unknown;
+  aiPeriodEnd?: unknown;
 };
 
 type BillingChangePlanResponse = {
@@ -1076,6 +1309,12 @@ type BillingChangePlanResponse = {
     plan?: unknown;
     subscriptionStatus?: unknown;
     dailyTokenLimit?: unknown;
+    aiTokensPerMonth?: unknown;
+    aiTokensTotal?: unknown;
+    aiTokensUsed?: unknown;
+    aiTokensRemaining?: unknown;
+    aiPeriodStart?: unknown;
+    aiPeriodEnd?: unknown;
   } | null;
 };
 
@@ -1125,6 +1364,7 @@ const parseBillingPlan = (value: unknown): BillingPlan | null => {
     code?: unknown;
     name?: unknown;
     dailyTokenLimit?: unknown;
+    aiTokensPerMonth?: unknown;
     tokenCosts?: unknown;
   };
 
@@ -1136,6 +1376,7 @@ const parseBillingPlan = (value: unknown): BillingPlan | null => {
   if (dailyTokenLimit === undefined) {
     return null;
   }
+  const aiTokensPerMonth = toInteger(payload.aiTokensPerMonth) ?? 0;
 
   const tokenCosts = payload.tokenCosts;
   const normalizedCosts: BillingPlanTokenCosts = {
@@ -1155,6 +1396,7 @@ const parseBillingPlan = (value: unknown): BillingPlan | null => {
     code: payload.code,
     name: payload.name,
     dailyTokenLimit,
+    aiTokensPerMonth,
     tokenCosts: normalizedCosts,
   };
 };
@@ -1219,6 +1461,11 @@ export const fetchBillingUsageFromBackend = async (): Promise<BillingUsage> => {
     tokensUsedToday: toInteger(payload.tokensUsedToday) ?? 0,
     tokensRemainingToday: toInteger(payload.tokensRemainingToday) ?? 0,
     usageDate: typeof payload.usageDate === 'string' ? payload.usageDate : '',
+    aiTokensTotal: toInteger(payload.aiTokensTotal) ?? 0,
+    aiTokensUsed: toInteger(payload.aiTokensUsed) ?? 0,
+    aiTokensRemaining: toInteger(payload.aiTokensRemaining) ?? 0,
+    aiPeriodStart: typeof payload.aiPeriodStart === 'string' ? payload.aiPeriodStart : null,
+    aiPeriodEnd: typeof payload.aiPeriodEnd === 'string' ? payload.aiPeriodEnd : null,
   };
 };
 

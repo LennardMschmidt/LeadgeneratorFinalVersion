@@ -77,6 +77,10 @@ export interface Lead {
   };
   websiteAnalysis?: Record<string, unknown>;
   websiteAnalysisCreatedAt?: string;
+  websiteAiSummary?: string;
+  websiteAiGeneratedAt?: string;
+  contactAiSuggestions?: Record<string, string>;
+  contactAiGeneratedAt?: string;
 }
 
 export interface BackendProblemSignal {

@@ -19,6 +19,7 @@ interface BillingPageProps {
   onNavigateBusinessProfile: () => void;
   onNavigateSavedSearches: () => void;
   onNavigateBilling: () => void;
+  onNavigateAccountSettings: () => void;
   onLogout: () => void;
 }
 
@@ -89,6 +90,7 @@ export function BillingPage({
   onNavigateBusinessProfile,
   onNavigateSavedSearches,
   onNavigateBilling,
+  onNavigateAccountSettings,
   onLogout,
 }: BillingPageProps) {
   const { t } = useI18n();
@@ -207,6 +209,7 @@ export function BillingPage({
         onNavigateBusinessProfile={onNavigateBusinessProfile}
         onNavigateSavedSearches={onNavigateSavedSearches}
         onNavigateBilling={onNavigateBilling}
+        onNavigateAccountSettings={onNavigateAccountSettings}
         onLogout={onLogout}
       />
 
@@ -407,6 +410,7 @@ export function BillingPage({
               </button>
             </div>
           </section>
+
         </div>
       </main>
 

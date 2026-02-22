@@ -1963,3 +1963,26 @@ html {
   animation: spin-loader .9s linear infinite;
   transform-origin: center;
 }
+
+/* Auth modal styles from Figma Make */
+.auth-modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.auth-modal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.auth-modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.auth-modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.auth-modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

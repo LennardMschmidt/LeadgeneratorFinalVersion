@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'motion/react';
-import { Check, CreditCard, Lock, Sparkles, UserRound, WalletCards, Layers, X } from 'lucide-react';
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
+import { ArrowLeft, Check, Mail, Shield, X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import {
   isSupabaseAuthConfigured,
@@ -22,6 +22,7 @@ interface LoginModalProps {
   onAuthenticated?: () => void;
 }
 
+type AuthView = 'login' | 'register';
 type BillingPlanCode = 'STANDARD' | 'PRO' | 'EXPERT';
 type RegisterStep = 1 | 2 | 3;
 
@@ -53,36 +54,34 @@ const PLAN_VISUALS: Record<
     period: string;
     description: string;
     cta: string;
-    highlighted: boolean;
     badge?: string;
     features: string[];
   }
 > = {
   STANDARD: {
     price: '$29',
-    period: 'per month',
+    period: '/per month',
     description: 'Essential tools for solo operators and early projects.',
     cta: 'Choose Standard',
-    highlighted: false,
     features: [
-      '180 tokens per day',
+      '180 tokens/day included',
       'Google Maps search',
       'Website analysis',
-      'Saved leads',
       'Basic lead management',
+      'Saved leads',
       'Email support',
     ],
   },
   PRO: {
     price: '$49',
-    period: 'per month',
-    description: 'Full access for growing teams.',
-    cta: 'Choose Pro',
-    highlighted: true,
+    period: '/per month',
+    description: 'Full access for growing teams',
+    cta: 'Switch to Pro',
     badge: 'MOST POPULAR',
     features: [
-      '380 tokens per day',
+      '380 tokens/day included',
       'LinkedIn + Google Maps search',
+      'Advanced website analysis',
       'CSV & CRM export',
       'Saved searches',
       'Lead scoring & tiers',
@@ -91,34 +90,20 @@ const PLAN_VISUALS: Record<
   },
   EXPERT: {
     price: '$79',
-    period: 'per month',
+    period: '/per month',
     description: 'Maximum volume and speed for high-output prospecting.',
-    cta: 'Choose Expert',
-    highlighted: false,
+    cta: 'Upgrade to Expert',
     badge: 'BEST VALUE',
     features: [
-      '700 tokens per day',
+      '700 tokens/day included',
       'Highest daily throughput',
+      'Priority execution lane',
       'All Pro features',
       'Advanced usage visibility',
       'Fast-track support',
       'API-ready workflow',
     ],
   },
-};
-
-const cardBrandFromNumber = (value: string): 'visa' | 'mastercard' | 'amex' | 'unknown' => {
-  const digits = value.replace(/\s+/g, '');
-  if (digits.startsWith('4')) {
-    return 'visa';
-  }
-  if (/^(5[1-5]|2[2-7])/.test(digits)) {
-    return 'mastercard';
-  }
-  if (/^(34|37)/.test(digits)) {
-    return 'amex';
-  }
-  return 'unknown';
 };
 
 const formatCardNumber = (value: string): string =>
@@ -136,27 +121,56 @@ const formatExpiry = (value: string): string => {
   return `${digits.slice(0, 2)}/${digits.slice(2)}`;
 };
 
-const passwordStrength = (value: string): 0 | 1 | 2 | 3 | 4 => {
-  let score: 0 | 1 | 2 | 3 | 4 = 0;
-  if (value.length >= 8) score = (score + 1) as 0 | 1 | 2 | 3 | 4;
-  if (/[A-Z]/.test(value)) score = (score + 1) as 0 | 1 | 2 | 3 | 4;
-  if (/[0-9]/.test(value)) score = (score + 1) as 0 | 1 | 2 | 3 | 4;
-  if (/[^A-Za-z0-9]/.test(value)) score = (score + 1) as 0 | 1 | 2 | 3 | 4;
-  return score;
+const getPasswordStrength = (value: string): { label: string; color: string; width: string } => {
+  if (!value) {
+    return { label: '', color: '', width: '0%' };
+  }
+
+  let strength = 0;
+  if (value.length >= 8) strength++;
+  if (value.length >= 12) strength++;
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) strength++;
+  if (/\d/.test(value)) strength++;
+  if (/[^a-zA-Z0-9]/.test(value)) strength++;
+
+  if (strength <= 1) {
+    return { label: 'Weak', color: 'rgb(244, 63, 94)', width: '25%' };
+  }
+  if (strength === 2) {
+    return { label: 'Okay', color: 'rgb(251, 146, 60)', width: '50%' };
+  }
+  if (strength === 3) {
+    return { label: 'Strong', color: 'rgb(59, 130, 246)', width: '75%' };
+  }
+  return { label: 'Very strong', color: 'rgb(16, 185, 129)', width: '100%' };
+};
+
+const getAuthFailureMessage = (result: unknown): string => {
+  if (
+    result &&
+    typeof result === 'object' &&
+    'message' in result &&
+    typeof (result as { message?: unknown }).message === 'string' &&
+    (result as { message: string }).message.trim().length > 0
+  ) {
+    return (result as { message: string }).message;
+  }
+  return 'Authentication failed. Please try again.';
 };
 
 export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) {
   const { t } = useI18n();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+
+  const [view, setView] = useState<AuthView>('login');
+  const [registerStep, setRegisterStep] = useState<RegisterStep>(1);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
   const [rememberMe, setRememberMe] = useState(false);
-  const [registerStep, setRegisterStep] = useState<RegisterStep>(1);
-  const [selectedPlan, setSelectedPlan] = useState<BillingPlanCode | null>(null);
+
+  const [selectedPlan, setSelectedPlan] = useState<BillingPlanCode | null>('PRO');
   const [availablePlans, setAvailablePlans] = useState<BillingPlan[]>(FALLBACK_PLANS);
 
   const [cardholderName, setCardholderName] = useState('');
@@ -190,31 +204,39 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   }, [open, onClose]);
 
   useEffect(() => {
-    if (!open) {
-      setMode('login');
-      setRegisterStep(1);
-      setFullName('');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
-      setRememberMe(false);
-      setSelectedPlan(null);
-      setAvailablePlans(FALLBACK_PLANS);
-      setCardholderName('');
-      setCardNumber('');
-      setExpiry('');
-      setCvc('');
-      setStatusMessage(null);
-      setInlineErrors({});
+    if (open) {
+      return;
     }
+
+    setView('login');
+    setRegisterStep(1);
+
+    setFullName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setRememberMe(false);
+
+    setSelectedPlan('PRO');
+    setAvailablePlans(FALLBACK_PLANS);
+
+    setCardholderName('');
+    setCardNumber('');
+    setExpiry('');
+    setCvc('');
+
+    setStatusMessage(null);
+    setInlineErrors({});
+    setIsSubmitting(false);
   }, [open]);
 
   useEffect(() => {
-    if (!open || mode !== 'register') {
+    if (!open || view !== 'register') {
       return;
     }
 
     let cancelled = false;
+
     const loadPlans = async () => {
       try {
         const plans = await fetchPublicBillingPlansFromBackend();
@@ -229,10 +251,11 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     };
 
     void loadPlans();
+
     return () => {
       cancelled = true;
     };
-  }, [open, mode]);
+  }, [open, view]);
 
   const orderedPlans = useMemo(() => {
     const order: BillingPlanCode[] = ['STANDARD', 'PRO', 'EXPERT'];
@@ -241,17 +264,18 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     );
   }, [availablePlans]);
 
-  const progress = useMemo(() => ((registerStep - 1) / 2) * 100, [registerStep]);
-  const strength = useMemo(() => passwordStrength(password), [password]);
-  const cardBrand = useMemo(() => cardBrandFromNumber(cardNumber), [cardNumber]);
-  const registerSteps = useMemo(
-    () => [
-      { step: 1, label: 'Account', icon: UserRound },
-      { step: 2, label: 'Plan', icon: Layers },
-      { step: 3, label: 'Payment', icon: WalletCards },
-    ],
-    [],
-  );
+  useEffect(() => {
+    const codes = orderedPlans.map((plan) => plan.code as BillingPlanCode);
+    if (codes.length === 0) {
+      return;
+    }
+
+    if (selectedPlan !== null && !codes.includes(selectedPlan)) {
+      setSelectedPlan(codes.includes('PRO') ? 'PRO' : codes[0]);
+    }
+  }, [orderedPlans, selectedPlan]);
+
+  const passwordStrength = useMemo(() => getPasswordStrength(password), [password]);
 
   const stepOneValid =
     fullName.trim().length >= 2 &&
@@ -261,6 +285,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     password === confirmPassword;
 
   const stepTwoValid = selectedPlan !== null;
+
   const stepThreeValid =
     cardholderName.trim().length >= 2 &&
     cardNumber.replace(/\s+/g, '').length >= 12 &&
@@ -307,7 +332,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleLogin = async () => {
     if (isSubmitting) {
       return;
     }
@@ -317,7 +342,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
       return;
     }
 
-    if (mode === 'register') {
+    if (view !== 'login') {
       setStatusMessage('Use email signup to complete onboarding and subscription setup.');
       return;
     }
@@ -327,7 +352,34 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
     const result = await signInWithGoogle('/dashboard', { rememberMe });
     if (!result.ok) {
-      setStatusMessage(result.message);
+      setStatusMessage(getAuthFailureMessage(result));
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLogin = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    if (!isSupabaseAuthConfigured()) {
+      setStatusMessage(t('login.authNotConfigured'));
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatusMessage(null);
+
+    try {
+      const result = await signInWithEmail(email.trim(), password, { rememberMe });
+      if (!result.ok) {
+        setStatusMessage(getAuthFailureMessage(result));
+        return;
+      }
+
+      setStatusMessage(t('login.emailLoginCaptured', { email }));
+      onAuthenticated?.();
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -357,7 +409,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
       });
 
       if (!result.ok) {
-        setStatusMessage(result.message);
+        setStatusMessage(getAuthFailureMessage(result));
         return;
       }
 
@@ -365,7 +417,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
         setStatusMessage(
           `Your account was created for ${email}. Please confirm your email, then sign in to activate your subscription.`,
         );
-        setMode('login');
+        setView('login');
         setRegisterStep(1);
         setPassword('');
         setConfirmPassword('');
@@ -416,418 +468,727 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     await completeRegistration();
   };
 
-  const handleEmailAuth = async (event: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (mode === 'register') {
-      await handleRegisterContinue();
+    if (view === 'login') {
+      await handleLogin();
       return;
     }
 
-    if (isSubmitting) {
-      return;
-    }
-
-    if (!isSupabaseAuthConfigured()) {
-      setStatusMessage(t('login.authNotConfigured'));
-      return;
-    }
-
-    setIsSubmitting(true);
-    setStatusMessage(null);
-
-    try {
-      const result = await signInWithEmail(email.trim(), password, { rememberMe });
-      if (!result.ok) {
-        setStatusMessage(result.message);
-        return;
-      }
-
-      setStatusMessage(t('login.emailLoginCaptured', { email }));
-      onAuthenticated?.();
-    } finally {
-      setIsSubmitting(false);
-    }
+    await handleRegisterContinue();
   };
 
-  if (!open) {
-    return null;
-  }
-
-  const strengthLabel =
-    strength <= 1 ? 'Weak' : strength === 2 ? 'Okay' : strength === 3 ? 'Strong' : 'Very strong';
+  const inputClassName =
+    'w-full rounded-xl border border-white/15 bg-white/5 px-3 text-white placeholder:text-white/35 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20';
+  const fieldHeightStyle = { height: 'calc(var(--spacing) * 11)' };
+  const fieldWrapperStyle = { marginBottom: '20px' };
+  const fieldLabelStyle = { display: 'block', marginBottom: '8px' };
+  const errorTextStyle = { color: 'rgb(251, 113, 133)' };
 
   return createPortal(
-    <>
-      <div
-        role="button"
-        aria-label={t('login.closeLoginForm')}
-        tabIndex={0}
-        onClick={onClose}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            onClose();
-          }
-        }}
-        className="fixed inset-0 z-[119] bg-black/70 backdrop-blur-[14px]"
-      />
-
-      <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-6">
-        <motion.div
-          initial={{ opacity: 0, y: 18, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.25 }}
-          className={`relative overflow-hidden rounded-3xl border shadow-[0_24px_80px_rgba(0,0,0,0.65)] ${
-            mode === 'register'
-              ? 'w-full max-w-5xl border-white/15 bg-[#0f1220]/95 p-6 sm:p-8'
-              : 'w-[94vw] sm:w-[88vw] lg:w-[70vw] lg:h-[70vh] lg:max-h-[760px] lg:max-w-[980px] border-white/25 bg-[#0b0f1d]/98 p-5 sm:p-6'
-          }`}
-        >
-          <div className="absolute -top-20 -right-20 h-52 w-52 rounded-full bg-blue-500/20 blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
-
-          <button
-            type="button"
-            aria-label={t('login.close')}
+    <AnimatePresence>
+      {open ? (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0"
             onClick={onClose}
-            className="absolute right-5 top-5 rounded-full p-1.5 text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+            style={{
+              zIndex: 9998,
+              background: 'rgba(2, 6, 23, 0.72)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)',
+            }}
+          />
+
+          <div
+            className="fixed inset-0 flex items-center justify-center p-4 pointer-events-none"
+            style={{ zIndex: 9999, pointerEvents: 'none' }}
           >
-            <X className="h-4 w-4" />
-          </button>
-
-          <div className={`mb-6 flex items-center gap-2 ${mode === 'login' ? 'lg:mb-5' : ''}`}>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <span className="text-sm font-medium tracking-wide text-gray-200">
-              {mode === 'login' ? t('login.loginTitle') : 'Onboarding'}
-            </span>
-          </div>
-
-          <div className={`space-y-6 ${mode === 'login' ? 'lg:h-[calc(100%-3.5rem)] lg:overflow-y-auto lg:pr-1' : ''}`}>
-          <div>
-            <h2 className="text-3xl font-semibold text-white">
-              {mode === 'login' ? t('login.welcomeBack') : 'Create your account'}
-            </h2>
-            <p className="mt-2 text-base text-gray-400">
-              {mode === 'login'
-                ? t('login.loginSubtitle')
-                : "You're just a few steps away from finding your next customers."}
-            </p>
-          </div>
-
-          {mode === 'register' ? (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-4 grid grid-cols-3 gap-2 text-center text-xs sm:text-sm">
-                  {registerSteps.map((item) => {
-                    const isDone = registerStep > item.step;
-                    const isActive = registerStep === item.step;
-                    const Icon = item.icon;
-                    return (
-                      <div key={item.step} className="flex items-center justify-center gap-2 text-gray-300">
-                        <span
-                          className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-                            isDone
-                              ? 'bg-emerald-500 text-white'
-                              : isActive
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white/10 text-gray-400'
-                          }`}
-                        >
-                          {isDone ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}
-                        </span>
-                        <span className={isActive ? 'text-white' : 'text-gray-400'}>{item.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                  <motion.div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400"
-                    animate={{ width: `${progress}%` }}
-                    transition={{ duration: 0.35, ease: 'easeInOut' }}
+            <AnimatePresence mode="wait">
+              {view === 'login' ? (
+                <motion.div
+                  key="login"
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={(event) => event.stopPropagation()}
+                  className="relative w-full max-w-md"
+                  style={{ pointerEvents: 'auto' }}
+                >
+                  <div
+                    className="absolute -left-20 -top-20 h-40 w-40 rounded-full opacity-20 blur-3xl pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, rgb(59, 130, 246), transparent)' }}
                   />
-                </div>
-              </div>
-            </div>
-          ) : null}
+                  <div
+                    className="absolute -bottom-20 -right-20 h-40 w-40 rounded-full opacity-20 blur-3xl pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, rgb(34, 211, 238), transparent)' }}
+                  />
 
-          <div className="grid gap-6 lg:grid-cols-[1fr_auto_1fr] lg:items-start">
-            <div className="space-y-4 lg:col-span-1">
-              <button
-                type="button"
-                onClick={handleGoogleAuth}
-                disabled={isSubmitting}
-                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-medium text-white transition hover:bg-white/10"
-              >
-                {mode === 'register' ? 'Continue with Google (Login only)' : t('login.continueWithGoogle')}
-              </button>
-
-              <div className="relative h-5">
-                <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/10" />
-                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0f1220] px-2 text-xs uppercase tracking-widest text-gray-500">
-                  {t('common.or')}
-                </span>
-              </div>
-            </div>
-
-            <div className="hidden h-full w-px bg-white/10 lg:block" />
-
-            <form className="space-y-4 lg:col-span-1" onSubmit={handleEmailAuth}>
-              <AnimatePresence mode="wait" initial={false}>
-                {mode === 'login' ? (
-                  <motion.div
-                    key="login-step"
-                    initial={{ opacity: 0, x: 24 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -24 }}
-                    transition={{ duration: 0.2 }}
-                    className="space-y-4"
+                  <div
+                    className="auth-modal-scroll relative rounded-3xl border p-8"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      maxHeight: '92vh',
+                      overflowY: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
                   >
-                    <div className="space-y-2">
-                      <label htmlFor="auth-email" className="text-sm text-gray-300">
-                        {t('login.email')}
-                      </label>
-                      <input
-                        id="auth-email"
-                        name="email"
-                        type="email"
-                        required
-                        disabled={isSubmitting}
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        placeholder={t('login.emailPlaceholder')}
-                        className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
-                      />
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      aria-label={t('login.close')}
+                      className="absolute z-10 text-gray-400 transition-colors hover:text-white"
+                      style={{ right: '1.25rem', top: '1.25rem' }}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+
+                    <div className="mb-8">
+                      <h2 className="mb-2 text-2xl text-white">Welcome back</h2>
+                      <p className="text-gray-400">Sign in to your account</p>
                     </div>
 
-                    <div className="space-y-2">
-                      <label htmlFor="auth-password" className="text-sm text-gray-300">
-                        {t('login.password')}
-                      </label>
-                      <input
-                        id="auth-password"
-                        name="password"
-                        type="password"
-                        required
-                        minLength={8}
-                        disabled={isSubmitting}
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        placeholder={t('login.loginPasswordPlaceholder')}
-                        className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between text-xs">
-                      <label className="inline-flex items-center gap-2 text-gray-400">
+                    <form onSubmit={handleFormSubmit}>
+                      <div style={fieldWrapperStyle}>
+                        <label htmlFor="auth-email" className="text-gray-300" style={fieldLabelStyle}>
+                          {t('login.email')}
+                        </label>
                         <input
-                          type="checkbox"
-                          checked={rememberMe}
-                          onChange={(event) => setRememberMe(event.target.checked)}
+                          id="auth-email"
+                          type="email"
+                          value={email}
+                          onChange={(event) => setEmail(event.target.value)}
+                          placeholder={t('login.emailPlaceholder')}
+                          className={inputClassName}
+                          style={fieldHeightStyle}
+                          required
                           disabled={isSubmitting}
-                          className="h-4 w-4 rounded border border-white/20 bg-white/5"
                         />
-                        {t('login.rememberMe')}
-                      </label>
-                      <a href="#" className="text-blue-300 hover:text-blue-200 transition-colors">
-                        {t('login.forgotPassword')}
-                      </a>
+                      </div>
+
+                      <div style={fieldWrapperStyle}>
+                        <label htmlFor="auth-password" className="text-gray-300" style={fieldLabelStyle}>
+                          {t('login.password')}
+                        </label>
+                        <input
+                          id="auth-password"
+                          type="password"
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          placeholder={t('login.loginPasswordPlaceholder')}
+                          className={inputClassName}
+                          style={fieldHeightStyle}
+                          required
+                          minLength={8}
+                          disabled={isSubmitting}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between" style={fieldWrapperStyle}>
+                        <label className="flex items-center gap-2 text-sm text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={rememberMe}
+                            onChange={(event) => setRememberMe(event.target.checked)}
+                            className="h-4 w-4 rounded border border-white/20 bg-white/5 accent-blue-500"
+                            disabled={isSubmitting}
+                          />
+                          {t('login.rememberMe')}
+                        </label>
+                        <button
+                          type="button"
+                          className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-sm text-transparent transition-all hover:from-blue-300 hover:to-purple-300"
+                        >
+                          {t('login.forgotPassword')}
+                        </button>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !email.trim() || !password}
+                        className="w-full rounded-xl transition disabled:cursor-not-allowed disabled:opacity-60"
+                        style={{
+                          ...fieldHeightStyle,
+                          marginBottom: '20px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          color: '#ffffff',
+                          fontWeight: 500,
+                          background: 'linear-gradient(135deg, rgb(59, 130, 246), rgb(168, 85, 247))',
+                        }}
+                      >
+                        <Mail className="h-4 w-4" />
+                        <span>{isSubmitting ? t('login.authenticating') : t('login.loginWithEmail') || 'Log in with Email'}</span>
+                      </button>
+
+                      <div className="relative" style={fieldWrapperStyle}>
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-white/10" />
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                          <span className="bg-[rgba(255,255,255,0.03)] px-2 text-gray-500">OR</span>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void handleGoogleLogin();
+                        }}
+                        disabled={isSubmitting}
+                        className="h-12 w-full rounded-xl border border-white/15 bg-[rgba(255,255,255,0.03)] text-white transition-colors hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <span className="inline-flex items-center justify-center">
+                          <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              fill="#4285F4"
+                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            />
+                            <path
+                              fill="#34A853"
+                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            />
+                            <path
+                              fill="#FBBC05"
+                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            />
+                            <path
+                              fill="#EA4335"
+                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            />
+                          </svg>
+                          {t('login.continueWithGoogle')}
+                        </span>
+                      </button>
+                    </form>
+
+                    <div className="mt-6 text-center">
+                      <span className="text-sm text-gray-400">No account yet? </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView('register');
+                          setRegisterStep(1);
+                          setStatusMessage(null);
+                          setInlineErrors({});
+                        }}
+                        disabled={isSubmitting}
+                        className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-sm text-transparent transition-all hover:from-blue-300 hover:to-purple-300 disabled:opacity-60"
+                      >
+                        Register
+                      </button>
                     </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key={`register-step-${registerStep}`}
-                    initial={{ opacity: 0, x: 30 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -30 }}
-                    transition={{ duration: 0.22 }}
-                    className="space-y-4"
+
+                    {statusMessage ? (
+                      <p className="mt-4 rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200">
+                        {statusMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="register"
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={(event) => event.stopPropagation()}
+                  className="relative w-full"
+                  style={{
+                    pointerEvents: 'auto',
+                    height: 'min(92vh, 860px)',
+                    maxWidth: '1000px',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                  }}
+                >
+                  <div
+                    className="absolute -left-24 -top-24 h-48 w-48 rounded-full opacity-20 blur-3xl pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, rgb(59, 130, 246), transparent)' }}
+                  />
+                  <div
+                    className="absolute -bottom-24 -right-24 h-48 w-48 rounded-full opacity-20 blur-3xl pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, rgb(34, 211, 238), transparent)' }}
+                  />
+
+                  <div
+                    className="auth-modal-scroll relative rounded-3xl border p-6 sm:p-8"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      borderColor: 'rgba(255, 255, 255, 0.1)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      height: '100%',
+                      overflowY: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                    }}
                   >
-                    {registerStep === 1 ? (
-                      <>
-                        <p className="text-sm text-gray-400">You're almost ready. Choose a strong password to keep your account secure.</p>
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      aria-label={t('login.close')}
+                      className="absolute z-10 text-gray-400 transition-colors hover:text-white"
+                      style={{ right: '1.25rem', top: '1.25rem' }}
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
 
-                        <div className="space-y-2">
-                          <label className="text-sm text-gray-300">Name</label>
-                          <input
-                            type="text"
-                            value={fullName}
-                            onChange={(event) => {
-                              setFullName(event.target.value);
-                              if (inlineErrors.fullName) {
-                                setInlineErrors((current) => ({ ...current, fullName: '' }));
-                              }
-                            }}
-                            placeholder="Your full name"
-                            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
-                          />
-                          {inlineErrors.fullName ? <p className="text-xs text-rose-300">{inlineErrors.fullName}</p> : null}
-                        </div>
+                    <div className="mb-6">
+                      <h2 className="mb-2 text-2xl text-white">Create your account</h2>
+                      <p className="text-gray-400">Get started with Lead Generator</p>
+                    </div>
 
-                        <div className="space-y-2">
-                          <label className="text-sm text-gray-300">Email</label>
-                          <input
-                            type="email"
-                            value={email}
-                            onChange={(event) => {
-                              setEmail(event.target.value);
-                              if (inlineErrors.email) {
-                                setInlineErrors((current) => ({ ...current, email: '' }));
-                              }
-                            }}
-                            placeholder={t('login.emailPlaceholder')}
-                            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
-                          />
-                          {inlineErrors.email ? <p className="text-xs text-rose-300">{inlineErrors.email}</p> : null}
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-sm text-gray-300">Password</label>
-                          <input
-                            type="password"
-                            value={password}
-                            onChange={(event) => {
-                              setPassword(event.target.value);
-                              if (inlineErrors.password) {
-                                setInlineErrors((current) => ({ ...current, password: '' }));
-                              }
-                            }}
-                            placeholder={t('login.registerPasswordPlaceholder')}
-                            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
-                          />
-                          <div className="space-y-1">
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-                              <motion.div
-                                className="h-full rounded-full bg-gradient-to-r from-rose-400 via-amber-400 to-emerald-400"
-                                animate={{ width: `${(strength / 4) * 100}%` }}
-                                transition={{ duration: 0.2 }}
-                              />
-                            </div>
-                            <p className="text-xs text-gray-400">Password strength: {strengthLabel}</p>
-                          </div>
-                          {inlineErrors.password ? <p className="text-xs text-rose-300">{inlineErrors.password}</p> : null}
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-sm text-gray-300">Confirm password</label>
-                          <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(event) => {
-                              setConfirmPassword(event.target.value);
-                              if (inlineErrors.confirmPassword) {
-                                setInlineErrors((current) => ({ ...current, confirmPassword: '' }));
-                              }
-                            }}
-                            placeholder="Repeat your password"
-                            className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
-                          />
-                          {inlineErrors.confirmPassword ? (
-                            <p className="text-xs text-rose-300">{inlineErrors.confirmPassword}</p>
-                          ) : null}
-                        </div>
-                      </>
-                    ) : null}
-
-                    {registerStep === 2 ? (
-                      <>
-                        <div>
-                          <h3 className="text-xl font-semibold text-white">Choose the plan that fits you best</h3>
-                          <p className="mt-2 text-sm text-gray-400">You can change your plan anytime.</p>
-                        </div>
-
-                        <div className="grid gap-4 md:grid-cols-3">
-                          {orderedPlans.map((plan) => {
-                            const code = plan.code as BillingPlanCode;
-                            const visual = PLAN_VISUALS[code];
-                            const isSelected = selectedPlan === code;
-                            const isExpert = code === 'EXPERT';
-
-                            return (
-                              <button
-                                key={code}
-                                type="button"
-                                onClick={() => setSelectedPlan(code)}
-                                className={`text-left rounded-3xl p-8 border transition-all ${
-                                  isExpert
-                                    ? 'border-2 border-cyan-300 bg-gradient-to-br from-cyan-500/20 via-emerald-500/15 to-lime-300/10 shadow-[0_0_0_1px_rgba(103,232,249,0.5),0_0_30px_rgba(34,211,238,0.38)]'
-                                    : visual.highlighted
-                                    ? 'bg-gradient-to-br from-white/10 to-white/[0.02] border-blue-500/30 shadow-xl shadow-blue-500/10 scale-105'
-                                    : 'bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10'
-                                } ${isSelected ? 'ring-2 ring-blue-400/70' : ''}`}
+                    <div className="mb-8">
+                      <div className="mb-3 flex items-center">
+                        {([1, 2, 3] as RegisterStep[]).map((step) => (
+                          <div
+                            key={step}
+                            className="flex items-center"
+                            style={{ flex: step < 3 ? 1 : '0 0 auto' }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`flex h-8 w-8 items-center justify-center rounded-full transition-all ${
+                                  registerStep >= step ? 'text-white' : 'text-gray-500'
+                                }`}
+                                style={{
+                                  background:
+                                    registerStep >= step
+                                      ? 'linear-gradient(135deg, rgb(59, 130, 246), rgb(168, 85, 247))'
+                                      : 'rgba(255, 255, 255, 0.05)',
+                                  border: registerStep >= step ? 'none' : '1px solid rgba(255, 255, 255, 0.15)',
+                                }}
                               >
-                                {visual.badge ? (
-                                  <div className="mb-4">
-                                    <span className="px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium">
-                                      {visual.badge}
-                                    </span>
-                                  </div>
-                                ) : null}
-
-                                <h3 className="text-2xl font-bold mb-2 text-white">{plan.name}</h3>
-                                <div className="flex items-baseline gap-2 mb-4">
-                                  <span className="text-5xl font-bold text-white">{visual.price}</span>
-                                  <span className="text-gray-400">/{visual.period}</span>
-                                </div>
-                                <p className="text-gray-400 mb-8">{visual.description}</p>
-
-                                <div
-                                  className={`w-full px-6 py-3 rounded-xl font-medium transition-all mb-8 text-center ${
-                                    isSelected
-                                      ? 'bg-white/15 text-white border border-white/20'
-                                      : visual.highlighted
-                                        ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25'
-                                        : isExpert
-                                          ? 'bg-gradient-to-r from-cyan-300 via-emerald-300 to-lime-200 text-black shadow-[0_0_22px_rgba(34,211,238,0.55)]'
-                                          : 'bg-white/5 text-white border border-white/10'
-                                  }`}
-                                >
-                                  {isSelected ? 'Selected' : visual.cta}
-                                </div>
-
-                                <ul className="space-y-3">
-                                  {visual.features.map((feature) => (
-                                    <li key={`${code}-${feature}`} className="flex items-start gap-3">
-                                      <div
-                                        className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                          visual.highlighted ? 'bg-blue-500/20' : 'bg-white/5'
-                                        }`}
-                                      >
-                                        <Check className={`w-3 h-3 ${visual.highlighted ? 'text-blue-400' : 'text-gray-400'}`} />
-                                      </div>
-                                      <span className="text-gray-300 text-sm">{feature}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        <p className="text-sm text-gray-400">No long-term commitment. Cancel anytime.</p>
-                      </>
-                    ) : null}
-
-                    {registerStep === 3 ? (
-                      <>
-                        <div>
-                          <h3 className="text-xl font-semibold text-white">Secure your subscription</h3>
-                          <p className="mt-2 text-sm text-gray-400">Your payment is securely processed.</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                          <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
-                            <Lock className="h-3.5 w-3.5" /> Secure payment
+                                {registerStep > step ? <Check className="h-4 w-4" /> : <span className="text-sm">{step}</span>}
+                              </div>
+                              <span
+                                className={`hidden text-sm sm:inline ${
+                                  registerStep >= step ? 'text-gray-300' : 'text-gray-500'
+                                }`}
+                              >
+                                {step === 1 ? 'Account' : step === 2 ? 'Package' : 'Payment'}
+                              </span>
+                            </div>
+                            {step < 3 ? (
+                              <div
+                                style={{
+                                  flex: 1,
+                                  height: '2px',
+                                  marginLeft: '0.5rem',
+                                  marginRight: '0.5rem',
+                                  background: 'rgba(255, 255, 255, 0.1)',
+                                  borderRadius: '999px',
+                                  overflow: 'hidden',
+                                }}
+                              >
+                                <motion.div
+                                  initial={{ width: '0%' }}
+                                  animate={{ width: registerStep > step ? '100%' : '0%' }}
+                                  transition={{ duration: 0.3 }}
+                                  style={{
+                                    height: '100%',
+                                    display: 'block',
+                                    background:
+                                      'linear-gradient(90deg, rgb(59, 130, 246), rgb(34, 211, 238), rgb(16, 185, 129))',
+                                  }}
+                                />
+                              </div>
+                            ) : null}
                           </div>
+                        ))}
+                      </div>
+                    </div>
 
-                          <div className="space-y-3">
-                            <div className="space-y-2">
-                              <label className="text-sm text-gray-300">Cardholder name</label>
+                    <form onSubmit={handleFormSubmit}>
+                      <AnimatePresence mode="wait" initial={false}>
+                        {registerStep === 1 ? (
+                          <motion.div
+                            key="step1"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-0"
+                          >
+                            <div style={fieldWrapperStyle}>
+                              <label htmlFor="register-name" className="text-gray-300" style={fieldLabelStyle}>
+                                Name
+                              </label>
                               <input
+                                id="register-name"
+                                type="text"
+                                value={fullName}
+                                onChange={(event) => {
+                                  setFullName(event.target.value);
+                                  if (inlineErrors.fullName) {
+                                    setInlineErrors((current) => ({ ...current, fullName: '' }));
+                                  }
+                                }}
+                                placeholder="John Doe"
+                                className={inputClassName}
+                                style={fieldHeightStyle}
+                                required
+                              />
+                              {inlineErrors.fullName ? (
+                                <p className="text-xs" style={errorTextStyle}>
+                                  {inlineErrors.fullName}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div style={fieldWrapperStyle}>
+                              <label htmlFor="register-email" className="text-gray-300" style={fieldLabelStyle}>
+                                {t('login.email')}
+                              </label>
+                              <input
+                                id="register-email"
+                                type="email"
+                                value={email}
+                                onChange={(event) => {
+                                  setEmail(event.target.value);
+                                  if (inlineErrors.email) {
+                                    setInlineErrors((current) => ({ ...current, email: '' }));
+                                  }
+                                }}
+                                placeholder={t('login.emailPlaceholder')}
+                                className={inputClassName}
+                                style={fieldHeightStyle}
+                                required
+                              />
+                              {inlineErrors.email ? (
+                                <p className="text-xs" style={errorTextStyle}>
+                                  {inlineErrors.email}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div style={fieldWrapperStyle}>
+                              <label htmlFor="register-password" className="text-gray-300" style={fieldLabelStyle}>
+                                {t('login.password')}
+                              </label>
+                              <input
+                                id="register-password"
+                                type="password"
+                                value={password}
+                                onChange={(event) => {
+                                  setPassword(event.target.value);
+                                  if (inlineErrors.password) {
+                                    setInlineErrors((current) => ({ ...current, password: '' }));
+                                  }
+                                }}
+                                placeholder={t('login.registerPasswordPlaceholder')}
+                                className={inputClassName}
+                                style={fieldHeightStyle}
+                                required
+                                minLength={8}
+                              />
+                              {password ? (
+                                <div style={{ marginTop: '6px' }}>
+                                  <div
+                                    style={{
+                                      height: '6px',
+                                      overflow: 'hidden',
+                                      borderRadius: '999px',
+                                      background: 'rgba(255, 255, 255, 0.1)',
+                                    }}
+                                  >
+                                    <motion.div
+                                      initial={{ width: '0%' }}
+                                      animate={{ width: passwordStrength.width }}
+                                      transition={{ duration: 0.3 }}
+                                      style={{
+                                        height: '100%',
+                                        display: 'block',
+                                        background: passwordStrength.color,
+                                      }}
+                                    />
+                                  </div>
+                                  <p className="text-xs" style={{ color: passwordStrength.color, marginTop: '6px' }}>
+                                    {passwordStrength.label}
+                                  </p>
+                                </div>
+                              ) : null}
+                              {inlineErrors.password ? (
+                                <p className="text-xs" style={errorTextStyle}>
+                                  {inlineErrors.password}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <div style={fieldWrapperStyle}>
+                              <label htmlFor="register-confirm-password" className="text-gray-300" style={fieldLabelStyle}>
+                                Confirm password
+                              </label>
+                              <input
+                                id="register-confirm-password"
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(event) => {
+                                  setConfirmPassword(event.target.value);
+                                  if (inlineErrors.confirmPassword) {
+                                    setInlineErrors((current) => ({ ...current, confirmPassword: '' }));
+                                  }
+                                }}
+                                placeholder="••••••••"
+                                className={inputClassName}
+                                style={
+                                  confirmPassword && password !== confirmPassword
+                                    ? { ...fieldHeightStyle, borderColor: 'rgba(244, 63, 94, 0.5)' }
+                                    : fieldHeightStyle
+                                }
+                                required
+                              />
+                              {confirmPassword && password !== confirmPassword ? (
+                                <p className="text-xs" style={errorTextStyle}>
+                                  Passwords do not match
+                                </p>
+                              ) : null}
+                              {inlineErrors.confirmPassword ? (
+                                <p className="text-xs" style={errorTextStyle}>
+                                  {inlineErrors.confirmPassword}
+                                </p>
+                              ) : null}
+                            </div>
+                          </motion.div>
+                        ) : null}
+
+                        {registerStep === 2 ? (
+                          <motion.div
+                            key="step2"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-4"
+                            style={{ marginBottom: '40px' }}
+                          >
+                            <p className="mb-4 text-gray-300">Choose the plan that fits your needs</p>
+                            <LayoutGroup id="register-plan-selection">
+                              <div className="grid gap-6 md:grid-cols-3">
+                                {orderedPlans.map((plan) => {
+                                  const code = plan.code as BillingPlanCode;
+                                  const visual = PLAN_VISUALS[code];
+                                  const isCurrent = selectedPlan === code;
+                                  const isPro = code === 'PRO';
+                                  const isExpert = code === 'EXPERT';
+                                  const scaledCardStyle = {
+                                    zoom: 0.51,
+                                    fontSize: '182%',
+                                  };
+                                  const selectedBorderColor = isExpert
+                                    ? 'rgb(34, 211, 238)'
+                                    : isPro
+                                      ? 'rgb(96, 165, 250)'
+                                      : 'rgb(147, 197, 253)';
+                                  const neonGlowGradient = isExpert
+                                    ? 'radial-gradient(70% 70% at 50% 50%, rgba(34,211,238,0.62), rgba(16,185,129,0.36) 52%, rgba(34,211,238,0) 100%)'
+                                    : isPro
+                                      ? 'radial-gradient(70% 70% at 50% 50%, rgba(96,165,250,0.62), rgba(168,85,247,0.36) 52%, rgba(96,165,250,0) 100%)'
+                                      : 'radial-gradient(70% 70% at 50% 50%, rgba(147,197,253,0.52), rgba(59,130,246,0.32) 52%, rgba(147,197,253,0) 100%)';
+                                  const selectedPulseShadow = isExpert
+                                    ? [
+                                        '0 0 0 2px rgba(34, 211, 238, 0.95), 0 0 36px rgba(34, 211, 238, 0.55), 0 0 96px rgba(16, 185, 129, 0.33)',
+                                        '0 0 0 2px rgba(34, 211, 238, 1), 0 0 58px rgba(34, 211, 238, 0.9), 0 0 118px rgba(16, 185, 129, 0.5)',
+                                        '0 0 0 2px rgba(34, 211, 238, 0.95), 0 0 36px rgba(34, 211, 238, 0.55), 0 0 96px rgba(16, 185, 129, 0.33)',
+                                      ]
+                                    : [
+                                        '0 0 0 2px rgba(96, 165, 250, 0.95), 0 0 32px rgba(59, 130, 246, 0.5), 0 0 86px rgba(168, 85, 247, 0.3)',
+                                        '0 0 0 2px rgba(96, 165, 250, 1), 0 0 54px rgba(59, 130, 246, 0.82), 0 0 110px rgba(168, 85, 247, 0.48)',
+                                        '0 0 0 2px rgba(96, 165, 250, 0.95), 0 0 32px rgba(59, 130, 246, 0.5), 0 0 86px rgba(168, 85, 247, 0.3)',
+                                      ];
+
+                                  return (
+                                    <motion.div
+                                      key={code}
+                                      className={`relative overflow-visible rounded-3xl border p-8 transition-all ${
+                                        isExpert
+                                          ? 'border-2 border-cyan-300 hover:scale-[1.02]'
+                                        : isPro
+                                            ? 'bg-gradient-to-br from-white/10 to-white/[0.02] border-blue-500/30 shadow-xl shadow-blue-500/10 scale-105'
+                                            : 'bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10'
+                                      }`}
+                                      style={
+                                        isExpert
+                                          ? {
+                                              ...scaledCardStyle,
+                                              borderColor: isCurrent ? '#67e8f9' : '#22d3ee',
+                                              borderWidth: '2px',
+                                              background:
+                                                'linear-gradient(135deg, rgba(6, 182, 212, 0.22), rgba(16, 185, 129, 0.18), rgba(163, 230, 53, 0.16))',
+                                              boxShadow:
+                                                '0 0 0 1px rgba(103, 232, 249, 0.55), 0 0 42px rgba(34, 211, 238, 0.42), inset 0 0 28px rgba(20, 184, 166, 0.12)',
+                                            }
+                                          : {
+                                              ...scaledCardStyle,
+                                              ...(isCurrent ? { borderColor: selectedBorderColor } : {}),
+                                            }
+                                      }
+                                      animate={isCurrent ? { boxShadow: selectedPulseShadow } : undefined}
+                                      transition={isCurrent ? { duration: 1.35, repeat: Infinity, ease: 'easeInOut' } : undefined}
+                                    >
+                                      {isCurrent ? (
+                                        <>
+                                          <motion.div
+                                            layoutId="selected-plan-neon-glow"
+                                            className="pointer-events-none absolute"
+                                            style={{
+                                              top: '-18px',
+                                              right: '-18px',
+                                              bottom: '-18px',
+                                              left: '-18px',
+                                              borderRadius: '2rem',
+                                              zIndex: 0,
+                                              background: neonGlowGradient,
+                                              filter: 'blur(18px)',
+                                            }}
+                                            animate={{ opacity: [0.72, 1, 0.72], scale: [0.98, 1.02, 0.98] }}
+                                            transition={{
+                                              opacity: { duration: 1.4, repeat: Infinity, ease: 'easeInOut' },
+                                              scale: { duration: 1.4, repeat: Infinity, ease: 'easeInOut' },
+                                            }}
+                                          />
+                                        </>
+                                      ) : null}
+
+                                      <div style={{ position: 'relative', zIndex: 2 }}>
+                                        {visual.badge ? (
+                                          <div className="mb-4">
+                                            <span
+                                              className={`px-3 py-1 rounded-full text-white text-xs font-medium ${
+                                              isExpert
+                                                ? 'bg-gradient-to-r from-cyan-300 to-emerald-300 text-black shadow-[0_0_20px_rgba(34,211,238,0.65)]'
+                                                : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                                            }`}
+                                              style={{ fontSize: '1.365rem' }}
+                                            >
+                                              {visual.badge}
+                                            </span>
+                                          </div>
+                                        ) : null}
+
+                                        <h3 className="text-2xl font-bold mb-2 text-white" style={{ fontSize: '2.73rem' }}>
+                                          {plan.name}
+                                        </h3>
+                                        <div className="flex items-baseline gap-2 mb-4">
+                                          <span className="text-5xl font-bold text-white" style={{ fontSize: '5.46rem' }}>
+                                            {visual.price}
+                                          </span>
+                                          <span className="text-gray-400">{visual.period}</span>
+                                        </div>
+                                        <p className="text-gray-400 mb-8">{visual.description}</p>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedPlan((current) => (current === code ? null : code));
+                                            setStatusMessage(null);
+                                          }}
+                                          className={`w-full px-6 py-3 rounded-xl font-medium transition-all mb-8 ${
+                                            isExpert
+                                              ? 'bg-gradient-to-r from-cyan-300 to-emerald-400 hover:from-cyan-400 hover:to-emerald-500 text-black shadow-[0_0_24px_rgba(16,185,129,0.35)]'
+                                              : isPro
+                                                ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/25'
+                                                : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
+                                          } disabled:cursor-not-allowed disabled:opacity-60`}
+                                          style={
+                                            isExpert
+                                              ? {
+                                                  border: '1px solid rgba(103, 232, 249, 0.8)',
+                                                  background: 'linear-gradient(90deg, rgb(103, 232, 249), rgb(52, 211, 153))',
+                                                  color: '#02120d',
+                                                  boxShadow: '0 0 24px rgba(16, 185, 129, 0.35)',
+                                                }
+                                              : undefined
+                                          }
+                                        >
+                                          {isCurrent ? 'Selected' : visual.cta}
+                                        </button>
+
+                                        <ul className="space-y-4">
+                                          {visual.features.map((feature) => (
+                                            <li key={`${plan.code}-${feature}`} className="flex items-start gap-3">
+                                              <div
+                                                className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                                  isExpert ? 'bg-emerald-400/30' : isPro ? 'bg-blue-500/20' : 'bg-white/5'
+                                                }`}
+                                              >
+                                                <Check
+                                                  className={`w-3 h-3 ${
+                                                    isExpert ? 'text-emerald-200' : isPro ? 'text-blue-400' : 'text-gray-400'
+                                                  }`}
+                                                />
+                                              </div>
+                                              <span className="text-gray-300">{feature}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    </motion.div>
+                                  );
+                                })}
+                              </div>
+                            </LayoutGroup>
+                          </motion.div>
+                        ) : null}
+
+                        {registerStep === 3 ? (
+                          <motion.div
+                            key="step3"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ duration: 0.2 }}
+                            className="space-y-0"
+                          >
+                            <motion.div
+                              className="flex items-center rounded-xl"
+                              style={{
+                                marginBottom: '16px',
+                                padding: '12px',
+                                gap: '8px',
+                                borderRadius: '12px',
+                                border: '1px solid rgba(16, 185, 129, 0.35)',
+                                background: 'rgba(16, 185, 129, 0.12)',
+                              }}
+                              animate={{
+                                boxShadow: [
+                                  '0 0 0 rgba(16, 185, 129, 0)',
+                                  '0 0 16px rgba(16, 185, 129, 0.22)',
+                                  '0 0 0 rgba(16, 185, 129, 0)',
+                                ],
+                              }}
+                              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                            >
+                              <motion.span
+                                style={{ display: 'inline-flex' }}
+                                animate={{ scale: [1, 1.06, 1] }}
+                                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                              >
+                                <Shield className="h-5 w-5" style={{ color: 'rgb(52, 211, 153)' }} />
+                              </motion.span>
+                              <span className="text-sm" style={{ color: 'rgb(110, 231, 183)', lineHeight: '1.35' }}>
+                                Secure payment - Your data is encrypted
+                              </span>
+                            </motion.div>
+
+                            <div style={fieldWrapperStyle}>
+                              <label htmlFor="cardholder-name" className="text-gray-300" style={fieldLabelStyle}>
+                                Cardholder name
+                              </label>
+                              <input
+                                id="cardholder-name"
                                 type="text"
                                 value={cardholderName}
                                 onChange={(event) => {
@@ -836,22 +1197,24 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                     setInlineErrors((current) => ({ ...current, cardholderName: '' }));
                                   }
                                 }}
-                                placeholder="Name on card"
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
+                                placeholder="John Doe"
+                                className={inputClassName}
+                                style={fieldHeightStyle}
+                                required
                               />
                               {inlineErrors.cardholderName ? (
-                                <p className="text-xs text-rose-300">{inlineErrors.cardholderName}</p>
+                                <p className="text-xs" style={errorTextStyle}>
+                                  {inlineErrors.cardholderName}
+                                </p>
                               ) : null}
                             </div>
 
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <label className="text-sm text-gray-300">Card number</label>
-                                <span className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[11px] uppercase tracking-wide text-gray-300">
-                                  <CreditCard className="h-3.5 w-3.5" /> {cardBrand}
-                                </span>
-                              </div>
+                            <div style={fieldWrapperStyle}>
+                              <label htmlFor="card-number" className="text-gray-300" style={fieldLabelStyle}>
+                                Card number
+                              </label>
                               <input
+                                id="card-number"
                                 type="text"
                                 value={cardNumber}
                                 onChange={(event) => {
@@ -860,16 +1223,25 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                     setInlineErrors((current) => ({ ...current, cardNumber: '' }));
                                   }
                                 }}
-                                placeholder="4242 4242 4242 4242"
-                                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
+                                placeholder="1234 5678 9012 3456"
+                                className={inputClassName}
+                                style={fieldHeightStyle}
+                                required
                               />
-                              {inlineErrors.cardNumber ? <p className="text-xs text-rose-300">{inlineErrors.cardNumber}</p> : null}
+                              {inlineErrors.cardNumber ? (
+                                <p className="text-xs" style={errorTextStyle}>
+                                  {inlineErrors.cardNumber}
+                                </p>
+                              ) : null}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <label className="text-sm text-gray-300">Expiry date</label>
+                            <div className="grid grid-cols-2 gap-5">
+                              <div>
+                                <label htmlFor="card-expiry" className="text-gray-300" style={fieldLabelStyle}>
+                                  Expiry date
+                                </label>
                                 <input
+                                  id="card-expiry"
                                   type="text"
                                   value={expiry}
                                   onChange={(event) => {
@@ -879,14 +1251,24 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                     }
                                   }}
                                   placeholder="MM/YY"
-                                  className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
+                                  maxLength={5}
+                                  className={inputClassName}
+                                  style={fieldHeightStyle}
+                                  required
                                 />
-                                {inlineErrors.expiry ? <p className="text-xs text-rose-300">{inlineErrors.expiry}</p> : null}
+                                {inlineErrors.expiry ? (
+                                  <p className="text-xs" style={errorTextStyle}>
+                                    {inlineErrors.expiry}
+                                  </p>
+                                ) : null}
                               </div>
 
-                              <div className="space-y-2">
-                                <label className="text-sm text-gray-300">CVC</label>
+                              <div>
+                                <label htmlFor="card-cvc" className="text-gray-300" style={fieldLabelStyle}>
+                                  CVC
+                                </label>
                                 <input
+                                  id="card-cvc"
                                   type="text"
                                   value={cvc}
                                   onChange={(event) => {
@@ -896,92 +1278,119 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                     }
                                   }}
                                   placeholder="123"
-                                  className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
+                                  maxLength={4}
+                                  className={inputClassName}
+                                  style={fieldHeightStyle}
+                                  required
                                 />
-                                {inlineErrors.cvc ? <p className="text-xs text-rose-300">{inlineErrors.cvc}</p> : null}
+                                {inlineErrors.cvc ? (
+                                  <p className="text-xs" style={errorTextStyle}>
+                                    {inlineErrors.cvc}
+                                  </p>
+                                ) : null}
                               </div>
                             </div>
-                          </div>
-                        </div>
-                      </>
+                          </motion.div>
+                        ) : null}
+                      </AnimatePresence>
+
+                      <div
+                        className="mt-8"
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          alignItems: 'center',
+                          gap: '12px',
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={onClose}
+                          className="h-11 rounded-xl px-6 text-gray-300 transition hover:bg-white/5 hover:text-white"
+                        >
+                          Cancel
+                        </button>
+
+                        {registerStep > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setRegisterStep((current) => (current - 1) as RegisterStep);
+                              setStatusMessage(null);
+                              setInlineErrors({});
+                            }}
+                            className="h-11 rounded-xl px-6 text-gray-300 transition hover:bg-white/5 hover:text-white"
+                          >
+                            <span className="inline-flex items-center">
+                              <ArrowLeft className="mr-2 h-4 w-4" />
+                              Back
+                            </span>
+                          </button>
+                        ) : null}
+
+                        <div style={{ flex: 1, minWidth: '20px' }} />
+
+                        <button
+                          type="submit"
+                          disabled={
+                            isSubmitting ||
+                            (registerStep === 1 && !stepOneValid) ||
+                            (registerStep === 2 && !stepTwoValid) ||
+                            (registerStep === 3 && !stepThreeValid)
+                          }
+                          className="whitespace-nowrap rounded-xl px-6 sm:px-8 transition disabled:cursor-not-allowed disabled:opacity-50"
+                          style={{
+                            ...fieldHeightStyle,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginLeft: 'auto',
+                            color: '#ffffff',
+                            fontWeight: 500,
+                            background: 'linear-gradient(135deg, rgb(59, 130, 246), rgb(168, 85, 247))',
+                          }}
+                        >
+                          <span>
+                            {isSubmitting
+                              ? t('login.authenticating')
+                              : registerStep < 3
+                                ? 'Continue'
+                                : 'Start my subscription'}
+                          </span>
+                        </button>
+                      </div>
+                    </form>
+
+                    <div className="mt-6 text-center">
+                      <span className="text-sm text-gray-400">Already have an account? </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setView('login');
+                          setRegisterStep(1);
+                          setStatusMessage(null);
+                          setInlineErrors({});
+                        }}
+                        disabled={isSubmitting}
+                        className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-sm text-transparent transition-all hover:from-blue-300 hover:to-purple-300 disabled:opacity-60"
+                      >
+                        Log in
+                      </button>
+                    </div>
+
+                    {statusMessage ? (
+                      <p className="mt-4 rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200">
+                        {statusMessage}
+                      </p>
                     ) : null}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                {mode === 'register' && registerStep > 1 ? (
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => {
-                      setRegisterStep((current) => (current - 1) as RegisterStep);
-                      setStatusMessage(null);
-                      setInlineErrors({});
-                    }}
-                    className="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10 disabled:opacity-60"
-                  >
-                    Back
-                  </button>
-                ) : (
-                  <div />
-                )}
-
-                <button
-                  type="submit"
-                  disabled={
-                    isSubmitting ||
-                    (mode === 'register' &&
-                      ((registerStep === 1 && !stepOneValid) ||
-                        (registerStep === 2 && !stepTwoValid) ||
-                        (registerStep === 3 && !stepThreeValid)))
-                  }
-                  className="rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-500/25 transition hover:from-blue-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isSubmitting ? (
-                    <span className="inline-flex items-center gap-2">
-                      <motion.span
-                        className="h-3.5 w-3.5 rounded-full border-2 border-white/35 border-t-white"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
-                      />
-                      {t('login.authenticating')}
-                    </span>
-                  ) : mode === 'login' ? (
-                    t('login.loginWithEmail')
-                  ) : registerStep === 3 ? (
-                    'Start my subscription'
-                  ) : (
-                    'Continue'
-                  )}
-                </button>
-              </div>
-            </form>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMode((currentMode) => (currentMode === 'login' ? 'register' : 'login'));
-              setRegisterStep(1);
-              setStatusMessage(null);
-              setInlineErrors({});
-            }}
-            disabled={isSubmitting}
-            className="w-full text-sm text-gray-300 hover:text-white transition-colors"
-          >
-            {mode === 'login' ? t('login.noAccount') : t('login.alreadyHaveAccount')}
-          </button>
-
-          {statusMessage ? (
-            <p className="rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200">
-              {statusMessage}
-            </p>
-          ) : null}
-          </div>
-        </motion.div>
-      </div>
-    </>,
+        </>
+      ) : null}
+    </AnimatePresence>,
     document.body,
   );
 }

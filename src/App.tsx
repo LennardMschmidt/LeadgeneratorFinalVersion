@@ -12,6 +12,7 @@ import { DashboardPage } from './components/dashboard/DashboardPage';
 import { BusinessProfilePage } from './components/dashboard/BusinessProfilePage';
 import { SavedSearchesPage } from './components/dashboard/SavedSearchesPage';
 import { BillingPage } from './components/dashboard/BillingPage';
+import { AccountSettingsPage } from './components/dashboard/AccountSettingsPage';
 import { restoreSupabaseSession, signOutFromSupabase } from './lib/supabaseAuth';
 
 type AppRoute =
@@ -20,6 +21,7 @@ type AppRoute =
   | '/business-profile'
   | '/saved-searches'
   | '/billing'
+  | '/account-settings'
   | '__protected_unknown__';
 
 const getRouteFromPathname = (pathname: string): AppRoute => {
@@ -41,6 +43,10 @@ const getRouteFromPathname = (pathname: string): AppRoute => {
 
   if (pathname === '/billing') {
     return '/billing';
+  }
+
+  if (pathname === '/account-settings') {
+    return '/account-settings';
   }
 
   return '__protected_unknown__';
@@ -127,6 +133,7 @@ export default function App() {
   const showBusinessProfile = route === '/business-profile' && isAuthenticated;
   const showSavedSearches = route === '/saved-searches' && isAuthenticated;
   const showBilling = route === '/billing' && isAuthenticated;
+  const showAccountSettings = route === '/account-settings' && isAuthenticated;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -145,6 +152,7 @@ export default function App() {
           onNavigateBusinessProfile={() => navigate('/business-profile')}
           onNavigateSavedSearches={() => navigate('/saved-searches')}
           onNavigateBilling={() => navigate('/billing')}
+          onNavigateAccountSettings={() => navigate('/account-settings')}
           onLogout={() => {
             void handleLogout();
           }}
@@ -156,6 +164,7 @@ export default function App() {
           onNavigateBusinessProfile={() => navigate('/business-profile')}
           onNavigateSavedSearches={() => navigate('/saved-searches')}
           onNavigateBilling={() => navigate('/billing')}
+          onNavigateAccountSettings={() => navigate('/account-settings')}
           onLogout={() => {
             void handleLogout();
           }}
@@ -167,6 +176,7 @@ export default function App() {
           onNavigateBusinessProfile={() => navigate('/business-profile')}
           onNavigateSavedSearches={() => navigate('/saved-searches')}
           onNavigateBilling={() => navigate('/billing')}
+          onNavigateAccountSettings={() => navigate('/account-settings')}
           onLogout={() => {
             void handleLogout();
           }}
@@ -178,6 +188,19 @@ export default function App() {
           onNavigateBusinessProfile={() => navigate('/business-profile')}
           onNavigateSavedSearches={() => navigate('/saved-searches')}
           onNavigateBilling={() => navigate('/billing')}
+          onNavigateAccountSettings={() => navigate('/account-settings')}
+          onLogout={() => {
+            void handleLogout();
+          }}
+        />
+      ) : showAccountSettings ? (
+        <AccountSettingsPage
+          onNavigateHome={() => navigate('/')}
+          onNavigateDashboard={() => navigate('/dashboard')}
+          onNavigateBusinessProfile={() => navigate('/business-profile')}
+          onNavigateSavedSearches={() => navigate('/saved-searches')}
+          onNavigateBilling={() => navigate('/billing')}
+          onNavigateAccountSettings={() => navigate('/account-settings')}
           onLogout={() => {
             void handleLogout();
           }}

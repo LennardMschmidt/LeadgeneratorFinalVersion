@@ -9,6 +9,7 @@ interface DashboardHeaderProps {
   onNavigateBusinessProfile: () => void;
   onNavigateSavedSearches: () => void;
   onNavigateBilling: () => void;
+  onNavigateAccountSettings: () => void;
   onLogout: () => void;
 }
 
@@ -18,6 +19,7 @@ export function DashboardHeader({
   onNavigateBusinessProfile,
   onNavigateSavedSearches,
   onNavigateBilling,
+  onNavigateAccountSettings,
   onLogout,
 }: DashboardHeaderProps) {
   const { t } = useI18n();
@@ -188,8 +190,12 @@ export function DashboardHeader({
                   {t('dashboardHeader.plan')}
                 </a>
 
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => {
+                    onNavigateAccountSettings();
+                    setIsAccountOpen(false);
+                  }}
                   className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
                   onMouseEnter={handleDropdownItemMouseEnter}
                   onMouseLeave={handleDropdownItemMouseLeave}
@@ -200,7 +206,7 @@ export function DashboardHeader({
                   }}
                 >
                   {t('dashboardHeader.accountSettings')}
-                </a>
+                </button>
 
                 <button
                   type="button"

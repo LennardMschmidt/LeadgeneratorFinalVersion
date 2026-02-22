@@ -295,6 +295,18 @@ export const translations = {
         cvcLabel: 'CVC',
         cardholderLabel: 'Cardholder Name',
       },
+      deleteAccount: {
+        title: 'Cancel Subscription & Delete Account',
+        description:
+          'This permanently cancels your subscription and removes your account, saved leads, saved searches, and usage history.',
+        warning: 'This action is permanent and cannot be undone.',
+        confirmLabel: 'Type {{phrase}} to confirm',
+        confirmPlaceholder: 'Enter {{phrase}}',
+        confirmDialog:
+          'Final confirmation: do you want to permanently cancel your subscription and delete your account?',
+        action: 'Delete Account Permanently',
+        deleting: 'Deleting account...',
+      },
       actions: {
         cancel: 'Cancel',
         save: 'Save',
@@ -308,6 +320,57 @@ export const translations = {
         loadFailed: 'Failed to load billing data.',
         planUpdateFailed: 'Failed to update plan.',
         paymentFailed: 'Failed to process mock payment.',
+        deleteAccountFailed: 'Failed to delete account.',
+        deleteAccountConfirmMismatch: 'Please type DELETE to confirm account deletion.',
+      },
+    },
+    accountSettingsPage: {
+      title: 'Account Details',
+      subtitle: 'Review your account information and subscription settings.',
+      details: {
+        title: 'Profile',
+        description: 'This is the account data currently available in your workspace.',
+        email: 'Email',
+        plan: 'Plan',
+        subscriptionStatus: 'Subscription Status',
+        currentPeriodEnd: 'Current Period End',
+        accountCreated: 'Account Created',
+        notAvailable: 'Not available',
+      },
+      actions: {
+        changePassword: 'Change Password',
+        changePasswordSoon: 'Change password is coming soon.',
+        cancelSubscription: 'Cancel Subscription',
+        cancelling: 'Cancelling...',
+        tempDeleteAccount: 'Temp Delete Account',
+        deletingAccount: 'Deleting account...',
+      },
+      cancellation: {
+        title: 'Subscription Cancellation',
+        cardDescription:
+          'Cancel your subscription. Your account stays active until your current paid period ends. After that, your account data will be deleted.',
+        dialogTitle: 'Cancel subscription?',
+        dialogDescription:
+          'Are you sure you want to cancel your subscription? Your account will remain active until the end of your current paid period, then account data will be deleted.',
+        dialogSupportHint: 'You can continue using your account until the current period ends.',
+        dialogCancel: 'Keep subscription',
+        dialogConfirm: 'Yes, cancel subscription',
+        successScheduled:
+          'Subscription cancelled. Your account remains active until {{date}}. Data deletion is scheduled after period end.',
+        successNoDate:
+          'Subscription cancelled. Data deletion is scheduled after your current period ends.',
+      },
+      deleteNow: {
+        dialogTitle: 'Delete account now?',
+        dialogDescription:
+          'This is a temporary development action. It immediately deletes your user and all associated data from the database.',
+        dialogCancel: 'Keep account',
+        dialogConfirm: 'Delete now',
+      },
+      errors: {
+        loadFailed: 'Failed to load account details.',
+        cancelFailed: 'Failed to cancel subscription.',
+        deleteNowFailed: 'Failed to delete account immediately.',
       },
     },
     leadCard: {
@@ -1014,6 +1077,18 @@ export const translations = {
         cvcLabel: 'CVC',
         cardholderLabel: 'Karteninhaber',
       },
+      deleteAccount: {
+        title: 'Abo kündigen & Konto löschen',
+        description:
+          'Dies kündigt dein Abo dauerhaft und löscht dein Konto, gespeicherte Leads, gespeicherte Suchen und Nutzungsverlauf.',
+        warning: 'Diese Aktion ist endgültig und kann nicht rückgängig gemacht werden.',
+        confirmLabel: 'Tippe {{phrase}} zur Bestätigung',
+        confirmPlaceholder: '{{phrase}} eingeben',
+        confirmDialog:
+          'Letzte Bestätigung: Möchtest du dein Abo dauerhaft kündigen und dein Konto löschen?',
+        action: 'Konto dauerhaft löschen',
+        deleting: 'Konto wird gelöscht...',
+      },
       actions: {
         cancel: 'Abbrechen',
         save: 'Speichern',
@@ -1027,6 +1102,58 @@ export const translations = {
         loadFailed: 'Abrechnungsdaten konnten nicht geladen werden.',
         planUpdateFailed: 'Tarif konnte nicht aktualisiert werden.',
         paymentFailed: 'Mock-Zahlung fehlgeschlagen.',
+        deleteAccountFailed: 'Konto konnte nicht gelöscht werden.',
+        deleteAccountConfirmMismatch:
+          'Bitte gib DELETE ein, um die Kontolöschung zu bestätigen.',
+      },
+    },
+    accountSettingsPage: {
+      title: 'Kontodetails',
+      subtitle: 'Prüfe deine Kontoinformationen und Abonnement-Einstellungen.',
+      details: {
+        title: 'Profil',
+        description: 'Dies sind die aktuell verfügbaren Kontodaten in deinem Workspace.',
+        email: 'E-Mail',
+        plan: 'Tarif',
+        subscriptionStatus: 'Abonnementstatus',
+        currentPeriodEnd: 'Aktuelles Periodenende',
+        accountCreated: 'Konto erstellt',
+        notAvailable: 'Nicht verfügbar',
+      },
+      actions: {
+        changePassword: 'Passwort ändern',
+        changePasswordSoon: 'Passwort ändern kommt bald.',
+        cancelSubscription: 'Abo kündigen',
+        cancelling: 'Kündige...',
+        tempDeleteAccount: 'Temporär Konto löschen',
+        deletingAccount: 'Konto wird gelöscht...',
+      },
+      cancellation: {
+        title: 'Abonnement kündigen',
+        cardDescription:
+          'Kündige dein Abo. Dein Konto bleibt bis zum Ende der aktuellen bezahlten Periode aktiv. Danach werden Kontodaten gelöscht.',
+        dialogTitle: 'Abo kündigen?',
+        dialogDescription:
+          'Möchtest du dein Abo wirklich kündigen? Dein Konto bleibt bis zum Ende der aktuellen bezahlten Periode aktiv, danach werden Kontodaten gelöscht.',
+        dialogSupportHint: 'Du kannst dein Konto bis zum Ende der aktuellen Periode weiter nutzen.',
+        dialogCancel: 'Abo behalten',
+        dialogConfirm: 'Ja, Abo kündigen',
+        successScheduled:
+          'Abo gekündigt. Dein Konto bleibt bis {{date}} aktiv. Datenlöschung ist danach eingeplant.',
+        successNoDate:
+          'Abo gekündigt. Die Datenlöschung ist nach Ende deiner aktuellen Periode eingeplant.',
+      },
+      deleteNow: {
+        dialogTitle: 'Konto jetzt löschen?',
+        dialogDescription:
+          'Dies ist eine temporäre Aktion für die Entwicklung. Dein Benutzer und alle zugehörigen Daten werden sofort aus der Datenbank gelöscht.',
+        dialogCancel: 'Konto behalten',
+        dialogConfirm: 'Jetzt löschen',
+      },
+      errors: {
+        loadFailed: 'Kontodetails konnten nicht geladen werden.',
+        cancelFailed: 'Abo konnte nicht gekündigt werden.',
+        deleteNowFailed: 'Konto konnte nicht sofort gelöscht werden.',
       },
     },
     leadCard: {

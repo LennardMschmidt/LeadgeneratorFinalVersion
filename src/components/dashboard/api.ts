@@ -1050,6 +1050,14 @@ export type BillingUsage = {
   usageDate: string;
 };
 
+export type AccountDetails = {
+  email: string;
+  plan: BackendBillingPlanCode;
+  subscriptionStatus: string;
+  currentPeriodEnd: string | null;
+  createdAt: string | null;
+};
+
 type BillingPlansResponse = {
   plans?: unknown;
 };
@@ -1078,6 +1086,31 @@ type BillingMockPaymentResponse = {
     subscriptionStatus?: unknown;
     activatedAt?: unknown;
   } | null;
+};
+
+type BillingAccountDetailsResponse = {
+  account?: {
+    email?: unknown;
+    plan?: unknown;
+    subscriptionStatus?: unknown;
+    currentPeriodEnd?: unknown;
+    createdAt?: unknown;
+  } | null;
+};
+
+type BillingCancelSubscriptionResponse = {
+  subscription?: {
+    plan?: unknown;
+    subscriptionStatus?: unknown;
+    currentPeriodEnd?: unknown;
+    scheduledDeletionAt?: unknown;
+  } | null;
+};
+
+type BillingCancelDeleteResponse = {
+  success?: unknown;
+  deletedUserId?: unknown;
+  cancelledAt?: unknown;
 };
 
 const isBillingPlanCode = (value: unknown): value is BackendBillingPlanCode =>
@@ -1189,6 +1222,35 @@ export const fetchBillingUsageFromBackend = async (): Promise<BillingUsage> => {
   };
 };
 
+export const fetchAccountDetailsFromBackend = async (): Promise<AccountDetails> => {
+  const requestUrl = buildApiUrl('/api/billing/account-details');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingAccountDetailsResponse;
+  const account = payload.account;
+  if (!account || typeof account.email !== 'string' || !isBillingPlanCode(account.plan)) {
+    throw new Error('Account details response is invalid.');
+  }
+
+  return {
+    email: account.email,
+    plan: account.plan,
+    subscriptionStatus: typeof account.subscriptionStatus === 'string' ? account.subscriptionStatus : 'inactive',
+    currentPeriodEnd: typeof account.currentPeriodEnd === 'string' ? account.currentPeriodEnd : null,
+    createdAt: typeof account.createdAt === 'string' ? account.createdAt : null,
+  };
+};
+
 export const changeBillingPlanInBackend = async (
   plan: BackendBillingPlanCode,
 ): Promise<BillingUsage> => {
@@ -1246,5 +1308,61 @@ export const mockBillingPaymentInBackend = async (input?: {
   const payload = (await response.json()) as BillingMockPaymentResponse;
   if (payload.success !== true) {
     throw new Error('Mock payment response is invalid.');
+  }
+};
+
+export const cancelSubscriptionAtPeriodEndInBackend = async (): Promise<{
+  plan: BackendBillingPlanCode;
+  subscriptionStatus: string;
+  currentPeriodEnd: string | null;
+}> => {
+  const requestUrl = buildApiUrl('/api/billing/cancel-subscription');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingCancelSubscriptionResponse;
+  const subscription = payload.subscription;
+  if (!subscription || !isBillingPlanCode(subscription.plan)) {
+    throw new Error('Cancel subscription response is invalid.');
+  }
+
+  return {
+    plan: subscription.plan,
+    subscriptionStatus:
+      typeof subscription.subscriptionStatus === 'string' ? subscription.subscriptionStatus : 'inactive',
+    currentPeriodEnd: typeof subscription.currentPeriodEnd === 'string' ? subscription.currentPeriodEnd : null,
+  };
+};
+
+export const cancelSubscriptionAndDeleteAccountInBackend = async (
+  confirmText: string,
+): Promise<void> => {
+  const requestUrl = buildApiUrl('/api/billing/cancel-and-delete-account');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authorization,
+    },
+    body: JSON.stringify({ confirmText }),
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseBackendError(response));
+  }
+
+  const payload = (await response.json()) as BillingCancelDeleteResponse;
+  if (payload.success !== true) {
+    throw new Error('Account deletion response is invalid.');
   }
 };

@@ -35,6 +35,7 @@ interface SavedSearchesPageProps {
   onNavigateBusinessProfile: () => void;
   onNavigateSavedSearches: () => void;
   onNavigateBilling: () => void;
+  onNavigateAccountSettings: () => void;
   onLogout: () => void;
 }
 
@@ -57,6 +58,7 @@ export function SavedSearchesPage({
   onNavigateBusinessProfile,
   onNavigateSavedSearches,
   onNavigateBilling,
+  onNavigateAccountSettings,
   onLogout,
 }: SavedSearchesPageProps) {
   const { t, tm } = useI18n();
@@ -495,6 +497,7 @@ export function SavedSearchesPage({
         onNavigateBusinessProfile={onNavigateBusinessProfile}
         onNavigateSavedSearches={onNavigateSavedSearches}
         onNavigateBilling={onNavigateBilling}
+        onNavigateAccountSettings={onNavigateAccountSettings}
         onLogout={onLogout}
       />
 

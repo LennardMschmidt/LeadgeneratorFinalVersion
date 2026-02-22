@@ -20,6 +20,7 @@ interface BusinessProfilePageProps {
   onNavigateBusinessProfile: () => void;
   onNavigateSavedSearches: () => void;
   onNavigateBilling: () => void;
+  onNavigateAccountSettings: () => void;
   onLogout: () => void;
 }
 
@@ -79,6 +80,7 @@ export function BusinessProfilePage({
   onNavigateBusinessProfile,
   onNavigateSavedSearches,
   onNavigateBilling,
+  onNavigateAccountSettings,
   onLogout,
 }: BusinessProfilePageProps) {
   const { t, tm } = useI18n();
@@ -198,19 +200,22 @@ export function BusinessProfilePage({
         onNavigateBusinessProfile={onNavigateBusinessProfile}
         onNavigateSavedSearches={onNavigateSavedSearches}
         onNavigateBilling={onNavigateBilling}
+        onNavigateAccountSettings={onNavigateAccountSettings}
         onLogout={onLogout}
       />
 
       <main className="relative mx-auto max-w-7xl px-6 py-24">
-        <section>
-          <h1 className="text-4xl font-bold">{t('dashboard.businessProfile.title')}</h1>
-          <p className="mt-4 text-gray-400">{t('dashboard.businessProfile.subtitle')}</p>
+        <section className="mb-[20px]">
+          <h1 className="text-4xl font-bold" style={{ marginBottom: '20px' }}>
+            {t('dashboard.businessProfile.title')}
+          </h1>
+          <p className="mb-2 text-gray-400">{t('dashboard.businessProfile.subtitle')}</p>
         </section>
 
-        <section className="mt-10">
+        <section>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-[0_0_30px_rgba(59,130,246,0.08)] backdrop-blur-sm md:p-12">
-            <div className="grid gap-y-10 md:grid-cols-2" style={{ columnGap: '2.75rem' }}>
-              <div className="space-y-4">
+            <div className="grid md:grid-cols-2" style={{ columnGap: '2.75rem' }}>
+              <div className="space-y-4" style={{ paddingBottom: '20px' }}>
                 <label htmlFor="business-name" className="block text-sm text-gray-300">
                   {t('dashboard.businessProfile.businessNameLabel')}
                 </label>
@@ -228,7 +233,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4" style={{ paddingBottom: '20px' }}>
                 <label htmlFor="business-category" className="block text-sm text-gray-300">
                   {t('dashboard.businessProfile.businessCategoryLabel')}
                 </label>
@@ -246,7 +251,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4" style={{ paddingBottom: '20px' }}>
                 <label htmlFor="business-location" className="block text-sm text-gray-300">
                   {t('dashboard.businessProfile.businessLocationLabel')}
                 </label>
@@ -264,7 +269,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4" style={{ paddingBottom: '20px' }}>
                 <label htmlFor="target-customer-type" className="block text-sm text-gray-300">
                   {t('dashboard.businessProfile.targetCustomerTypeLabel')}
                 </label>
@@ -288,7 +293,7 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-4 md:col-span-2">
+              <div className="space-y-4 md:col-span-2" style={{ paddingBottom: '20px' }}>
                 <label htmlFor="service-description" className="block text-sm text-gray-300">
                   {t('dashboard.businessProfile.serviceDescriptionLabel')}
                 </label>
@@ -307,8 +312,8 @@ export function BusinessProfilePage({
                 />
               </div>
 
-              <div className="space-y-5 md:col-span-2">
-                <p className="text-sm text-gray-300">{t('dashboard.businessProfile.primaryProblemsLabel')}</p>
+              <div className="space-y-5 md:col-span-2" style={{ paddingBottom: '20px' }}>
+                <p className="mb-2 text-sm text-gray-300">{t('dashboard.businessProfile.primaryProblemsLabel')}</p>
                 <div className="flex flex-wrap gap-3">
                   {PRIMARY_PROBLEM_OPTIONS.map((problem) => {
                     const isSelected = form.primaryProblemsYouSolve.includes(problem);
@@ -330,8 +335,8 @@ export function BusinessProfilePage({
                 </div>
               </div>
 
-              <div className="mb-5 space-y-5 md:col-span-2">
-                <p className="text-sm text-gray-300">{t('dashboard.businessProfile.preferredContactMethodLabel')}</p>
+              <div className="space-y-5 md:col-span-2" style={{ paddingBottom: '20px' }}>
+                <p className="mb-2 text-sm text-gray-300">{t('dashboard.businessProfile.preferredContactMethodLabel')}</p>
                 <div className="flex flex-wrap gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                   {CONTACT_METHOD_OPTIONS.map((method) => (
                     <label

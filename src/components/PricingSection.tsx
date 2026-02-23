@@ -3,18 +3,79 @@ import { Check } from 'lucide-react';
 import { useI18n } from '../i18n';
 
 interface PricingPlan {
+  code: 'STANDARD' | 'PRO' | 'EXPERT';
   name: string;
   price: string;
   period: string;
   description: string;
   features: string[];
   cta: string;
+  badge?: string;
   highlighted: boolean;
 }
 
+const HOME_PRICING_PLANS: PricingPlan[] = [
+  {
+    code: 'STANDARD',
+    name: 'Standard',
+    price: '$29',
+    period: 'per month',
+    description: 'Essential tools for solo operators and early projects.',
+    features: [
+      '200 AI evaluation tokens/month',
+      '180 tokens/day included',
+      'Google Maps search',
+      'Website analysis',
+      'Basic lead management',
+      'Saved leads',
+      'Email support',
+    ],
+    cta: 'Choose Standard',
+    highlighted: false,
+  },
+  {
+    code: 'PRO',
+    name: 'Pro',
+    price: '$49',
+    period: 'per month',
+    description: 'Full access for growing teams',
+    features: [
+      '500 AI evaluation tokens/month',
+      '380 tokens/day included',
+      'LinkedIn + Google Maps search',
+      'Advanced website analysis',
+      'CSV & CRM export',
+      'Saved searches',
+      'Lead scoring & tiers',
+      'Priority support',
+    ],
+    cta: 'Switch to Pro',
+    badge: 'MOST POPULAR',
+    highlighted: true,
+  },
+  {
+    code: 'EXPERT',
+    name: 'Expert',
+    price: '$79',
+    period: 'per month',
+    description: 'Maximum volume and speed for high-output prospecting.',
+    features: [
+      '1200 AI evaluation tokens/month',
+      '700 tokens/day included',
+      'Highest daily throughput',
+      'Priority execution lane',
+      'All Pro features',
+      'Advanced usage visibility',
+      'Fast-track support',
+      'API-ready workflow',
+    ],
+    cta: 'Upgrade to Expert',
+    highlighted: false,
+  },
+];
+
 export function PricingSection() {
-  const { raw, t } = useI18n();
-  const plans = raw<PricingPlan[]>('pricing.plans');
+  const { t } = useI18n();
 
   return (
     <section id="pricing" className="max-w-6xl mx-auto px-6 py-32">
@@ -29,10 +90,10 @@ export function PricingSection() {
         <p className="text-xl text-gray-400">{t('pricing.subtitle')}</p>
       </motion.div>
 
-      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-        {plans.map((plan, index) => (
+      <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3">
+        {HOME_PRICING_PLANS.map((plan, index) => (
           <motion.div
-            key={`${plan.name}-${index}`}
+            key={plan.code}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -43,13 +104,13 @@ export function PricingSection() {
                 : 'bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10'
             }`}
           >
-            {plan.highlighted && (
+            {plan.badge ? (
               <div className="mb-4">
                 <span className="px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium">
-                  {t('pricing.popularBadge')}
+                  {plan.badge === 'MOST POPULAR' ? t('pricing.popularBadge') : plan.badge}
                 </span>
               </div>
-            )}
+            ) : null}
 
             <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
             <div className="flex items-baseline gap-2 mb-4">

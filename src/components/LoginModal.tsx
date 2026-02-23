@@ -1128,6 +1128,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                   const isCurrent = selectedPlan === code;
                                   const isPro = code === 'PRO';
                                   const isExpert = code === 'EXPERT';
+                                  const showPlanBadge = Boolean(visual.badge) && !isExpert;
                                   const planFeatures = [
                                     `${plan.aiTokensPerMonth} AI evaluation tokens/month`,
                                     ...visual.features,
@@ -1136,54 +1137,36 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                     zoom: 0.51,
                                     fontSize: '182%',
                                   };
-                                  const selectedBorderColor = isExpert
-                                    ? 'rgb(34, 211, 238)'
-                                    : isPro
-                                      ? 'rgb(96, 165, 250)'
-                                      : 'rgb(147, 197, 253)';
-                                  const neonGlowGradient = isExpert
-                                    ? 'radial-gradient(70% 70% at 50% 50%, rgba(34,211,238,0.62), rgba(16,185,129,0.36) 52%, rgba(34,211,238,0) 100%)'
-                                    : isPro
-                                      ? 'radial-gradient(70% 70% at 50% 50%, rgba(96,165,250,0.62), rgba(168,85,247,0.36) 52%, rgba(96,165,250,0) 100%)'
-                                      : 'radial-gradient(70% 70% at 50% 50%, rgba(147,197,253,0.52), rgba(59,130,246,0.32) 52%, rgba(147,197,253,0) 100%)';
-                                  const selectedPulseShadow = isExpert
+                                  const selectedBorderColor = isPro
+                                    ? 'rgb(96, 165, 250)'
+                                    : 'rgb(147, 197, 253)';
+                                  const neonGlowGradient = isPro
+                                    ? 'radial-gradient(70% 70% at 50% 50%, rgba(96,165,250,0.62), rgba(168,85,247,0.36) 52%, rgba(96,165,250,0) 100%)'
+                                    : 'radial-gradient(70% 70% at 50% 50%, rgba(147,197,253,0.52), rgba(59,130,246,0.32) 52%, rgba(147,197,253,0) 100%)';
+                                  const selectedPulseShadow = isPro
                                     ? [
-                                        '0 0 0 2px rgba(34, 211, 238, 0.95), 0 0 36px rgba(34, 211, 238, 0.55), 0 0 96px rgba(16, 185, 129, 0.33)',
-                                        '0 0 0 2px rgba(34, 211, 238, 1), 0 0 58px rgba(34, 211, 238, 0.9), 0 0 118px rgba(16, 185, 129, 0.5)',
-                                        '0 0 0 2px rgba(34, 211, 238, 0.95), 0 0 36px rgba(34, 211, 238, 0.55), 0 0 96px rgba(16, 185, 129, 0.33)',
-                                      ]
-                                    : [
                                         '0 0 0 2px rgba(96, 165, 250, 0.95), 0 0 32px rgba(59, 130, 246, 0.5), 0 0 86px rgba(168, 85, 247, 0.3)',
                                         '0 0 0 2px rgba(96, 165, 250, 1), 0 0 54px rgba(59, 130, 246, 0.82), 0 0 110px rgba(168, 85, 247, 0.48)',
                                         '0 0 0 2px rgba(96, 165, 250, 0.95), 0 0 32px rgba(59, 130, 246, 0.5), 0 0 86px rgba(168, 85, 247, 0.3)',
+                                      ]
+                                    : [
+                                        '0 0 0 2px rgba(147, 197, 253, 0.9), 0 0 30px rgba(59, 130, 246, 0.42), 0 0 72px rgba(59, 130, 246, 0.2)',
+                                        '0 0 0 2px rgba(147, 197, 253, 1), 0 0 48px rgba(59, 130, 246, 0.7), 0 0 92px rgba(59, 130, 246, 0.3)',
+                                        '0 0 0 2px rgba(147, 197, 253, 0.9), 0 0 30px rgba(59, 130, 246, 0.42), 0 0 72px rgba(59, 130, 246, 0.2)',
                                       ];
 
                                   return (
                                     <motion.div
                                       key={code}
                                       className={`relative overflow-visible rounded-3xl border p-8 transition-all ${
-                                        isExpert
-                                          ? 'border-2 border-cyan-300 hover:scale-[1.02]'
-                                        : isPro
+                                        isPro
                                             ? 'bg-gradient-to-br from-white/10 to-white/[0.02] border-blue-500/30 shadow-xl shadow-blue-500/10 scale-105'
                                             : 'bg-gradient-to-br from-white/5 to-white/[0.02] border-white/10'
                                       }`}
-                                      style={
-                                        isExpert
-                                          ? {
-                                              ...scaledCardStyle,
-                                              borderColor: isCurrent ? '#67e8f9' : '#22d3ee',
-                                              borderWidth: '2px',
-                                              background:
-                                                'linear-gradient(135deg, rgba(6, 182, 212, 0.22), rgba(16, 185, 129, 0.18), rgba(163, 230, 53, 0.16))',
-                                              boxShadow:
-                                                '0 0 0 1px rgba(103, 232, 249, 0.55), 0 0 42px rgba(34, 211, 238, 0.42), inset 0 0 28px rgba(20, 184, 166, 0.12)',
-                                            }
-                                          : {
-                                              ...scaledCardStyle,
-                                              ...(isCurrent ? { borderColor: selectedBorderColor } : {}),
-                                            }
-                                      }
+                                      style={{
+                                        ...scaledCardStyle,
+                                        ...(isCurrent ? { borderColor: selectedBorderColor } : {}),
+                                      }}
                                       animate={isCurrent ? { boxShadow: selectedPulseShadow } : undefined}
                                       transition={isCurrent ? { duration: 1.35, repeat: Infinity, ease: 'easeInOut' } : undefined}
                                     >
@@ -1212,14 +1195,10 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                       ) : null}
 
                                       <div style={{ position: 'relative', zIndex: 2 }}>
-                                        {visual.badge ? (
+                                        {showPlanBadge ? (
                                           <div className="mb-4">
                                             <span
-                                              className={`px-3 py-1 rounded-full text-white text-xs font-medium ${
-                                              isExpert
-                                                ? 'bg-gradient-to-r from-cyan-300 to-emerald-300 text-black shadow-[0_0_20px_rgba(34,211,238,0.65)]'
-                                                : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
-                                            }`}
+                                              className="px-3 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600"
                                               style={{ fontSize: '1.365rem' }}
                                             >
                                               {visual.badge}
@@ -1245,22 +1224,10 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                             setStatusMessage(null);
                                           }}
                                           className={`w-full px-6 py-3 rounded-xl font-medium transition-all mb-8 ${
-                                            isExpert
-                                              ? 'bg-gradient-to-r from-cyan-300 to-emerald-400 hover:from-cyan-400 hover:to-emerald-500 text-black shadow-[0_0_24px_rgba(16,185,129,0.35)]'
-                                              : isPro
+                                            isPro
                                                 ? 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg shadow-blue-500/25'
                                                 : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                                           } disabled:cursor-not-allowed disabled:opacity-60`}
-                                          style={
-                                            isExpert
-                                              ? {
-                                                  border: '1px solid rgba(103, 232, 249, 0.8)',
-                                                  background: 'linear-gradient(90deg, rgb(103, 232, 249), rgb(52, 211, 153))',
-                                                  color: '#02120d',
-                                                  boxShadow: '0 0 24px rgba(16, 185, 129, 0.35)',
-                                                }
-                                              : undefined
-                                          }
                                         >
                                           {isCurrent ? 'Selected' : visual.cta}
                                         </button>
@@ -1270,14 +1237,10 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                             <li key={`${plan.code}-${feature}`} className="flex items-start gap-3">
                                               <div
                                                 className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                                  isExpert ? 'bg-emerald-400/30' : isPro ? 'bg-blue-500/20' : 'bg-white/5'
+                                                  isPro ? 'bg-blue-500/20' : 'bg-white/5'
                                                 }`}
                                               >
-                                                <Check
-                                                  className={`w-3 h-3 ${
-                                                    isExpert ? 'text-emerald-200' : isPro ? 'text-blue-400' : 'text-gray-400'
-                                                  }`}
-                                                />
+                                                <Check className={`w-3 h-3 ${isPro ? 'text-blue-400' : 'text-gray-400'}`} />
                                               </div>
                                               <span className="text-gray-300">{feature}</span>
                                             </li>

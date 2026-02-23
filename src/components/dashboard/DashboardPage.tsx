@@ -5,6 +5,7 @@ import {
   createSavedSearchInBackend,
   deleteSavedSearchFromBackend,
   fetchSavedSearchesFromBackend,
+  generateAiSummaryForSavedLead,
   generateLeadsFromBackend,
   saveLeadToBackend,
   saveVisibleLeadsToBackend,
@@ -79,6 +80,7 @@ export function DashboardPage({
   const [isSavingVisibleLeads, setIsSavingVisibleLeads] = useState(false);
   const [savingLeadIds, setSavingLeadIds] = useState<Record<string, boolean>>({});
   const [websiteAnalysisModalLeadId, setWebsiteAnalysisModalLeadId] = useState<string | null>(null);
+  const [websiteAiSummaryLoadingLeadId, setWebsiteAiSummaryLoadingLeadId] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
 
@@ -433,6 +435,10 @@ export function DashboardPage({
                 savedLeadId: savedLead.savedLeadId,
                 websiteAnalysis: savedLead.websiteAnalysis,
                 websiteAnalysisCreatedAt: savedLead.websiteAnalysisCreatedAt,
+                websiteAiSummary: savedLead.websiteAiSummary,
+                websiteAiGeneratedAt: savedLead.websiteAiGeneratedAt,
+                contactAiSuggestions: savedLead.contactAiSuggestions,
+                contactAiGeneratedAt: savedLead.contactAiGeneratedAt,
               }
             : item,
         ),
@@ -466,6 +472,47 @@ export function DashboardPage({
   const selectedWebsiteAnalysisLead = websiteAnalysisModalLeadId
     ? leads.find((lead) => lead.id === websiteAnalysisModalLeadId) ?? null
     : null;
+  const canGenerateModalAiSummary = !!selectedWebsiteAnalysisLead?.savedLeadId;
+
+  const generateModalAiSummary = async () => {
+    if (!selectedWebsiteAnalysisLead?.savedLeadId) {
+      return;
+    }
+
+    const savedLeadId = selectedWebsiteAnalysisLead.savedLeadId;
+    setWebsiteAiSummaryLoadingLeadId(selectedWebsiteAnalysisLead.id);
+    try {
+      const updated = await generateAiSummaryForSavedLead(savedLeadId);
+      setLeads((current) =>
+        current.map((item) =>
+          item.savedLeadId === updated.savedLeadId
+            ? {
+                ...item,
+                websiteAiSummary: updated.websiteAiSummary,
+                websiteAiGeneratedAt: updated.websiteAiGeneratedAt,
+                contactAiSuggestions: updated.contactAiSuggestions,
+                contactAiGeneratedAt: updated.contactAiGeneratedAt,
+                websiteAnalysis: updated.websiteAnalysis ?? item.websiteAnalysis,
+                websiteAnalysisCreatedAt:
+                  updated.websiteAnalysisCreatedAt ?? item.websiteAnalysisCreatedAt,
+              }
+            : item,
+        ),
+      );
+      setSearchError(null);
+      setActionNotice(t('dashboard.savedLeads.aiSummary.success'));
+    } catch (error) {
+      setActionNotice(null);
+      if (error instanceof Error) {
+        setSearchError(error.message);
+      } else {
+        setSearchError(t('dashboard.savedLeads.aiSummary.failed'));
+      }
+      throw error;
+    } finally {
+      setWebsiteAiSummaryLoadingLeadId(null);
+    }
+  };
 
   return (
     <>
@@ -552,6 +599,13 @@ export function DashboardPage({
         onClose={() => setWebsiteAnalysisModalLeadId(null)}
         analysis={selectedWebsiteAnalysisLead?.websiteAnalysis ?? null}
         businessName={selectedWebsiteAnalysisLead?.businessName}
+        aiSummary={selectedWebsiteAnalysisLead?.websiteAiSummary}
+        aiSummaryLoading={
+          !!selectedWebsiteAnalysisLead &&
+          websiteAiSummaryLoadingLeadId === selectedWebsiteAnalysisLead.id
+        }
+        onGenerateAiSummary={canGenerateModalAiSummary ? generateModalAiSummary : undefined}
+        onNavigateBilling={onNavigateBilling}
       />
     </>
   );

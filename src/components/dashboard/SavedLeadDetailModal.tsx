@@ -1,5 +1,5 @@
-import { type CSSProperties, useState } from 'react';
-import { Globe, Link as LinkIcon, Linkedin, Loader2, Mail, MapPinned, Phone, Star } from 'lucide-react';
+import { type CSSProperties, useEffect, useState } from 'react';
+import { Copy, Globe, Link as LinkIcon, Linkedin, Loader2, Mail, MapPinned, Phone, Sparkles, Star } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { DashboardSelect } from './DashboardSelect';
@@ -7,6 +7,7 @@ import { STATUS_VISUALS, TIER_BADGE_STYLES } from './leadVisuals';
 import { STATUS_OPTIONS } from './mockData';
 import { WebsiteAnalysisModal } from './WebsiteAnalysisModal';
 import { LeadStatus, SavedLead } from './types';
+import type { AiContactSuggestionChannel } from './api';
 
 const MODAL_OVERLAY_STYLE: CSSProperties = {
   backgroundColor: 'rgba(8, 10, 14, 0.16)',
@@ -107,6 +108,52 @@ const CONTACT_TEXT_STACK_STYLE: CSSProperties = {
   paddingRight: '0.35rem',
 };
 
+const AI_CONTACT_CHANNELS: Array<{
+  channel: AiContactSuggestionChannel;
+  labelKey: string;
+}> = [
+  { channel: 'email', labelKey: 'dashboard.savedLeads.detailModal.aiContact.channels.email' },
+  { channel: 'linkedin', labelKey: 'dashboard.savedLeads.detailModal.aiContact.channels.linkedin' },
+  { channel: 'phone', labelKey: 'dashboard.savedLeads.detailModal.aiContact.channels.phone' },
+];
+
+const copyToClipboard = async (value: string): Promise<boolean> => {
+  if (!value.trim()) {
+    return false;
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      // Fallback below.
+    }
+  }
+
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.setAttribute('readonly', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  textarea.style.pointerEvents = 'none';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  let copied = false;
+  try {
+    copied = document.execCommand('copy');
+  } catch {
+    copied = false;
+  }
+  document.body.removeChild(textarea);
+  return copied;
+};
+
 interface ParsedContactChannel {
   type: string;
   value: string;
@@ -119,11 +166,19 @@ interface SavedLeadDetailModalProps {
   statusUpdating: boolean;
   deleting: boolean;
   websiteAnalysisLoading?: boolean;
+  aiSummaryLoading?: boolean;
+  aiContactSuggestionLoadingByChannel?: Partial<Record<AiContactSuggestionChannel, boolean>>;
   onClose: () => void;
   onStatusChange: (lead: SavedLead, status: LeadStatus) => void;
   onDelete: (savedLeadId: string) => void;
   onRunWebsiteAnalysis?: (lead: SavedLead) => Promise<void> | void;
   onRemoveWebsiteAnalysis?: (lead: SavedLead) => Promise<void> | void;
+  onGenerateAiSummary?: (lead: SavedLead) => Promise<void> | void;
+  onGenerateAiContactSuggestion?: (
+    lead: SavedLead,
+    channel: AiContactSuggestionChannel,
+  ) => Promise<void> | void;
+  onNavigateBilling?: () => void;
 }
 
 interface DirectLink {
@@ -222,18 +277,76 @@ export function SavedLeadDetailModal({
   statusUpdating,
   deleting,
   websiteAnalysisLoading = false,
+  aiSummaryLoading = false,
+  aiContactSuggestionLoadingByChannel,
   onClose,
   onStatusChange,
   onDelete,
   onRunWebsiteAnalysis,
   onRemoveWebsiteAnalysis,
+  onGenerateAiSummary,
+  onGenerateAiContactSuggestion,
+  onNavigateBilling,
 }: SavedLeadDetailModalProps) {
   const { t, tm } = useI18n();
   const [isWebsiteAnalysisOpen, setIsWebsiteAnalysisOpen] = useState(false);
+  const [selectedAiChannel, setSelectedAiChannel] = useState<AiContactSuggestionChannel>('email');
+  const [aiSuggestionError, setAiSuggestionError] = useState<string | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [copySuccessMessage, setCopySuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedAiChannel('email');
+    setAiSuggestionError(null);
+    setShowUpgradePrompt(false);
+    setCopySuccessMessage(null);
+  }, [lead?.savedLeadId]);
 
   if (!lead) {
     return null;
   }
+
+  const selectedSuggestion =
+    typeof lead.contactAiSuggestions?.[selectedAiChannel] === 'string'
+      ? lead.contactAiSuggestions[selectedAiChannel]
+      : '';
+  const hasWebsiteAnalysis = !!lead.websiteAnalysis;
+  const canGenerateAiContact =
+    hasWebsiteAnalysis && typeof onGenerateAiContactSuggestion === 'function';
+
+  const requestAiSuggestion = async (channel: AiContactSuggestionChannel) => {
+    setSelectedAiChannel(channel);
+    if (!onGenerateAiContactSuggestion || !hasWebsiteAnalysis) {
+      return;
+    }
+
+    setAiSuggestionError(null);
+    setCopySuccessMessage(null);
+    setShowUpgradePrompt(false);
+    try {
+      await onGenerateAiContactSuggestion(lead, channel);
+      setCopySuccessMessage(null);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : t('dashboard.savedLeads.detailModal.aiContact.errors.default');
+      setAiSuggestionError(message);
+      if (/insufficient|remaining|token|limit/i.test(message)) {
+        setShowUpgradePrompt(true);
+      }
+    }
+  };
+
+  const handleCopySuggestion = async () => {
+    const copied = await copyToClipboard(selectedSuggestion);
+    if (copied) {
+      setAiSuggestionError(null);
+      setCopySuccessMessage(t('dashboard.savedLeads.detailModal.aiContact.copySuccess'));
+      return;
+    }
+    setAiSuggestionError(t('dashboard.savedLeads.detailModal.aiContact.errors.copyFailed'));
+  };
 
   const directLinks = [
     lead.websiteUrl
@@ -602,6 +715,106 @@ export function SavedLeadDetailModal({
                       })}
                     </div>
                   ) : null}
+
+                  <div className="rounded-2xl border border-cyan-300/25 bg-cyan-500/[0.08] p-5">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-cyan-200" />
+                      <h4 className="text-sm font-semibold text-cyan-100">
+                        {t('dashboard.savedLeads.detailModal.aiContact.title')}
+                      </h4>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-cyan-50/85">
+                      {t('dashboard.savedLeads.detailModal.aiContact.description')}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {AI_CONTACT_CHANNELS.map(({ channel, labelKey }) => {
+                        const isSelected = selectedAiChannel === channel;
+                        const isLoading = !!aiContactSuggestionLoadingByChannel?.[channel];
+                        return (
+                          <button
+                            key={`${lead.savedLeadId}-ai-contact-${channel}`}
+                            type="button"
+                            disabled={!canGenerateAiContact || isLoading}
+                            onClick={() => {
+                              void requestAiSuggestion(channel);
+                            }}
+                            title={
+                              !hasWebsiteAnalysis
+                                ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
+                                : undefined
+                            }
+                            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
+                            style={{
+                              borderColor: isSelected
+                                ? 'rgba(125, 211, 252, 0.72)'
+                                : 'rgba(148, 163, 184, 0.38)',
+                              backgroundColor: isSelected
+                                ? 'rgba(14, 165, 233, 0.22)'
+                                : 'rgba(15, 23, 42, 0.4)',
+                              color: isSelected ? 'rgb(224, 242, 254)' : 'rgb(203, 213, 225)',
+                            }}
+                          >
+                            {isLoading ? <Loader2 className="spin-loader h-3.5 w-3.5" /> : null}
+                            {t(labelKey)}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {!hasWebsiteAnalysis ? (
+                      <p className="mt-3 text-xs text-amber-200">
+                        {t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')}
+                      </p>
+                    ) : null}
+
+                    {aiSuggestionError ? (
+                      <div className="mt-3 rounded-lg border border-rose-300/35 bg-rose-500/15 px-3 py-2 text-xs text-rose-100">
+                        {aiSuggestionError}
+                      </div>
+                    ) : null}
+
+                    {showUpgradePrompt && onNavigateBilling ? (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={onNavigateBilling}
+                          className="rounded-lg border border-cyan-300/55 bg-cyan-400/15 px-3 py-2 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/25"
+                        >
+                          {t('dashboard.savedLeads.detailModal.aiContact.upgradeCta')}
+                        </button>
+                      </div>
+                    ) : null}
+
+                    <div className="mt-4 rounded-xl border border-white/12 bg-slate-950/45 p-4">
+                      {selectedSuggestion ? (
+                        <>
+                          <pre className="whitespace-pre-wrap text-xs leading-relaxed text-slate-100">
+                            {selectedSuggestion}
+                          </pre>
+                          <div className="mt-3 flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void handleCopySuggestion();
+                              }}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-white/18 bg-white/10 px-2.5 py-1.5 text-xs text-slate-100 transition hover:bg-white/15"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                              {t('dashboard.savedLeads.detailModal.aiContact.copy')}
+                            </button>
+                            {copySuccessMessage ? (
+                              <span className="text-xs text-emerald-200">{copySuccessMessage}</span>
+                            ) : null}
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-slate-300">
+                          {t('dashboard.savedLeads.detailModal.aiContact.empty')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -702,6 +915,16 @@ export function SavedLeadDetailModal({
         onClose={() => setIsWebsiteAnalysisOpen(false)}
         analysis={lead.websiteAnalysis ?? null}
         businessName={lead.businessName}
+        aiSummary={lead.websiteAiSummary}
+        aiSummaryLoading={aiSummaryLoading}
+        onGenerateAiSummary={
+          onGenerateAiSummary
+            ? async () => {
+                await onGenerateAiSummary(lead);
+              }
+            : undefined
+        }
+        onNavigateBilling={onNavigateBilling}
       />
     </Dialog>
   );

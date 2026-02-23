@@ -14,6 +14,14 @@ interface WebsiteAnalysisModalProps {
   onNavigateBilling?: () => void;
 }
 
+type AiSummarySectionKey = 'businessOverview' | 'strengths' | 'weaknesses' | 'howWeCanHelp';
+
+type AiSummarySection = {
+  key: AiSummarySectionKey;
+  title: string;
+  bullets: string[];
+};
+
 const SECTION_KEYS = [
   'accessibility',
   'seo',
@@ -215,6 +223,150 @@ const formatValue = (value: unknown): string => {
   if (Array.isArray(value)) return value.length ? JSON.stringify(value) : '[]';
   if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
+};
+
+const AI_SUMMARY_TITLES: Record<'en' | 'de', Record<AiSummarySectionKey, string>> = {
+  en: {
+    businessOverview: 'Business Overview',
+    strengths: 'Strengths',
+    weaknesses: 'Weaknesses',
+    howWeCanHelp: 'How We Can Help',
+  },
+  de: {
+    businessOverview: 'Unternehmensüberblick',
+    strengths: 'Stärken',
+    weaknesses: 'Schwächen',
+    howWeCanHelp: 'Wie wir direkt helfen können',
+  },
+};
+
+const AI_SUMMARY_HEADING_ALIASES: Record<AiSummarySectionKey, string[]> = {
+  businessOverview: ['Business Overview', 'Overview', 'Unternehmensüberblick', 'Geschäftsüberblick'],
+  strengths: ['Strengths', 'Stärken'],
+  weaknesses: ['Weaknesses', 'Schwächen'],
+  howWeCanHelp: ['How We Can Help', 'Recommendations', 'Wie wir helfen können', 'Wie wir direkt helfen können'],
+};
+
+const sanitizeAiBullet = (value: string): string =>
+  value
+    .replace(/^[-*•]\s+/, '')
+    .replace(/^\d+[\.\)]\s+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const parseAiBullets = (raw: string): string[] => {
+  const normalizedLines = raw
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  const lineBulletCandidates = normalizedLines
+    .filter((line) => /^[-*•]\s+/.test(line))
+    .map(sanitizeAiBullet)
+    .filter((line) => line.length > 0);
+  if (lineBulletCandidates.length > 0) {
+    return lineBulletCandidates.slice(0, 6);
+  }
+
+  const compact = raw.replace(/\s+/g, ' ').trim();
+  if (!compact) {
+    return [];
+  }
+
+  const hyphenSplit = compact
+    .split(/\s[-•]\s+/)
+    .map(sanitizeAiBullet)
+    .filter((item) => item.length > 0);
+  if (hyphenSplit.length > 1) {
+    return hyphenSplit.slice(0, 6);
+  }
+
+  return compact
+    .split(/\.\s+/)
+    .map((item) => sanitizeAiBullet(item.endsWith('.') ? item : `${item}.`))
+    .filter((item) => item.length > 0)
+    .slice(0, 4);
+};
+
+const extractAiSummarySections = (
+  aiSummary: string | undefined,
+  language: 'en' | 'de',
+): AiSummarySection[] => {
+  if (typeof aiSummary !== 'string') {
+    return [];
+  }
+
+  const text = aiSummary.replace(/\r/g, '\n').trim();
+  if (!text) {
+    return [];
+  }
+
+  const sectionOrder: AiSummarySectionKey[] = [
+    'businessOverview',
+    'strengths',
+    'weaknesses',
+    'howWeCanHelp',
+  ];
+
+  const headingMatches: Array<{
+    key: AiSummarySectionKey;
+    headingStart: number;
+    contentStart: number;
+  }> = [];
+
+  sectionOrder.forEach((key) => {
+    const aliases = AI_SUMMARY_HEADING_ALIASES[key];
+    let bestMatch:
+      | {
+          index: number;
+          contentStart: number;
+        }
+      | null = null;
+
+    aliases.forEach((alias) => {
+      const regex = new RegExp(`(^|\\n|\\s)${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[:\\-]?\\s*`, 'i');
+      const match = regex.exec(text);
+      if (!match || typeof match.index !== 'number') {
+        return;
+      }
+
+      const headingStart = match.index + match[1].length;
+      const contentStart = match.index + match[0].length;
+      if (!bestMatch || headingStart < bestMatch.index) {
+        bestMatch = { index: headingStart, contentStart };
+      }
+    });
+
+    if (bestMatch) {
+      headingMatches.push({
+        key,
+        headingStart: bestMatch.index,
+        contentStart: bestMatch.contentStart,
+      });
+    }
+  });
+
+  if (headingMatches.length === 0) {
+    return [];
+  }
+
+  headingMatches.sort((a, b) => a.headingStart - b.headingStart);
+
+  return headingMatches
+    .map((heading, index) => {
+      const nextHeading = headingMatches[index + 1];
+      const rawSection = text
+        .slice(heading.contentStart, nextHeading ? nextHeading.headingStart : text.length)
+        .trim();
+      const bullets = parseAiBullets(rawSection);
+      return {
+        key: heading.key,
+        title: AI_SUMMARY_TITLES[language][heading.key],
+        bullets,
+      };
+    })
+    .filter((section) => section.bullets.length > 0);
 };
 
 const buildSummary = (analysis: Record<string, unknown> | null, businessName: string | undefined, language: 'en' | 'de') => {
@@ -450,6 +602,10 @@ export function WebsiteAnalysisModal({
 
   const normalizedAnalysis =
     analysis && typeof analysis === 'object' && !Array.isArray(analysis) ? analysis : null;
+  const parsedAiSummarySections = useMemo(
+    () => extractAiSummarySections(aiSummary, currentLanguage),
+    [aiSummary, currentLanguage],
+  );
 
   useEffect(() => {
     setIsSummaryOpen(true);
@@ -458,10 +614,15 @@ export function WebsiteAnalysisModal({
   }, [normalizedAnalysis, businessName, currentLanguage, aiSummary]);
 
   const canGenerateSummary = !!normalizedAnalysis && !!onGenerateAiSummary;
-  const missingAnalysisMessage =
-    currentLanguage === 'de'
+  const disabledGenerateMessage = !normalizedAnalysis
+    ? currentLanguage === 'de'
       ? 'Führe zuerst eine Website-Analyse aus.'
-      : 'Run website analysis first.';
+      : 'Run website analysis first.'
+    : !onGenerateAiSummary
+      ? currentLanguage === 'de'
+        ? 'Speichere den Lead zuerst, um die AI-Zusammenfassung zu nutzen.'
+        : 'Save this lead first to use AI summary.'
+      : undefined;
 
   const handleGenerateSummary = async () => {
     if (!onGenerateAiSummary || !normalizedAnalysis || aiSummaryLoading) {
@@ -564,7 +725,7 @@ export function WebsiteAnalysisModal({
                 void handleGenerateSummary();
               }}
               disabled={!canGenerateSummary || aiSummaryLoading}
-              title={!canGenerateSummary ? missingAnalysisMessage : undefined}
+              title={!canGenerateSummary ? disabledGenerateMessage : undefined}
               className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
               style={{
                 border: '1px solid rgba(103, 232, 249, 0.86)',
@@ -621,7 +782,22 @@ export function WebsiteAnalysisModal({
             <div className="mt-8 mb-2 pr-1">
               <div className="space-y-4 rounded-xl border border-cyan-200/35 bg-slate-950/30 px-6 py-6">
                 {typeof aiSummary === 'string' && aiSummary.trim().length > 0 ? (
-                  <p className="whitespace-pre-wrap text-lg leading-relaxed text-slate-50">{aiSummary}</p>
+                  parsedAiSummarySections.length > 0 ? (
+                    <div className="space-y-5">
+                      {parsedAiSummarySections.map((section) => (
+                        <section key={`ai-summary-${section.key}`} className="space-y-2">
+                          <h4 className="text-base font-semibold text-cyan-100">{section.title}</h4>
+                          <ul className="list-disc space-y-1 pl-5 text-base leading-relaxed text-slate-50">
+                            {section.bullets.map((bullet, index) => (
+                              <li key={`ai-summary-${section.key}-${index}`}>{bullet}</li>
+                            ))}
+                          </ul>
+                        </section>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="whitespace-pre-wrap text-lg leading-relaxed text-slate-50">{aiSummary}</p>
+                  )
                 ) : (
                   <p className="text-base text-slate-200">
                     {currentLanguage === 'de'

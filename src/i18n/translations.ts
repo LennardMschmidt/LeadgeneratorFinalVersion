@@ -431,6 +431,14 @@ export const translations = {
         bulkDeleteError: 'Failed to delete filtered leads.',
         singleSavedSuccess: 'Saved lead: {{name}}.',
         singleSavedError: 'Failed to save lead.',
+        aiSummary: {
+          success: 'AI summary generated.',
+          failed: 'Failed to generate AI summary.',
+        },
+        aiContact: {
+          success: 'AI contact suggestion generated.',
+          failed: 'Failed to generate AI contact suggestion.',
+        },
         exportExcel: 'Export Excel',
         loadError: 'Failed to load saved leads.',
         statusUpdated: 'Lead status updated.',
@@ -468,6 +476,25 @@ export const translations = {
           problemsAndReason: 'Problems and reasoning',
           noProblemsDetected: 'No problems detected',
           contactAndLinks: 'Contact and links',
+          aiContact: {
+            title: 'AI Contact Suggestion',
+            description:
+              'Generate one personalized outreach opener using your business profile and website findings.',
+            channels: {
+              email: 'Email opener',
+              linkedin: 'LinkedIn opener',
+              phone: 'Phone opener',
+            },
+            runWebsiteAnalysisFirst: 'Run website analysis first.',
+            upgradeCta: 'Upgrade for more AI tokens',
+            copy: 'Copy message',
+            copySuccess: 'Copied to clipboard.',
+            empty: 'No AI contact suggestion generated yet.',
+            errors: {
+              default: 'Failed to generate AI contact suggestion.',
+              copyFailed: 'Could not copy message.',
+            },
+          },
           metadata: 'Metadata',
           address: 'Address and geo',
           hours: 'Opening hours',
@@ -1221,6 +1248,14 @@ export const translations = {
         bulkDeleteError: 'Gefilterte Leads konnten nicht gelöscht werden.',
         singleSavedSuccess: 'Lead gespeichert: {{name}}.',
         singleSavedError: 'Lead konnte nicht gespeichert werden.',
+        aiSummary: {
+          success: 'AI-Zusammenfassung wurde erstellt.',
+          failed: 'AI-Zusammenfassung konnte nicht erstellt werden.',
+        },
+        aiContact: {
+          success: 'AI-Kontaktvorschlag wurde erstellt.',
+          failed: 'AI-Kontaktvorschlag konnte nicht erstellt werden.',
+        },
         exportExcel: 'Excel exportieren',
         loadError: 'Gespeicherte Leads konnten nicht geladen werden.',
         statusUpdated: 'Lead-Status wurde aktualisiert.',
@@ -1258,6 +1293,25 @@ export const translations = {
           problemsAndReason: 'Probleme und Begründung',
           noProblemsDetected: 'Keine Probleme erkannt',
           contactAndLinks: 'Kontakt und Links',
+          aiContact: {
+            title: 'AI-Kontaktvorschlag',
+            description:
+              'Erstelle eine personalisierte Erstnachricht basierend auf deinem Unternehmensprofil und den Website-Ergebnissen.',
+            channels: {
+              email: 'E-Mail-Opener',
+              linkedin: 'LinkedIn-Opener',
+              phone: 'Telefon-Opener',
+            },
+            runWebsiteAnalysisFirst: 'Führe zuerst eine Website-Analyse aus.',
+            upgradeCta: 'Upgrade für mehr AI-Tokens',
+            copy: 'Nachricht kopieren',
+            copySuccess: 'In die Zwischenablage kopiert.',
+            empty: 'Noch kein AI-Kontaktvorschlag vorhanden.',
+            errors: {
+              default: 'AI-Kontaktvorschlag konnte nicht erstellt werden.',
+              copyFailed: 'Nachricht konnte nicht kopiert werden.',
+            },
+          },
           metadata: 'Metadaten',
           address: 'Adresse und Geo',
           hours: 'Öffnungszeiten',

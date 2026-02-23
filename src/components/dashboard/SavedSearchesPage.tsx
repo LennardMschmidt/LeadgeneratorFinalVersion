@@ -6,9 +6,12 @@ import {
   removeWebsiteAnalysisForSavedLead,
   deleteSavedLeadFromBackend,
   fetchSavedLeadsFromBackend,
+  generateAiContactSuggestionForSavedLead,
+  generateAiSummaryForSavedLead,
   runWebsiteAnalysisForSavedLead,
   updateSavedLeadStatusInBackend,
 } from './api';
+import type { AiContactSuggestionChannel } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSelect } from './DashboardSelect';
 import { exportRowsToExcel, exportRowsToPdf } from './exportUtils';
@@ -76,6 +79,10 @@ export function SavedSearchesPage({
   const [statusUpdatingIds, setStatusUpdatingIds] = useState<Record<string, boolean>>({});
   const [deletingIds, setDeletingIds] = useState<Record<string, boolean>>({});
   const [websiteAnalysisLoadingIds, setWebsiteAnalysisLoadingIds] = useState<Record<string, boolean>>({});
+  const [aiSummaryLoadingIds, setAiSummaryLoadingIds] = useState<Record<string, boolean>>({});
+  const [aiContactLoadingByLead, setAiContactLoadingByLead] = useState<
+    Record<string, Partial<Record<AiContactSuggestionChannel, boolean>>>
+  >({});
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -217,6 +224,15 @@ export function SavedSearchesPage({
   const closeLeadDetail = () => {
     setIsDetailOpen(false);
     setSelectedLead(null);
+  };
+
+  const mergeUpdatedLead = (updatedLead: SavedLead) => {
+    setSavedLeads((current) =>
+      current.map((item) => (item.savedLeadId === updatedLead.savedLeadId ? updatedLead : item)),
+    );
+    setSelectedLead((current) =>
+      current && current.savedLeadId === updatedLead.savedLeadId ? updatedLead : current,
+    );
   };
 
   const changeStatus = async (savedLead: SavedLead, status: LeadStatus) => {
@@ -383,6 +399,80 @@ export function SavedSearchesPage({
       setWebsiteAnalysisLoadingIds((current) => {
         const next = { ...current };
         delete next[savedLeadId];
+        return next;
+      });
+    }
+  };
+
+  const generateAiSummary = async (lead: SavedLead) => {
+    const savedLeadId = lead.savedLeadId;
+    if (!savedLeadId || aiSummaryLoadingIds[savedLeadId]) {
+      return;
+    }
+
+    setAiSummaryLoadingIds((current) => ({ ...current, [savedLeadId]: true }));
+    try {
+      const updated = await generateAiSummaryForSavedLead(savedLeadId);
+      mergeUpdatedLead(updated);
+      setNoticeMessage(t('dashboard.savedLeads.aiSummary.success'));
+      setErrorMessage(null);
+    } catch (error) {
+      setNoticeMessage(null);
+      const message =
+        error instanceof Error ? error.message : t('dashboard.savedLeads.aiSummary.failed');
+      setErrorMessage(message);
+      throw new Error(message);
+    } finally {
+      setAiSummaryLoadingIds((current) => {
+        const next = { ...current };
+        delete next[savedLeadId];
+        return next;
+      });
+    }
+  };
+
+  const generateAiContactSuggestion = async (
+    lead: SavedLead,
+    channel: AiContactSuggestionChannel,
+  ) => {
+    const savedLeadId = lead.savedLeadId;
+    if (!savedLeadId || aiContactLoadingByLead[savedLeadId]?.[channel]) {
+      return;
+    }
+
+    setAiContactLoadingByLead((current) => ({
+      ...current,
+      [savedLeadId]: {
+        ...(current[savedLeadId] ?? {}),
+        [channel]: true,
+      },
+    }));
+
+    try {
+      const updated = await generateAiContactSuggestionForSavedLead(savedLeadId, channel);
+      mergeUpdatedLead(updated);
+      setNoticeMessage(t('dashboard.savedLeads.aiContact.success'));
+      setErrorMessage(null);
+    } catch (error) {
+      setNoticeMessage(null);
+      const message =
+        error instanceof Error ? error.message : t('dashboard.savedLeads.aiContact.failed');
+      setErrorMessage(message);
+      throw new Error(message);
+    } finally {
+      setAiContactLoadingByLead((current) => {
+        const existing = current[savedLeadId];
+        if (!existing) {
+          return current;
+        }
+        const nextForLead = { ...existing };
+        delete nextForLead[channel];
+        const next = { ...current };
+        if (Object.keys(nextForLead).length === 0) {
+          delete next[savedLeadId];
+        } else {
+          next[savedLeadId] = nextForLead;
+        }
         return next;
       });
     }
@@ -880,11 +970,18 @@ export function SavedSearchesPage({
         statusUpdating={!!(selectedLead && statusUpdatingIds[selectedLead.savedLeadId])}
         deleting={!!(selectedLead && deletingIds[selectedLead.savedLeadId])}
         websiteAnalysisLoading={!!(selectedLead && websiteAnalysisLoadingIds[selectedLead.savedLeadId])}
+        aiSummaryLoading={!!(selectedLead && aiSummaryLoadingIds[selectedLead.savedLeadId])}
+        aiContactSuggestionLoadingByChannel={
+          selectedLead ? aiContactLoadingByLead[selectedLead.savedLeadId] : undefined
+        }
         onClose={closeLeadDetail}
         onStatusChange={changeStatus}
         onDelete={deleteSavedLead}
         onRunWebsiteAnalysis={runWebsiteAnalysis}
         onRemoveWebsiteAnalysis={removeWebsiteAnalysis}
+        onGenerateAiSummary={generateAiSummary}
+        onGenerateAiContactSuggestion={generateAiContactSuggestion}
+        onNavigateBilling={onNavigateBilling}
       />
 
       <AlertDialog open={isBulkDeleteConfirmOpen} onOpenChange={setIsBulkDeleteConfirmOpen}>

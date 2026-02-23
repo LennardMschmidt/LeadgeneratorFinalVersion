@@ -74,15 +74,14 @@ const parseStoredSession = (raw: string | null): StoredSession | null => {
 
 const getSessionStorageMode = (): SessionStorageMode => {
   if (!isBrowser) {
-    return 'session';
+    return 'local';
   }
 
-  const raw = window.localStorage.getItem(SESSION_STORAGE_MODE_KEY);
-  return raw === 'local' ? 'local' : 'session';
+  return 'local';
 };
 
-const setSessionStorageMode = (rememberMe: boolean): SessionStorageMode => {
-  const mode: SessionStorageMode = rememberMe ? 'local' : 'session';
+const setSessionStorageMode = (): SessionStorageMode => {
+  const mode: SessionStorageMode = 'local';
   if (!isBrowser) {
     return mode;
   }
@@ -108,6 +107,11 @@ const readStoredSession = (): { session: StoredSession; mode: SessionStorageMode
 
     const session = parseStoredSession(raw);
     if (session) {
+      if (mode === 'session') {
+        writeStoredSession(session, 'local');
+        return { session, mode: 'local' };
+      }
+
       return { session, mode };
     }
   }
@@ -431,8 +435,7 @@ export const signUpWithEmail = async (
     };
   }
 
-  const rememberMe = options?.rememberMe === true;
-  const mode = setSessionStorageMode(rememberMe);
+  const mode = setSessionStorageMode();
 
   const response = await authRequest('signup', {
     body: {
@@ -475,6 +478,7 @@ export const signInWithEmail = async (
   password: string,
   options?: { rememberMe?: boolean },
 ): Promise<AuthActionResult> => {
+  void options;
   if (!hasSupabaseConfig()) {
     return {
       ok: false,
@@ -482,8 +486,7 @@ export const signInWithEmail = async (
     };
   }
 
-  const rememberMe = options?.rememberMe === true;
-  const mode = setSessionStorageMode(rememberMe);
+  const mode = setSessionStorageMode();
 
   const response = await authRequest('token?grant_type=password', {
     body: { email, password },
@@ -512,6 +515,7 @@ export const signInWithGoogle = async (
   redirectPath = '/dashboard',
   options?: { rememberMe?: boolean },
 ): Promise<AuthActionResult> => {
+  void options;
   if (!hasSupabaseConfig()) {
     return {
       ok: false,
@@ -526,8 +530,7 @@ export const signInWithGoogle = async (
     };
   }
 
-  const rememberMe = options?.rememberMe === true;
-  setSessionStorageMode(rememberMe);
+  setSessionStorageMode();
 
   const normalizedPath = redirectPath.startsWith('/') ? redirectPath : '/dashboard';
   const redirectTo = `${window.location.origin}${normalizedPath}`;

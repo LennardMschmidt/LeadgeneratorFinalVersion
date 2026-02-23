@@ -1,5 +1,19 @@
 import { type CSSProperties, useEffect, useState } from 'react';
-import { Copy, Globe, Link as LinkIcon, Linkedin, Loader2, Mail, MapPinned, Phone, Sparkles, Star } from 'lucide-react';
+import {
+  AlertCircle,
+  Copy,
+  ExternalLink,
+  Globe,
+  Link as LinkIcon,
+  Linkedin,
+  Loader2,
+  Mail,
+  MapPinned,
+  Phone,
+  Sparkles,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { DashboardSelect } from './DashboardSelect';
@@ -10,103 +24,184 @@ import { LeadStatus, SavedLead } from './types';
 import type { AiContactSuggestionChannel } from './api';
 
 const MODAL_OVERLAY_STYLE: CSSProperties = {
-  backgroundColor: 'rgba(8, 10, 14, 0.16)',
-  backdropFilter: 'blur(4px)',
-  WebkitBackdropFilter: 'blur(4px)',
+  backgroundColor: 'rgba(2, 6, 23, 0.64)',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
 };
 
 const MODAL_CONTENT_STYLE: CSSProperties = {
-  backdropFilter: 'blur(22px) saturate(125%)',
-  WebkitBackdropFilter: 'blur(22px) saturate(125%)',
-  background: 'linear-gradient(160deg, rgba(44, 54, 70, 0.58), rgba(30, 38, 52, 0.56))',
-  boxShadow: '0 24px 72px rgba(5, 10, 24, 0.36)',
+  width: 'min(1320px, calc(100vw - 3rem))',
+  maxHeight: '92vh',
+  overflow: 'hidden',
+  padding: 0,
+  border: '1px solid rgba(255, 255, 255, 0.14)',
+  borderRadius: '1.5rem',
+  color: '#F8FAFC',
+  background:
+    'radial-gradient(120% 160% at 0% 0%, rgba(59, 130, 246, 0.18) 0%, rgba(11, 16, 32, 0.96) 42%), linear-gradient(145deg, rgba(18, 21, 33, 0.98), rgba(11, 16, 32, 0.98))',
+  boxShadow: '0 32px 92px rgba(2, 6, 23, 0.62), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
 };
 
-const GLASS_PANEL = 'rounded-3xl bg-white/[0.08] backdrop-blur-xl';
-const SECTION_TITLE_CLASS = 'text-base font-semibold text-white/90 mb-6';
-const BLOCK_TITLE_CLASS = 'text-base font-semibold text-slate-100';
-const META_LABEL_CLASS = 'text-sm font-medium text-slate-300';
-const MAIN_TITLE_STYLE: CSSProperties = {
-  fontSize: '2.6rem',
-  lineHeight: 1.08,
-  fontWeight: 700,
+const MODAL_SCROLL_AREA_STYLE: CSSProperties = {
+  maxHeight: '92vh',
+  overflowY: 'auto',
+  overflowX: 'hidden',
+  padding: '1.6rem',
 };
+
+const MODAL_STACK_STYLE: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '1.25rem',
+};
+
+const SECTION_CARD_STYLE: CSSProperties = {
+  borderRadius: '1.1rem',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03))',
+  boxShadow: '0 14px 42px rgba(2, 6, 23, 0.32)',
+  backdropFilter: 'blur(16px)',
+  WebkitBackdropFilter: 'blur(16px)',
+  padding: '1.5rem',
+};
+
+const SECTION_LABEL_STYLE: CSSProperties = {
+  fontSize: '0.75rem',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  color: '#94A3B8',
+  marginBottom: '0.9rem',
+  fontWeight: 600,
+};
+
 const SECTION_TITLE_STYLE: CSSProperties = {
-  fontSize: '1.45rem',
-  lineHeight: 1.2,
-  fontWeight: 650,
-  marginBottom: '1.25rem',
-};
-const BLOCK_TITLE_STYLE: CSSProperties = {
-  fontSize: '1.22rem',
+  fontSize: '1.15rem',
   lineHeight: 1.25,
   fontWeight: 650,
-};
-const METADATA_LABEL_STYLE: CSSProperties = {
-  fontSize: '1.08rem',
-  lineHeight: 1.25,
-  fontWeight: 620,
+  color: '#F8FAFC',
 };
 
-const CONTACT_BUTTON_CLASS =
-  'flex min-w-[260px] flex-1 items-start gap-3 rounded-xl border border-white/24 bg-white/[0.05] px-5 py-4 text-sm text-slate-100 transition-colors hover:border-white/38 hover:bg-white/[0.1]';
-const CONTACT_VALUE_CLASS = 'block text-sm text-slate-300 break-all';
-const PROBLEM_CHIP_CLASS = 'px-4 py-1.5 rounded-lg bg-red-500/10 text-red-300 text-sm font-medium border border-red-500/20';
-const PROBLEM_CHIP_EMPTY_CLASS =
-  'px-4 py-1.5 rounded-lg bg-emerald-400/10 text-emerald-300 text-sm font-medium border border-emerald-400/20';
-const OUTER_CONTENT_PADDING_STYLE: CSSProperties = { padding: '2.75rem' };
-const STACK_12_STYLE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: '3rem' };
-const STACK_10_STYLE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: '2.5rem' };
-const STACK_6_STYLE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: '1.5rem' };
-const STACK_4_STYLE: CSSProperties = { display: 'flex', flexDirection: 'column', gap: '1rem' };
-const PANEL_PADDING_STYLE: CSSProperties = { padding: '2.5rem' };
-const TWO_COLUMN_GRID_STYLE: CSSProperties = {
+const ANALYSIS_PANEL_STYLE: CSSProperties = {
+  marginTop: '1rem',
+  borderRadius: '0.95rem',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'rgba(15, 23, 42, 0.48)',
+  padding: '0.9rem 1rem',
+};
+
+const CONTACT_GRID_STYLE: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-  gap: '4rem',
+  gap: '1.25rem',
 };
-const DIVIDER_STYLE: CSSProperties = {
-  borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-  paddingTop: '2rem',
-};
-const SECTION_BREAK_STYLE: CSSProperties = {
-  height: '1px',
-  border: 0,
-  background:
-    'linear-gradient(90deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.58) 50%, rgba(255,255,255,0.12) 100%)',
-};
-const INTERACTIVE_BUTTON_STYLE: CSSProperties = {
+
+const CONTACT_CARD_BASE_STYLE: CSSProperties = {
   border: '1px solid rgba(148, 163, 184, 0.42)',
   backgroundColor: 'rgba(255, 255, 255, 0.09)',
   boxShadow: '0 10px 24px rgba(15, 23, 42, 0.28)',
-  padding: '1rem 1.5rem',
   transform: 'translateY(0)',
   transition: 'background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease',
+  borderRadius: '0.9rem',
+  minHeight: '4.25rem',
+  padding: '0.75rem 0.95rem',
 };
-const ANALYSIS_VIEW_BUTTON_STYLE: CSSProperties = {
-  border: '1px solid rgba(34, 211, 238, 0.68)',
-  backgroundColor: 'rgba(6, 182, 212, 0.24)',
-  color: 'rgb(207, 250, 254)',
-  boxShadow: '0 12px 26px rgba(8, 145, 178, 0.34)',
-};
-const ANALYSIS_RUN_BUTTON_STYLE: CSSProperties = {
-  border: '1px solid rgba(96, 165, 250, 0.72)',
-  backgroundColor: 'rgba(37, 99, 235, 0.26)',
-  color: 'rgb(219, 234, 254)',
-  boxShadow: '0 12px 26px rgba(30, 64, 175, 0.34)',
-};
-const ANALYSIS_REMOVE_BUTTON_STYLE: CSSProperties = {
-  border: '1px solid rgba(248, 113, 113, 0.68)',
-  backgroundColor: 'rgba(239, 68, 68, 0.2)',
-  color: 'rgb(254, 226, 226)',
-  boxShadow: '0 12px 26px rgba(185, 28, 28, 0.32)',
-};
-const CONTACT_TEXT_STACK_STYLE: CSSProperties = {
+
+const CHANNEL_ICON_BOX_STYLE: CSSProperties = {
+  width: '2.25rem',
+  height: '2.25rem',
+  borderRadius: '0.7rem',
   display: 'flex',
-  flexDirection: 'column',
-  gap: '0.35rem',
-  paddingRight: '0.35rem',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '1px solid rgba(148, 163, 184, 0.25)',
+  flexShrink: 0,
+  marginRight: '15px',
 };
+
+const AI_PANEL_STYLE: CSSProperties = {
+  borderRadius: '1rem',
+  border: '1px solid rgba(34, 211, 238, 0.25)',
+  background:
+    'linear-gradient(145deg, rgba(15, 23, 42, 0.74), rgba(11, 16, 32, 0.74)), radial-gradient(110% 140% at 0% 0%, rgba(34, 211, 238, 0.14) 0%, rgba(0, 0, 0, 0) 45%)',
+  padding: '1rem',
+};
+
+const AI_SUGGESTION_BOX_STYLE: CSSProperties = {
+  marginTop: '0.85rem',
+  borderRadius: '0.85rem',
+  border: '1px solid rgba(255, 255, 255, 0.14)',
+  background: 'rgba(2, 6, 23, 0.48)',
+  padding: '0.95rem',
+};
+
+const METADATA_GRID_STYLE: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+  gap: '0.85rem',
+};
+
+const METADATA_CARD_STYLE: CSSProperties = {
+  borderRadius: '0.9rem',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+  background: 'rgba(15, 23, 42, 0.42)',
+  padding: '0.85rem 0.95rem',
+};
+
+const META_LABEL_STYLE: CSSProperties = {
+  fontSize: '0.72rem',
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase',
+  color: '#64748B',
+  marginBottom: '0.35rem',
+  fontWeight: 600,
+};
+
+const PROBLEM_CHIP_CLASS =
+  'rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300';
+const PROBLEM_CHIP_EMPTY_CLASS =
+  'rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300';
+
+const FIGMA_BUTTON_BASE_STYLE: CSSProperties = {
+  minHeight: '2.5rem',
+  padding: '0.55rem 1rem',
+  borderRadius: '0.8rem',
+  border: '1px solid transparent',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.45rem',
+  fontSize: '0.78rem',
+  fontWeight: 600,
+  lineHeight: 1.2,
+  transition: 'transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease, border-color 160ms ease, background 160ms ease',
+};
+
+const FIGMA_BUTTON_VARIANTS = {
+  primary: {
+    borderColor: 'rgba(125, 211, 252, 0.6)',
+    background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.92) 0%, rgba(168, 85, 247, 0.92) 100%)',
+    color: '#ffffff',
+    boxShadow: '0 10px 24px rgba(59, 130, 246, 0.34)',
+  },
+  secondary: {
+    borderColor: 'rgba(148, 163, 184, 0.46)',
+    background: 'rgba(15, 23, 42, 0.62)',
+    color: '#e2e8f0',
+    boxShadow: '0 8px 20px rgba(2, 6, 23, 0.34)',
+  },
+  danger: {
+    borderColor: 'rgba(248, 113, 113, 0.58)',
+    background: 'rgba(239, 68, 68, 0.2)',
+    color: '#fee2e2',
+    boxShadow: '0 8px 20px rgba(127, 29, 29, 0.3)',
+  },
+  selected: {
+    borderColor: 'rgba(125, 211, 252, 0.72)',
+    background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.32), rgba(168, 85, 247, 0.3))',
+    color: '#e0f2fe',
+    boxShadow: '0 10px 24px rgba(59, 130, 246, 0.28)',
+  },
+} as const;
 
 const AI_CONTACT_CHANNELS: Array<{
   channel: AiContactSuggestionChannel;
@@ -234,24 +329,55 @@ const setInteractiveHoverState = (element: HTMLElement, isHover: boolean): void 
     : '0 10px 24px rgba(15, 23, 42, 0.28)';
   element.style.transform = isHover ? 'translateY(-1px)' : 'translateY(0)';
 };
-const setAnalysisButtonHoverState = (
-  element: HTMLElement,
-  isHover: boolean,
-  mode: 'view' | 'run' | 'remove',
-): void => {
-  if (mode === 'view') {
-    element.style.backgroundColor = isHover ? 'rgba(6, 182, 212, 0.34)' : 'rgba(6, 182, 212, 0.24)';
-    element.style.borderColor = isHover ? 'rgba(103, 232, 249, 0.82)' : 'rgba(34, 211, 238, 0.68)';
-    return;
-  }
-  if (mode === 'remove') {
-    element.style.backgroundColor = isHover ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)';
-    element.style.borderColor = isHover ? 'rgba(252, 165, 165, 0.88)' : 'rgba(248, 113, 113, 0.68)';
+
+type FigmaButtonVariant = keyof typeof FIGMA_BUTTON_VARIANTS;
+
+const getFigmaButtonStyle = (variant: FigmaButtonVariant): CSSProperties => ({
+  ...FIGMA_BUTTON_BASE_STYLE,
+  ...FIGMA_BUTTON_VARIANTS[variant],
+});
+
+const setFigmaButtonHoverState = (element: HTMLElement, isHover: boolean, variant: FigmaButtonVariant): void => {
+  if (variant === 'danger') {
+    element.style.background = isHover ? 'rgba(239, 68, 68, 0.3)' : 'rgba(239, 68, 68, 0.2)';
+    element.style.borderColor = isHover ? 'rgba(252, 165, 165, 0.85)' : 'rgba(248, 113, 113, 0.58)';
+    element.style.boxShadow = isHover
+      ? '0 14px 30px rgba(127, 29, 29, 0.38)'
+      : '0 8px 20px rgba(127, 29, 29, 0.3)';
+    element.style.transform = isHover ? 'translateY(-1px)' : 'translateY(0)';
     return;
   }
 
-  element.style.backgroundColor = isHover ? 'rgba(37, 99, 235, 0.35)' : 'rgba(37, 99, 235, 0.26)';
-  element.style.borderColor = isHover ? 'rgba(147, 197, 253, 0.86)' : 'rgba(96, 165, 250, 0.72)';
+  if (variant === 'secondary') {
+    element.style.background = isHover ? 'rgba(30, 41, 59, 0.84)' : 'rgba(15, 23, 42, 0.62)';
+    element.style.borderColor = isHover ? 'rgba(191, 219, 254, 0.72)' : 'rgba(148, 163, 184, 0.46)';
+    element.style.boxShadow = isHover
+      ? '0 12px 26px rgba(15, 23, 42, 0.45)'
+      : '0 8px 20px rgba(2, 6, 23, 0.34)';
+    element.style.transform = isHover ? 'translateY(-1px)' : 'translateY(0)';
+    return;
+  }
+
+  if (variant === 'selected') {
+    element.style.background = isHover
+      ? 'linear-gradient(90deg, rgba(59, 130, 246, 0.4), rgba(168, 85, 247, 0.36))'
+      : 'linear-gradient(90deg, rgba(59, 130, 246, 0.32), rgba(168, 85, 247, 0.3))';
+    element.style.borderColor = isHover ? 'rgba(186, 230, 253, 0.88)' : 'rgba(125, 211, 252, 0.72)';
+    element.style.boxShadow = isHover
+      ? '0 14px 30px rgba(59, 130, 246, 0.36)'
+      : '0 10px 24px rgba(59, 130, 246, 0.28)';
+    element.style.transform = isHover ? 'translateY(-1px)' : 'translateY(0)';
+    return;
+  }
+
+  element.style.background = isHover
+    ? 'linear-gradient(90deg, rgba(59, 130, 246, 1) 0%, rgba(168, 85, 247, 1) 100%)'
+    : 'linear-gradient(90deg, rgba(59, 130, 246, 0.92) 0%, rgba(168, 85, 247, 0.92) 100%)';
+  element.style.borderColor = isHover ? 'rgba(186, 230, 253, 0.9)' : 'rgba(125, 211, 252, 0.6)';
+  element.style.boxShadow = isHover
+    ? '0 14px 30px rgba(59, 130, 246, 0.45)'
+    : '0 10px 24px rgba(59, 130, 246, 0.34)';
+  element.style.transform = isHover ? 'translateY(-1px)' : 'translateY(0)';
 };
 
 const toDisplayScore = (score: number, maxScore: number): number => {
@@ -268,6 +394,48 @@ const formatDateTime = (value: string): string => {
     return value;
   }
   return parsed.toLocaleString();
+};
+
+const getChannelIconStyle = (channelType: string): CSSProperties => {
+  if (channelType === 'email') {
+    return {
+      ...CHANNEL_ICON_BOX_STYLE,
+      borderColor: 'rgba(96, 165, 250, 0.35)',
+      background: 'linear-gradient(145deg, rgba(59, 130, 246, 0.22), rgba(168, 85, 247, 0.2))',
+      color: '#bfdbfe',
+    };
+  }
+  if (channelType === 'phone') {
+    return {
+      ...CHANNEL_ICON_BOX_STYLE,
+      borderColor: 'rgba(52, 211, 153, 0.35)',
+      background: 'linear-gradient(145deg, rgba(16, 185, 129, 0.2), rgba(34, 211, 238, 0.2))',
+      color: '#6ee7b7',
+    };
+  }
+  if (channelType === 'linkedin') {
+    return {
+      ...CHANNEL_ICON_BOX_STYLE,
+      borderColor: 'rgba(59, 130, 246, 0.35)',
+      background: 'linear-gradient(145deg, rgba(37, 99, 235, 0.2), rgba(59, 130, 246, 0.2))',
+      color: '#93c5fd',
+    };
+  }
+  if (channelType === 'maps') {
+    return {
+      ...CHANNEL_ICON_BOX_STYLE,
+      borderColor: 'rgba(251, 113, 133, 0.35)',
+      background: 'linear-gradient(145deg, rgba(244, 63, 94, 0.2), rgba(251, 146, 60, 0.2))',
+      color: '#fda4af',
+    };
+  }
+
+  return {
+    ...CHANNEL_ICON_BOX_STYLE,
+    borderColor: 'rgba(148, 163, 184, 0.35)',
+    background: 'rgba(148, 163, 184, 0.18)',
+    color: '#cbd5e1',
+  };
 };
 
 export function SavedLeadDetailModal({
@@ -311,11 +479,12 @@ export function SavedLeadDetailModal({
       ? lead.contactAiSuggestions[selectedAiChannel]
       : '';
   const hasWebsiteAnalysis = !!lead.websiteAnalysis;
-  const canGenerateAiContact =
-    hasWebsiteAnalysis && typeof onGenerateAiContactSuggestion === 'function';
+  const canGenerateAiContact = hasWebsiteAnalysis && typeof onGenerateAiContactSuggestion === 'function';
+  const anyAiContactSuggestionLoading = Object.values(aiContactSuggestionLoadingByChannel ?? {}).some(Boolean);
+  const isSelectedAiChannelLoading = !!aiContactSuggestionLoadingByChannel?.[selectedAiChannel];
 
-  const requestAiSuggestion = async (channel: AiContactSuggestionChannel) => {
-    setSelectedAiChannel(channel);
+  const requestAiSuggestion = async () => {
+    const channel = selectedAiChannel;
     if (!onGenerateAiContactSuggestion || !hasWebsiteAnalysis) {
       return;
     }
@@ -352,9 +521,7 @@ export function SavedLeadDetailModal({
     lead.websiteUrl
       ? { key: 'website', label: t('leadCard.website'), value: lead.websiteUrl, icon: Globe }
       : null,
-    lead.mapsUrl
-      ? { key: 'maps', label: 'Maps', value: lead.mapsUrl, icon: MapPinned }
-      : null,
+    lead.mapsUrl ? { key: 'maps', label: 'Maps', value: lead.mapsUrl, icon: MapPinned } : null,
     lead.reviewsUrl
       ? {
           key: 'reviews',
@@ -370,29 +537,26 @@ export function SavedLeadDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent
-        overlayStyle={MODAL_OVERLAY_STYLE}
-        className="max-h-[92vh] overflow-y-auto p-0 text-white sm:max-w-[1120px]"
-        style={MODAL_CONTENT_STYLE}
-      >
-        <div className="relative" style={OUTER_CONTENT_PADDING_STYLE}>
-          <div style={{ ...STACK_12_STYLE, margin: '20px' }}>
-            <section style={STACK_10_STYLE}>
-              <p className={SECTION_TITLE_CLASS} style={SECTION_TITLE_STYLE}>{t('dashboard.savedLeads.columns.business')}</p>
-              <DialogHeader className="text-left" style={STACK_6_STYLE}>
-                <DialogTitle className="text-3xl font-semibold tracking-tight text-white sm:text-4xl" style={MAIN_TITLE_STYLE}>
+      <DialogContent overlayStyle={MODAL_OVERLAY_STYLE} className="text-white" style={MODAL_CONTENT_STYLE}>
+        <div className="saved-lead-detail-scroll" style={MODAL_SCROLL_AREA_STYLE}>
+          <div style={MODAL_STACK_STYLE}>
+            <section style={SECTION_CARD_STYLE}>
+              <p style={SECTION_LABEL_STYLE}>{t('dashboard.savedLeads.columns.business')}</p>
+
+              <DialogHeader className="text-left" style={{ marginBottom: '1rem' }}>
+                <DialogTitle className="font-semibold tracking-tight text-white" style={{ fontSize: '2rem', lineHeight: 1.15 }}>
                   {lead.businessName}
                 </DialogTitle>
-                <DialogDescription className="text-lg leading-relaxed text-slate-200">
+                <DialogDescription className="text-slate-300" style={{ fontSize: '1rem' }}>
                   {lead.category} • {lead.location}
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="flex flex-wrap items-center" style={{ gap: '1rem' }}>
+              <div className="flex flex-wrap items-center" style={{ gap: '0.65rem', marginBottom: '1rem' }}>
                 <span
                   className={`rounded-full px-4 text-sm font-medium ${TIER_BADGE_STYLES[lead.tier]}`}
                   style={{
-                    minHeight: '2.75rem',
+                    minHeight: '2.3rem',
                     display: 'inline-flex',
                     alignItems: 'center',
                     lineHeight: 1.2,
@@ -401,18 +565,23 @@ export function SavedLeadDetailModal({
                   {tm('leadTierLabels', lead.tier)} ({tm('leadTiers', lead.tier)})
                 </span>
                 <span
-                  className="rounded-full border border-white/20 bg-white/[0.08] px-4 text-sm text-slate-100"
+                  className="rounded-full border px-4 text-sm text-slate-100"
                   style={{
-                    minHeight: '2.75rem',
+                    minHeight: '2.3rem',
                     display: 'inline-flex',
                     alignItems: 'center',
                     lineHeight: 1.2,
                     fontWeight: 500,
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    background: 'linear-gradient(90deg, rgba(59, 130, 246, 0.17), rgba(168, 85, 247, 0.17))',
                   }}
                 >
                   {t('dashboard.leadTable.score')}: {toDisplayScore(lead.score, scoreDenominator)}
                 </span>
-                <div className="min-w-[240px]">
+              </div>
+
+              <div className="flex flex-wrap items-center" style={{ gap: '0.75rem' }}>
+                <div style={{ minWidth: '200px' }}>
                   <DashboardSelect
                     value={lead.status}
                     onValueChange={(value) => onStatusChange(lead, value as LeadStatus)}
@@ -421,8 +590,7 @@ export function SavedLeadDetailModal({
                       label: tm('leadStatuses', status),
                     }))}
                     size="compact"
-                    triggerClassName="min-w-[180px] rounded-lg text-sm"
-                    contentClassName="min-w-[180px]"
+                    triggerClassName="rounded-lg text-sm"
                     triggerStyleOverride={{
                       ...STATUS_VISUALS[lead.status].triggerStyle,
                       minWidth: '180px',
@@ -431,34 +599,24 @@ export function SavedLeadDetailModal({
                       fontSize: '0.875rem',
                       lineHeight: 1.2,
                     }}
-                    getOptionClassName={(status) =>
-                      STATUS_VISUALS[status as LeadStatus]?.optionClassName ?? ''
-                    }
+                    contentStyleOverride={{
+                      minWidth: '180px',
+                    }}
+                    getOptionClassName={(status) => STATUS_VISUALS[status as LeadStatus]?.optionClassName ?? ''}
                   />
                 </div>
                 <button
                   type="button"
                   onClick={() => onDelete(lead.savedLeadId)}
                   disabled={deleting}
-                  className="inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-[11px] font-medium transition disabled:cursor-not-allowed"
+                  className="inline-flex items-center rounded-lg text-xs font-medium transition disabled:cursor-not-allowed"
                   style={{
-                    border: '1px solid rgba(248, 113, 113, 0.55)',
-                    backgroundColor: 'rgba(239, 68, 68, 0.13)',
-                    color: 'rgb(254, 226, 226)',
-                    lineHeight: 1.2,
+                    ...getFigmaButtonStyle('danger'),
+                    minWidth: '7.5rem',
                     opacity: deleting ? 0.6 : 1,
                   }}
-                  onMouseEnter={(event) => {
-                    if (deleting) {
-                      return;
-                    }
-                    event.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.24)';
-                    event.currentTarget.style.borderColor = 'rgba(248, 113, 113, 0.7)';
-                  }}
-                  onMouseLeave={(event) => {
-                    event.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.13)';
-                    event.currentTarget.style.borderColor = 'rgba(248, 113, 113, 0.55)';
-                  }}
+                  onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'danger')}
+                  onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'danger')}
                 >
                   {deleting ? (
                     <>
@@ -466,122 +624,135 @@ export function SavedLeadDetailModal({
                       {t('dashboard.savedLeads.removing')}
                     </>
                   ) : (
-                    <>{t('dashboard.savedLeads.remove')}</>
+                    <>
+                      <Trash2 className="h-3.5 w-3.5" />
+                      {t('dashboard.savedLeads.remove')}
+                    </>
                   )}
                 </button>
               </div>
+
               {statusUpdating ? (
-                <p className="text-base text-slate-300">{t('dashboard.savedLeads.updatingStatus')}</p>
+                <p className="text-sm text-slate-300" style={{ marginTop: '0.7rem' }}>
+                  {t('dashboard.savedLeads.updatingStatus')}
+                </p>
               ) : null}
+
               {lead.websiteUrl ? (
-                <div className="flex items-center gap-3">
-                  {lead.websiteAnalysis ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => setIsWebsiteAnalysisOpen(true)}
-                        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition"
-                        style={ANALYSIS_VIEW_BUTTON_STYLE}
-                        onMouseEnter={(event) =>
-                          setAnalysisButtonHoverState(event.currentTarget, true, 'view')
-                        }
-                        onMouseLeave={(event) =>
-                          setAnalysisButtonHoverState(event.currentTarget, false, 'view')
-                        }
-                      >
-                        {t('dashboard.websiteAnalysis.view')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (onRunWebsiteAnalysis) {
-                            void onRunWebsiteAnalysis(lead);
-                          }
-                        }}
-                        disabled={websiteAnalysisLoading || !onRunWebsiteAnalysis}
-                        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                        style={ANALYSIS_RUN_BUTTON_STYLE}
-                        onMouseEnter={(event) =>
-                          setAnalysisButtonHoverState(event.currentTarget, true, 'run')
-                        }
-                        onMouseLeave={(event) =>
-                          setAnalysisButtonHoverState(event.currentTarget, false, 'run')
-                        }
-                      >
-                        {websiteAnalysisLoading ? (
-                          <>
-                            <Loader2 className="spin-loader h-3.5 w-3.5" />
-                            {t('dashboard.websiteAnalysis.running')}
-                          </>
-                        ) : (
-                          t('dashboard.websiteAnalysis.rerun')
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (onRemoveWebsiteAnalysis) {
-                            void onRemoveWebsiteAnalysis(lead);
-                          }
-                        }}
-                        disabled={websiteAnalysisLoading || !onRemoveWebsiteAnalysis}
-                        className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                        style={ANALYSIS_REMOVE_BUTTON_STYLE}
-                        onMouseEnter={(event) =>
-                          setAnalysisButtonHoverState(event.currentTarget, true, 'remove')
-                        }
-                        onMouseLeave={(event) =>
-                          setAnalysisButtonHoverState(event.currentTarget, false, 'remove')
-                        }
-                      >
-                        {websiteAnalysisLoading ? (
-                          <>
-                            <Loader2 className="spin-loader h-3.5 w-3.5" />
-                            {t('dashboard.websiteAnalysis.removing')}
-                          </>
-                        ) : (
-                          t('dashboard.websiteAnalysis.removeAnalysis')
-                        )}
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (onRunWebsiteAnalysis) {
-                          void onRunWebsiteAnalysis(lead);
-                        }
-                      }}
-                      disabled={websiteAnalysisLoading || !onRunWebsiteAnalysis}
-                      className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
-                      style={ANALYSIS_RUN_BUTTON_STYLE}
-                      onMouseEnter={(event) =>
-                        setAnalysisButtonHoverState(event.currentTarget, true, 'run')
-                      }
-                      onMouseLeave={(event) =>
-                        setAnalysisButtonHoverState(event.currentTarget, false, 'run')
-                      }
-                    >
-                      {websiteAnalysisLoading ? (
+                <div style={ANALYSIS_PANEL_STYLE}>
+                  <div className="flex flex-wrap items-center justify-between" style={{ gap: '0.7rem' }}>
+                    <div className="inline-flex items-center text-sm text-slate-300" style={{ gap: '0.5rem' }}>
+                      <Globe className="h-4 w-4" />
+                      <span>{t('dashboard.websiteAnalysis.title')}</span>
+                    </div>
+
+                    <div className="flex flex-wrap items-center" style={{ gap: '0' }}>
+                      {lead.websiteAnalysis ? (
                         <>
-                          <Loader2 className="spin-loader h-3.5 w-3.5" />
-                          {t('dashboard.websiteAnalysis.running')}
+                          <button
+                            type="button"
+                            onClick={() => setIsWebsiteAnalysisOpen(true)}
+                            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+                            style={{
+                              ...getFigmaButtonStyle('primary'),
+                              marginTop: '10px',
+                              marginBottom: '10px',
+                              marginRight: '10px',
+                            }}
+                            onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'primary')}
+                            onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'primary')}
+                          >
+                            {t('dashboard.websiteAnalysis.view')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onRunWebsiteAnalysis) {
+                                void onRunWebsiteAnalysis(lead);
+                              }
+                            }}
+                            disabled={websiteAnalysisLoading || !onRunWebsiteAnalysis}
+                            className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                            style={{
+                              ...getFigmaButtonStyle('primary'),
+                              marginTop: '10px',
+                              marginBottom: '10px',
+                              marginRight: '10px',
+                            }}
+                            onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'primary')}
+                            onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'primary')}
+                          >
+                            {websiteAnalysisLoading ? (
+                              <>
+                                <Loader2 className="spin-loader h-3.5 w-3.5" />
+                                {t('dashboard.websiteAnalysis.running')}
+                              </>
+                            ) : (
+                              t('dashboard.websiteAnalysis.rerun')
+                            )}
+                          </button>
+                          {!websiteAnalysisLoading ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onRemoveWebsiteAnalysis) {
+                                  void onRemoveWebsiteAnalysis(lead);
+                                }
+                              }}
+                              disabled={!onRemoveWebsiteAnalysis}
+                              className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                              style={{
+                                ...getFigmaButtonStyle('danger'),
+                                marginTop: '10px',
+                                marginBottom: '10px',
+                                marginRight: '10px',
+                              }}
+                              onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'danger')}
+                              onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'danger')}
+                            >
+                              {t('dashboard.websiteAnalysis.removeAnalysis')}
+                            </button>
+                          ) : null}
                         </>
                       ) : (
-                        t('dashboard.websiteAnalysis.run')
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (onRunWebsiteAnalysis) {
+                              void onRunWebsiteAnalysis(lead);
+                            }
+                          }}
+                          disabled={websiteAnalysisLoading || !onRunWebsiteAnalysis}
+                          className="inline-flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60"
+                          style={getFigmaButtonStyle('primary')}
+                          onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'primary')}
+                          onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'primary')}
+                        >
+                          {websiteAnalysisLoading ? (
+                            <>
+                              <Loader2 className="spin-loader h-3.5 w-3.5" />
+                              {t('dashboard.websiteAnalysis.running')}
+                            </>
+                          ) : (
+                            t('dashboard.websiteAnalysis.run')
+                          )}
+                        </button>
                       )}
-                    </button>
-                  )}
+                    </div>
+                  </div>
                 </div>
               ) : null}
             </section>
 
-            <section className={GLASS_PANEL} style={{ ...STACK_10_STYLE, ...PANEL_PADDING_STYLE }}>
-              <h1 className={SECTION_TITLE_CLASS} style={SECTION_TITLE_STYLE}>{t('dashboard.savedLeads.detailModal.contactAndLinks')}</h1>
-              <div className="xl:divide-x xl:divide-white/10" style={TWO_COLUMN_GRID_STYLE}>
-                <div style={STACK_6_STYLE}>
-                  <h1 className={BLOCK_TITLE_CLASS} style={BLOCK_TITLE_STYLE}>{t('dashboard.savedLeads.detailModal.problemsAndReason')}</h1>
-                  <div className="flex flex-wrap" style={{ gap: '1rem' }}>
+            <section style={SECTION_CARD_STYLE}>
+              <h2 style={SECTION_TITLE_STYLE}>{t('dashboard.savedLeads.detailModal.contactAndLinks')}</h2>
+              <div style={CONTACT_GRID_STYLE}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                  <h3 className="text-base font-semibold text-slate-100">
+                    {t('dashboard.savedLeads.detailModal.problemsAndReason')}
+                  </h3>
+
+                  <div className="flex flex-wrap" style={{ gap: '0.55rem' }}>
                     {lead.problems.length > 0 ? (
                       lead.problems.map((problem) => (
                         <span key={`${lead.savedLeadId}-${problem}`} className={PROBLEM_CHIP_CLASS}>
@@ -594,16 +765,28 @@ export function SavedLeadDetailModal({
                       </span>
                     )}
                   </div>
-                  <p className="text-sm leading-relaxed text-slate-100">
-                    {lead.explanation || t('common.notAvailable')}
-                  </p>
+
+                  <div
+                    style={{
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      borderRadius: '0.85rem',
+                      background: 'rgba(15, 23, 42, 0.42)',
+                      padding: '0.85rem 0.95rem',
+                    }}
+                  >
+                    <p className="text-sm leading-relaxed text-slate-100">
+                      {lead.explanation || t('common.notAvailable')}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="xl:pl-10" style={STACK_6_STYLE}>
-                  <h3 className={BLOCK_TITLE_CLASS} style={BLOCK_TITLE_STYLE}>{t('dashboard.savedLeads.detailModal.contactAndLinks')}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  <h3 className="text-base font-semibold text-slate-100">
+                    {t('dashboard.savedLeads.detailModal.contactAndLinks')}
+                  </h3>
 
                   {lead.contactChannels.length > 0 ? (
-                    <div className="flex w-full flex-wrap" style={{ gap: '2rem' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '0.55rem' }}>
                       {lead.contactChannels.map((rawChannel) => {
                         const parsed = parseContactChannel(rawChannel);
                         const channelType = parsed.type.toLowerCase();
@@ -646,23 +829,32 @@ export function SavedLeadDetailModal({
                                 : undefined;
                         const displayValue = formatChannelDisplayValue(channelType, value);
 
+                        const content = (
+                          <>
+                            <span style={getChannelIconStyle(channelType)}>
+                              <Icon className="h-4 w-4" />
+                            </span>
+                            <span className="min-w-0 text-left" style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <span className="text-xs text-slate-400">{label}</span>
+                              <span className="text-sm text-slate-100 break-all">
+                                {displayValue || t('dashboard.leadTable.noValueProvided')}
+                              </span>
+                            </span>
+                            <ExternalLink className="h-4 w-4 text-slate-400" style={{ marginLeft: 'auto' }} />
+                          </>
+                        );
+
                         if (!href) {
                           return (
                             <button
                               key={`${lead.savedLeadId}-${rawChannel}`}
                               type="button"
-                              className={CONTACT_BUTTON_CLASS}
-                              style={INTERACTIVE_BUTTON_STYLE}
+                              className="inline-flex w-full items-center"
+                              style={CONTACT_CARD_BASE_STYLE}
                               onMouseEnter={(event) => setInteractiveHoverState(event.currentTarget, true)}
                               onMouseLeave={(event) => setInteractiveHoverState(event.currentTarget, false)}
                             >
-                              <Icon className="h-4 w-4 shrink-0" />
-                              <span className="min-w-0 text-left" style={CONTACT_TEXT_STACK_STYLE}>
-                                <span className="block text-sm leading-none">{label}</span>
-                                <span className={CONTACT_VALUE_CLASS}>
-                                  {displayValue || t('dashboard.leadTable.noValueProvided')}
-                                </span>
-                              </span>
+                              {content}
                             </button>
                           );
                         }
@@ -673,28 +865,22 @@ export function SavedLeadDetailModal({
                             href={href}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className={CONTACT_BUTTON_CLASS}
-                            style={INTERACTIVE_BUTTON_STYLE}
+                            className="inline-flex w-full items-center"
+                            style={CONTACT_CARD_BASE_STYLE}
                             onMouseEnter={(event) => setInteractiveHoverState(event.currentTarget, true)}
                             onMouseLeave={(event) => setInteractiveHoverState(event.currentTarget, false)}
                           >
-                            <Icon className="h-4 w-4 shrink-0" />
-                            <span className="min-w-0 text-left" style={CONTACT_TEXT_STACK_STYLE}>
-                              <span className="block text-sm leading-none">{label}</span>
-                              <span className={CONTACT_VALUE_CLASS}>
-                                {displayValue || t('dashboard.leadTable.noValueProvided')}
-                              </span>
-                            </span>
+                            {content}
                           </a>
                         );
                       })}
                     </div>
                   ) : (
-                    <p className="text-base text-slate-300">{t('common.notAvailable')}</p>
+                    <p className="text-sm text-slate-300">{t('common.notAvailable')}</p>
                   )}
 
                   {lead.contactChannels.length === 0 && directLinks.length > 0 ? (
-                    <div className="flex flex-wrap" style={{ gap: '1.5rem' }}>
+                    <div className="flex flex-wrap" style={{ gap: '0.5rem' }}>
                       {directLinks.map((link) => {
                         const Icon = link.icon;
                         return (
@@ -703,8 +889,8 @@ export function SavedLeadDetailModal({
                             href={ensureUrlProtocol(link.value)}
                             target="_blank"
                             rel="noreferrer noopener"
-                            className="inline-flex items-center gap-3 rounded-lg border border-white/22 bg-white/[0.08] px-5 py-3 text-sm font-medium text-slate-100 transition hover:bg-white/[0.16]"
-                            style={INTERACTIVE_BUTTON_STYLE}
+                            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-slate-100 transition"
+                            style={CONTACT_CARD_BASE_STYLE}
                             onMouseEnter={(event) => setInteractiveHoverState(event.currentTarget, true)}
                             onMouseLeave={(event) => setInteractiveHoverState(event.currentTarget, false)}
                           >
@@ -716,200 +902,310 @@ export function SavedLeadDetailModal({
                     </div>
                   ) : null}
 
-                  <div className="rounded-2xl border border-cyan-300/25 bg-cyan-500/[0.08] p-5">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-cyan-200" />
-                      <h4 className="text-sm font-semibold text-cyan-100">
+                </div>
+              </div>
+            </section>
+
+            <section style={SECTION_CARD_STYLE}>
+              <h2 style={{ ...SECTION_TITLE_STYLE, marginBottom: '20px' }}>
+                {t('dashboard.savedLeads.detailModal.aiContact.title')}
+              </h2>
+              <div style={AI_PANEL_STYLE}>
+                <div className="flex items-start justify-between" style={{ gap: '0.75rem' }}>
+                  <div className="inline-flex items-start" style={{ gap: '0.65rem' }}>
+                    <span
+                      style={{
+                        width: '1.95rem',
+                        height: '1.95rem',
+                        borderRadius: '0.65rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'linear-gradient(135deg, #3B82F6 0%, #A855F7 100%)',
+                        boxShadow: '0 10px 24px rgba(59, 130, 246, 0.36)',
+                        color: '#fff',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <h3 className="text-sm font-semibold text-cyan-50">
                         {t('dashboard.savedLeads.detailModal.aiContact.title')}
-                      </h4>
-                    </div>
-                    <p className="mt-2 text-xs leading-relaxed text-cyan-50/85">
-                      {t('dashboard.savedLeads.detailModal.aiContact.description')}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {AI_CONTACT_CHANNELS.map(({ channel, labelKey }) => {
-                        const isSelected = selectedAiChannel === channel;
-                        const isLoading = !!aiContactSuggestionLoadingByChannel?.[channel];
-                        return (
-                          <button
-                            key={`${lead.savedLeadId}-ai-contact-${channel}`}
-                            type="button"
-                            disabled={!canGenerateAiContact || isLoading}
-                            onClick={() => {
-                              void requestAiSuggestion(channel);
-                            }}
-                            title={
-                              !hasWebsiteAnalysis
-                                ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
-                                : undefined
-                            }
-                            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
-                            style={{
-                              borderColor: isSelected
-                                ? 'rgba(125, 211, 252, 0.72)'
-                                : 'rgba(148, 163, 184, 0.38)',
-                              backgroundColor: isSelected
-                                ? 'rgba(14, 165, 233, 0.22)'
-                                : 'rgba(15, 23, 42, 0.4)',
-                              color: isSelected ? 'rgb(224, 242, 254)' : 'rgb(203, 213, 225)',
-                            }}
-                          >
-                            {isLoading ? <Loader2 className="spin-loader h-3.5 w-3.5" /> : null}
-                            {t(labelKey)}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {!hasWebsiteAnalysis ? (
-                      <p className="mt-3 text-xs text-amber-200">
-                        {t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')}
+                      </h3>
+                      <p className="text-xs text-cyan-100/80" style={{ marginTop: '0.2rem' }}>
+                        {t('dashboard.savedLeads.detailModal.aiContact.description')}
                       </p>
-                    ) : null}
+                    </div>
+                  </div>
+                </div>
 
-                    {aiSuggestionError ? (
-                      <div className="mt-3 rounded-lg border border-rose-300/35 bg-rose-500/15 px-3 py-2 text-xs text-rose-100">
-                        {aiSuggestionError}
-                      </div>
-                    ) : null}
+                <div className="flex flex-wrap" style={{ gap: '0.55rem', marginTop: '0.95rem' }}>
+                  {AI_CONTACT_CHANNELS.map(({ channel, labelKey }) => {
+                    const isSelected = selectedAiChannel === channel;
+                    const buttonVariant: FigmaButtonVariant = isSelected ? 'selected' : 'secondary';
 
-                    {showUpgradePrompt && onNavigateBilling ? (
-                      <div className="mt-3">
+                    return (
+                      <button
+                        key={`${lead.savedLeadId}-ai-contact-${channel}`}
+                        type="button"
+                        disabled={!hasWebsiteAnalysis || anyAiContactSuggestionLoading}
+                        onClick={() => {
+                          setSelectedAiChannel(channel);
+                          setAiSuggestionError(null);
+                          setCopySuccessMessage(null);
+                        }}
+                        title={
+                          !hasWebsiteAnalysis
+                            ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
+                            : undefined
+                        }
+                        className="inline-flex items-center rounded-lg text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
+                        style={{
+                          ...getFigmaButtonStyle(buttonVariant),
+                          minWidth: '8.6rem',
+                        }}
+                        onMouseEnter={(event) =>
+                          setFigmaButtonHoverState(event.currentTarget, true, buttonVariant)
+                        }
+                        onMouseLeave={(event) =>
+                          setFigmaButtonHoverState(event.currentTarget, false, buttonVariant)
+                        }
+                      >
+                        {t(labelKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex flex-wrap" style={{ gap: '0.55rem', marginTop: '0.8rem' }}>
+                  <button
+                    type="button"
+                    disabled={!canGenerateAiContact || anyAiContactSuggestionLoading}
+                    onClick={() => {
+                      void requestAiSuggestion();
+                    }}
+                    title={
+                      !hasWebsiteAnalysis
+                        ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
+                        : undefined
+                    }
+                    className="inline-flex items-center rounded-lg text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
+                    style={{
+                      ...getFigmaButtonStyle('primary'),
+                      minWidth: '8.8rem',
+                    }}
+                    onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'primary')}
+                    onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'primary')}
+                  >
+                    {isSelectedAiChannelLoading ? <Loader2 className="spin-loader h-3.5 w-3.5" /> : null}
+                    {isSelectedAiChannelLoading ? 'Generating...' : 'Generate'}
+                  </button>
+                </div>
+
+                {!hasWebsiteAnalysis ? (
+                  <div
+                    style={{
+                      marginTop: '0.75rem',
+                      border: '1px solid rgba(251, 191, 36, 0.28)',
+                      borderRadius: '0.75rem',
+                      background: 'rgba(245, 158, 11, 0.08)',
+                      padding: '0.55rem 0.7rem',
+                    }}
+                  >
+                    <p className="text-xs text-amber-200">
+                      {t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')}
+                    </p>
+                  </div>
+                ) : null}
+
+                {aiSuggestionError ? (
+                  <div
+                    style={{
+                      marginTop: '0.75rem',
+                      border: '1px solid rgba(251, 113, 133, 0.35)',
+                      borderRadius: '0.75rem',
+                      background: 'rgba(225, 29, 72, 0.14)',
+                      padding: '0.55rem 0.7rem',
+                    }}
+                  >
+                    <p className="text-xs text-rose-100">{aiSuggestionError}</p>
+                  </div>
+                ) : null}
+
+                {showUpgradePrompt && onNavigateBilling ? (
+                  <div
+                    style={{
+                      marginTop: '0.75rem',
+                      border: '1px solid rgba(167, 139, 250, 0.38)',
+                      borderRadius: '0.75rem',
+                      background:
+                        'linear-gradient(120deg, rgba(59, 130, 246, 0.2), rgba(168, 85, 247, 0.2))',
+                      padding: '0.6rem 0.7rem',
+                    }}
+                  >
+                    <div className="inline-flex items-start" style={{ gap: '0.45rem' }}>
+                      <AlertCircle className="h-4 w-4 text-violet-200" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+                      <div>
+                        <p className="text-xs text-violet-100" style={{ marginBottom: '0.45rem' }}>
+                          {t('dashboard.savedLeads.detailModal.aiContact.upgradeCta')}
+                        </p>
                         <button
                           type="button"
                           onClick={onNavigateBilling}
-                          className="rounded-lg border border-cyan-300/55 bg-cyan-400/15 px-3 py-2 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/25"
+                          className="inline-flex items-center rounded-lg text-xs font-medium transition"
+                          style={getFigmaButtonStyle('primary')}
+                          onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'primary')}
+                          onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'primary')}
                         >
                           {t('dashboard.savedLeads.detailModal.aiContact.upgradeCta')}
                         </button>
                       </div>
-                    ) : null}
-
-                    <div className="mt-4 rounded-xl border border-white/12 bg-slate-950/45 p-4">
-                      {selectedSuggestion ? (
-                        <>
-                          <pre className="whitespace-pre-wrap text-xs leading-relaxed text-slate-100">
-                            {selectedSuggestion}
-                          </pre>
-                          <div className="mt-3 flex items-center gap-3">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                void handleCopySuggestion();
-                              }}
-                              className="inline-flex items-center gap-1.5 rounded-md border border-white/18 bg-white/10 px-2.5 py-1.5 text-xs text-slate-100 transition hover:bg-white/15"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                              {t('dashboard.savedLeads.detailModal.aiContact.copy')}
-                            </button>
-                            {copySuccessMessage ? (
-                              <span className="text-xs text-emerald-200">{copySuccessMessage}</span>
-                            ) : null}
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-xs text-slate-300">
-                          {t('dashboard.savedLeads.detailModal.aiContact.empty')}
-                        </p>
-                      )}
                     </div>
                   </div>
+                ) : null}
+
+                <div style={AI_SUGGESTION_BOX_STYLE}>
+                  {selectedSuggestion ? (
+                    <>
+                      <div className="flex items-center justify-between" style={{ gap: '0.6rem', marginBottom: '0.6rem' }}>
+                        <span className="text-xs font-medium text-slate-300">
+                          {t(
+                            AI_CONTACT_CHANNELS.find((entry) => entry.channel === selectedAiChannel)?.labelKey ??
+                              'dashboard.savedLeads.detailModal.aiContact.channels.email',
+                          )}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void handleCopySuggestion();
+                          }}
+                          className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs transition"
+                          style={getFigmaButtonStyle('secondary')}
+                          onMouseEnter={(event) => setFigmaButtonHoverState(event.currentTarget, true, 'secondary')}
+                          onMouseLeave={(event) => setFigmaButtonHoverState(event.currentTarget, false, 'secondary')}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          {t('dashboard.savedLeads.detailModal.aiContact.copy')}
+                        </button>
+                      </div>
+
+                      <p className="text-sm text-slate-100" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                        {selectedSuggestion}
+                      </p>
+
+                      {copySuccessMessage ? (
+                        <span className="text-xs text-emerald-200" style={{ display: 'inline-block', marginTop: '0.6rem' }}>
+                          {copySuccessMessage}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="text-xs text-slate-300">
+                      {t('dashboard.savedLeads.detailModal.aiContact.empty')}
+                    </p>
+                  )}
                 </div>
               </div>
             </section>
-            <hr aria-hidden="true" style={SECTION_BREAK_STYLE} />
 
-            <section className={GLASS_PANEL} style={{ ...STACK_10_STYLE, ...PANEL_PADDING_STYLE }}>
-              <p className={SECTION_TITLE_CLASS} style={SECTION_TITLE_STYLE}>{t('dashboard.savedLeads.detailModal.metadata')}</p>
-              <div className="grid gap-16 lg:grid-cols-2 lg:divide-x lg:divide-white/10">
-                <div style={STACK_6_STYLE}>
-                  <div style={STACK_4_STYLE}>
-                    <p className={META_LABEL_CLASS} style={METADATA_LABEL_STYLE}>
-                      {t('dashboard.savedLeads.columns.savedAt')}
-                    </p>
-                    <p className="text-lg leading-relaxed text-slate-100">{formatDateTime(lead.savedAt)}</p>
-                  </div>
+            <section style={SECTION_CARD_STYLE}>
+              <h2 style={SECTION_TITLE_STYLE}>{t('dashboard.savedLeads.detailModal.metadata')}</h2>
 
-                  <div style={{ ...STACK_4_STYLE, ...DIVIDER_STYLE }}>
-                    <p className={META_LABEL_CLASS} style={METADATA_LABEL_STYLE}>
-                      {t('dashboard.savedLeads.detailModal.updatedAt')}
-                    </p>
-                    <p className="text-lg leading-relaxed text-slate-100">{formatDateTime(lead.updatedAt)}</p>
-                  </div>
+              <div style={METADATA_GRID_STYLE}>
+                <div style={METADATA_CARD_STYLE}>
+                  <p style={META_LABEL_STYLE}>{t('dashboard.savedLeads.columns.savedAt')}</p>
+                  <p className="text-sm text-slate-100">{formatDateTime(lead.savedAt)}</p>
+                </div>
 
-                  <div style={{ ...STACK_4_STYLE, ...DIVIDER_STYLE }}>
-                    <p className={META_LABEL_CLASS} style={METADATA_LABEL_STYLE}>
-                      {t('dashboard.leadTable.source')}
-                    </p>
-                    <p className="text-lg leading-relaxed text-slate-100">
-                      {lead.source || t('dashboard.leadTable.defaultSource')}
-                    </p>
-                  </div>
+                <div style={METADATA_CARD_STYLE}>
+                  <p style={META_LABEL_STYLE}>{t('dashboard.savedLeads.detailModal.updatedAt')}</p>
+                  <p className="text-sm text-slate-100">{formatDateTime(lead.updatedAt)}</p>
+                </div>
 
-                  {typeof lead.rating === 'number' ? (
-                    <div style={{ ...STACK_4_STYLE, ...DIVIDER_STYLE }}>
-                      <p className={META_LABEL_CLASS} style={METADATA_LABEL_STYLE}>
-                        {t('dashboard.leadTable.rating')}
-                      </p>
-                      <p className="text-lg leading-relaxed text-slate-100">
+                <div style={METADATA_CARD_STYLE}>
+                  <p style={META_LABEL_STYLE}>{t('dashboard.leadTable.source')}</p>
+                  <p className="text-sm text-slate-100">{lead.source || t('dashboard.leadTable.defaultSource')}</p>
+                </div>
+
+                {typeof lead.rating === 'number' ? (
+                  <div style={METADATA_CARD_STYLE}>
+                    <p style={META_LABEL_STYLE}>{t('dashboard.leadTable.rating')}</p>
+                    <div className="inline-flex items-center" style={{ gap: '0.35rem' }}>
+                      <Star className="h-4 w-4 text-amber-300" />
+                      <span className="text-sm text-slate-100">
                         {lead.rating.toFixed(1)}
                         {typeof lead.reviewCount === 'number' ? ` (${lead.reviewCount})` : ''}
-                      </p>
+                      </span>
                     </div>
+                  </div>
+                ) : null}
+
+                <div style={{ ...METADATA_CARD_STYLE, gridColumn: '1 / -1' }}>
+                  <p style={META_LABEL_STYLE}>{t('dashboard.savedLeads.detailModal.address')}</p>
+                  <p className="text-sm text-slate-100">{lead.address?.full || t('common.notAvailable')}</p>
+                  {lead.geo ? (
+                    <p className="text-xs text-slate-300" style={{ marginTop: '0.3rem' }}>
+                      Lat: {lead.geo.lat.toFixed(5)} • Lng: {lead.geo.lng.toFixed(5)}
+                    </p>
                   ) : null}
                 </div>
 
-                <div className="lg:pl-10" style={STACK_6_STYLE}>
-                  <div style={STACK_4_STYLE}>
-                    <p className={META_LABEL_CLASS} style={METADATA_LABEL_STYLE}>
-                      {t('dashboard.savedLeads.detailModal.address')}
-                    </p>
-                    <p className="text-lg leading-relaxed text-slate-100">
-                      {lead.address?.full || t('common.notAvailable')}
-                    </p>
-                    {lead.geo ? (
-                      <p className="text-sm leading-relaxed text-slate-300">
-                        Lat: {lead.geo.lat.toFixed(5)} • Lng: {lead.geo.lng.toFixed(5)}
+                {lead.hours ? (
+                  <div style={{ ...METADATA_CARD_STYLE, gridColumn: '1 / -1' }}>
+                    <p style={META_LABEL_STYLE}>{t('dashboard.savedLeads.detailModal.hours')}</p>
+                    {lead.hours.statusSummary ? <p className="text-xs text-slate-100">{lead.hours.statusSummary}</p> : null}
+                    {lead.hours.statusText ? (
+                      <p className="text-xs text-slate-300" style={{ marginTop: '0.2rem' }}>
+                        {lead.hours.statusText}
                       </p>
                     ) : null}
-                  </div>
-
-                  {lead.hours ? (
-                    <div style={{ ...STACK_4_STYLE, ...DIVIDER_STYLE }}>
-                      <p className={META_LABEL_CLASS} style={METADATA_LABEL_STYLE}>
-                        {t('dashboard.savedLeads.detailModal.hours')}
-                      </p>
-                      {lead.hours.statusSummary ? <p className="text-sm text-slate-100">{lead.hours.statusSummary}</p> : null}
-                      {lead.hours.statusText ? <p className="text-sm text-slate-300">{lead.hours.statusText}</p> : null}
+                    <div style={{ marginTop: '0.45rem', display: 'grid', gap: '0.2rem' }}>
                       {lead.hours.weeklyHours.map((entry, index) => (
-                        <p key={`${lead.savedLeadId}-hours-${index}`} className="text-sm text-slate-200">
+                        <p key={`${lead.savedLeadId}-hours-${index}`} className="text-xs text-slate-200">
                           <span className="font-medium text-slate-100">{entry.day || t('common.notAvailable')}</span>
                           : {entry.hours.join(', ') || t('common.notAvailable')}
                         </p>
                       ))}
                     </div>
-                  ) : null}
+                  </div>
+                ) : null}
 
-                  {lead.attributes ? (
-                    <div style={{ ...STACK_4_STYLE, ...DIVIDER_STYLE }}>
-                      <p className={META_LABEL_CLASS} style={METADATA_LABEL_STYLE}>
-                        {t('dashboard.savedLeads.detailModal.attributes')}
-                      </p>
+                {lead.attributes ? (
+                  <div style={{ ...METADATA_CARD_STYLE, gridColumn: '1 / -1' }}>
+                    <p style={META_LABEL_STYLE}>{t('dashboard.savedLeads.detailModal.attributes')}</p>
+                    <div style={{ display: 'grid', gap: '0.2rem' }}>
                       {Object.entries(lead.attributes).map(([key, values]) => (
-                        <p key={`${lead.savedLeadId}-attribute-${key}`} className="text-sm text-slate-200">
+                        <p key={`${lead.savedLeadId}-attribute-${key}`} className="text-xs text-slate-200">
                           <span className="font-medium text-slate-100">{key}: </span>
                           {values.join(', ')}
                         </p>
                       ))}
                     </div>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
               </div>
             </section>
           </div>
         </div>
+
+        <style>{`
+          .saved-lead-detail-scroll::-webkit-scrollbar {
+            width: 8px;
+          }
+          .saved-lead-detail-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+          }
+          .saved-lead-detail-scroll::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.35);
+            border-radius: 6px;
+          }
+          .saved-lead-detail-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.5);
+          }
+        `}</style>
       </DialogContent>
+
       <WebsiteAnalysisModal
         open={isWebsiteAnalysisOpen}
         onClose={() => setIsWebsiteAnalysisOpen(false)}

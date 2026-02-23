@@ -188,7 +188,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
 
   const [selectedPlan, setSelectedPlan] = useState<BillingPlanCode | null>('PRO');
   const [availablePlans, setAvailablePlans] = useState<BillingPlan[]>(FALLBACK_PLANS);
@@ -247,7 +246,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     setEmail('');
     setPassword('');
     setConfirmPassword('');
-    setRememberMe(false);
 
     setSelectedPlan('PRO');
     setAvailablePlans(FALLBACK_PLANS);
@@ -435,7 +433,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     setIsSubmitting(true);
     setStatusMessage(t('login.googleLoginClicked'));
 
-    const result = await signInWithGoogle('/dashboard', { rememberMe });
+    const result = await signInWithGoogle('/dashboard');
     if (!result.ok) {
       setStatusMessage(getAuthFailureMessage(result));
       setIsSubmitting(false);
@@ -456,7 +454,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     setStatusMessage(null);
 
     try {
-      const result = await signInWithEmail(email.trim(), password, { rememberMe });
+      const result = await signInWithEmail(email.trim(), password);
       if (!result.ok) {
         setStatusMessage(getAuthFailureMessage(result));
         return;
@@ -489,7 +487,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
     try {
       const result = await signUpWithEmail(email.trim(), password, {
-        rememberMe,
         name: fullName.trim(),
       });
 
@@ -698,17 +695,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                         />
                       </div>
 
-                      <div className="flex items-center justify-between" style={fieldWrapperStyle}>
-                        <label className="flex items-center gap-2 text-sm text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={rememberMe}
-                            onChange={(event) => setRememberMe(event.target.checked)}
-                            className="h-4 w-4 rounded border border-white/20 bg-white/5 accent-blue-500"
-                            disabled={isSubmitting}
-                          />
-                          {t('login.rememberMe')}
-                        </label>
+                      <div className="flex items-center justify-end" style={fieldWrapperStyle}>
                         <button
                           type="button"
                           onClick={() => {

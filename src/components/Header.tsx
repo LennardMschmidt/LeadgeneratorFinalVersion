@@ -1,4 +1,3 @@
-import { Sparkles } from 'lucide-react';
 import { useI18n } from '../i18n';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
@@ -13,9 +12,12 @@ export function Header({ onLoginClick }: HeaderProps) {
     <header className="sticky top-0 z-50 backdrop-blur-lg bg-[#0a0a0f]/80 border-b border-white/5">
       <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="Lead Generator logo"
+            className="shrink-0 rounded-lg object-cover"
+            style={{ width: '2.5rem', height: '2.5rem' }}
+          />
           <span className="text-xl font-semibold">{t('common.appName')}</span>
         </div>
 

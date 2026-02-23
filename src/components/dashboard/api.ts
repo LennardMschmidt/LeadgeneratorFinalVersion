@@ -221,10 +221,7 @@ const toPayload = (searchConfig: SearchConfiguration) => {
     problemFilters,
     maxResults: searchConfig.maxResults,
     max_results: searchConfig.maxResults,
-    contactPreferences:
-      searchConfig.contactPreference === 'Any'
-        ? []
-        : [searchConfig.contactPreference.toLowerCase()],
+    contactPreferences: [],
   };
 };
 
@@ -297,6 +294,7 @@ type SavedLeadListResponse = {
   limit?: unknown;
   offset?: unknown;
   tierCounts?: unknown;
+  problemCounts?: unknown;
 };
 
 type SavedLeadMutationResponse = {
@@ -313,6 +311,8 @@ type SavedLeadFilteredDeleteResponse = {
   deleted?: unknown;
   statusFilter?: unknown;
   tierFilter?: unknown;
+  queryFilter?: unknown;
+  problemAny?: unknown;
 };
 
 export type SavedLeadPage = {
@@ -321,6 +321,7 @@ export type SavedLeadPage = {
   limit: number;
   offset: number;
   tierCounts: Record<LeadTier, number>;
+  problemCounts: Record<string, number>;
 };
 
 export type SavedLeadBulkResult = {
@@ -333,6 +334,52 @@ export type SavedLeadFilteredDeleteResult = {
   deleted: number;
   statusFilter: LeadStatus | null;
   tierFilter: LeadTier | null;
+  queryFilter: string | null;
+  problemAny: string[];
+};
+
+const MAX_BULK_SAVE_PAYLOAD_BYTES = 80_000;
+
+const estimateJsonPayloadSize = (payload: unknown): number => {
+  const serialized = JSON.stringify(payload);
+  if (typeof globalThis.TextEncoder === 'function') {
+    return new globalThis.TextEncoder().encode(serialized).length;
+  }
+  return serialized.length;
+};
+
+const splitLeadsIntoSaveBatches = (leads: Lead[]): Lead[][] => {
+  if (leads.length === 0) {
+    return [];
+  }
+
+  const batches: Lead[][] = [];
+  let currentBatch: Lead[] = [];
+
+  for (const lead of leads) {
+    const candidateBatch = [...currentBatch, lead];
+    const candidateSize = estimateJsonPayloadSize({ leads: candidateBatch });
+
+    if (currentBatch.length > 0 && candidateSize > MAX_BULK_SAVE_PAYLOAD_BYTES) {
+      batches.push(currentBatch);
+      currentBatch = [lead];
+      continue;
+    }
+
+    currentBatch = candidateBatch;
+
+    // Even if a single lead is oversized, keep progress by sending it alone.
+    if (candidateSize > MAX_BULK_SAVE_PAYLOAD_BYTES) {
+      batches.push(currentBatch);
+      currentBatch = [];
+    }
+  }
+
+  if (currentBatch.length > 0) {
+    batches.push(currentBatch);
+  }
+
+  return batches;
 };
 
 const parseStringArray = (value: unknown): string[] =>
@@ -368,7 +415,7 @@ const mapSavedSearch = (item: BackendSavedSearch): SavedSearch | null => {
       contactPreference: normalizeContactPreference(config.contactPreference),
       maxResults:
         typeof config.maxResults === 'number' && Number.isFinite(config.maxResults)
-          ? Math.max(20, Math.min(300, Math.round(config.maxResults)))
+          ? Math.max(20, Math.min(120, Math.round(config.maxResults)))
           : 20,
     },
   };
@@ -975,26 +1022,46 @@ export const saveLeadToBackend = async (lead: Lead): Promise<SavedLead> => {
 export const saveVisibleLeadsToBackend = async (
   leads: Lead[],
 ): Promise<SavedLeadBulkResult> => {
-  const requestUrl = buildApiUrl('/api/leads/saved-leads/bulk');
-  const authorization = await getAuthorizationHeader();
-  const response = await fetch(requestUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: authorization,
-    },
-    body: JSON.stringify({ leads }),
-  });
-
-  if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+  if (leads.length === 0) {
+    return {
+      requested: 0,
+      insertedOrUpdated: 0,
+      skipped: 0,
+    };
   }
 
-  const payload = (await response.json()) as SavedLeadBulkResponse;
+  const requestUrl = buildApiUrl('/api/leads/saved-leads/bulk');
+  const authorization = await getAuthorizationHeader();
+  const batches = splitLeadsIntoSaveBatches(leads);
+
+  let requested = 0;
+  let insertedOrUpdated = 0;
+  let skipped = 0;
+
+  for (const batch of batches) {
+    const response = await fetch(requestUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: authorization,
+      },
+      body: JSON.stringify({ leads: batch }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await parseBackendError(response));
+    }
+
+    const payload = (await response.json()) as SavedLeadBulkResponse;
+    requested += toInteger(payload.requested) ?? 0;
+    insertedOrUpdated += toInteger(payload.insertedOrUpdated) ?? 0;
+    skipped += toInteger(payload.skipped) ?? 0;
+  }
+
   return {
-    requested: toInteger(payload.requested) ?? 0,
-    insertedOrUpdated: toInteger(payload.insertedOrUpdated) ?? 0,
-    skipped: toInteger(payload.skipped) ?? 0,
+    requested,
+    insertedOrUpdated,
+    skipped,
   };
 };
 
@@ -1003,6 +1070,8 @@ export const fetchSavedLeadsFromBackend = async (params?: {
   offset?: number;
   status?: LeadStatus | 'All';
   tier?: LeadTier | 'All';
+  query?: string;
+  problemAny?: string[];
 }): Promise<SavedLeadPage> => {
   const query = new URLSearchParams();
   if (typeof params?.limit === 'number') {
@@ -1016,6 +1085,22 @@ export const fetchSavedLeadsFromBackend = async (params?: {
   }
   if (params?.tier && params.tier !== 'All') {
     query.set('tier', params.tier);
+  }
+  const queryFilter =
+    typeof params?.query === 'string' ? params.query.trim() : '';
+  if (queryFilter.length > 0) {
+    query.set('q', queryFilter);
+  }
+  if (Array.isArray(params?.problemAny)) {
+    const uniqueProblems = Array.from(
+      new Set(
+        params.problemAny
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    );
+    uniqueProblems.forEach((problem) => query.append('problemAny', problem));
   }
 
   const requestUrl = buildApiUrl(`/api/leads/saved-leads${query.toString() ? `?${query}` : ''}`);
@@ -1034,6 +1119,7 @@ export const fetchSavedLeadsFromBackend = async (params?: {
   const payload = (await response.json()) as SavedLeadListResponse;
   const rawItems = Array.isArray(payload.items) ? payload.items : [];
   const parsedTierCounts = payload.tierCounts;
+  const parsedProblemCounts = payload.problemCounts;
   const tierCounts: Record<LeadTier, number> = {
     'Tier 1': 0,
     'Tier 2': 0,
@@ -1046,6 +1132,21 @@ export const fetchSavedLeadsFromBackend = async (params?: {
     });
   }
 
+  const problemCounts: Record<string, number> = {};
+  if (
+    typeof parsedProblemCounts === 'object' &&
+    parsedProblemCounts !== null &&
+    !Array.isArray(parsedProblemCounts)
+  ) {
+    Object.entries(parsedProblemCounts as Record<string, unknown>).forEach(([problem, value]) => {
+      const normalizedProblem = problem.trim();
+      if (!normalizedProblem) {
+        return;
+      }
+      problemCounts[normalizedProblem] = Math.max(0, toInteger(value) ?? 0);
+    });
+  }
+
   return {
     items: rawItems
       .map((item) => mapSavedLead(item as BackendSavedLead))
@@ -1054,6 +1155,7 @@ export const fetchSavedLeadsFromBackend = async (params?: {
     limit: toInteger(payload.limit) ?? params?.limit ?? 25,
     offset: toInteger(payload.offset) ?? params?.offset ?? 0,
     tierCounts,
+    problemCounts,
   };
 };
 
@@ -1217,6 +1319,8 @@ export const deleteFilteredSavedLeadsFromBackend = async (
   filters?: {
     status?: LeadStatus | 'All';
     tier?: LeadTier | 'All';
+    query?: string;
+    problemAny?: string[];
   },
 ): Promise<SavedLeadFilteredDeleteResult> => {
   const query = new URLSearchParams();
@@ -1225,6 +1329,22 @@ export const deleteFilteredSavedLeadsFromBackend = async (
   }
   if (filters?.tier && filters.tier !== 'All') {
     query.set('tier', filters.tier);
+  }
+  const queryFilter =
+    typeof filters?.query === 'string' ? filters.query.trim() : '';
+  if (queryFilter.length > 0) {
+    query.set('q', queryFilter);
+  }
+  if (Array.isArray(filters?.problemAny)) {
+    const uniqueProblems = Array.from(
+      new Set(
+        filters.problemAny
+          .filter((value): value is string => typeof value === 'string')
+          .map((value) => value.trim())
+          .filter(Boolean),
+      ),
+    );
+    uniqueProblems.forEach((problem) => query.append('problemAny', problem));
   }
 
   const requestUrl = buildApiUrl(`/api/leads/saved-leads${query.toString() ? `?${query}` : ''}`);
@@ -1245,6 +1365,11 @@ export const deleteFilteredSavedLeadsFromBackend = async (
     deleted: toInteger(payload.deleted) ?? 0,
     statusFilter: isLeadStatus(payload.statusFilter) ? payload.statusFilter : null,
     tierFilter: isLeadTier(payload.tierFilter) ? payload.tierFilter : null,
+    queryFilter:
+      typeof payload.queryFilter === 'string' && payload.queryFilter.trim().length > 0
+        ? payload.queryFilter.trim()
+        : null,
+    problemAny: toStringArray(payload.problemAny),
   };
 };
 

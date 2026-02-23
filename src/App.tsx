@@ -7,6 +7,9 @@ import { HowItWorksSection } from './components/HowItWorksSection';
 import { ValuePropSection } from './components/ValuePropSection';
 import { PricingSection } from './components/PricingSection';
 import { Footer } from './components/Footer';
+import { ImpressumPage } from './components/ImpressumPage';
+import { DatenschutzPage } from './components/DatenschutzPage';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { LoginModal } from './components/LoginModal';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
 import { DashboardPage } from './components/dashboard/DashboardPage';
@@ -24,6 +27,8 @@ type AppRoute =
   | '/billing'
   | '/account-settings'
   | '/reset-password'
+  | '/impressum'
+  | '/datenschutz'
   | '__protected_unknown__';
 
 const getRouteFromPathname = (pathname: string): AppRoute => {
@@ -53,6 +58,14 @@ const getRouteFromPathname = (pathname: string): AppRoute => {
 
   if (pathname === '/reset-password') {
     return '/reset-password';
+  }
+
+  if (pathname === '/impressum') {
+    return '/impressum';
+  }
+
+  if (pathname === '/datenschutz') {
+    return '/datenschutz';
   }
 
   return '__protected_unknown__';
@@ -138,7 +151,12 @@ export default function App() {
       return;
     }
 
-    const isProtectedRoute = route !== '/' && route !== '/reset-password';
+    const isPublicRoute =
+      route === '/' ||
+      route === '/reset-password' ||
+      route === '/impressum' ||
+      route === '/datenschutz';
+    const isProtectedRoute = !isPublicRoute;
     if (isProtectedRoute && !isAuthenticated) {
       setIsLoginOpen(true);
       navigate('/');
@@ -178,6 +196,8 @@ export default function App() {
   const showBilling = route === '/billing' && isAuthenticated;
   const showAccountSettings = route === '/account-settings' && isAuthenticated;
   const showResetPassword = route === '/reset-password';
+  const showImpressum = route === '/impressum';
+  const showDatenschutz = route === '/datenschutz';
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">
@@ -254,6 +274,24 @@ export default function App() {
           onBackHome={() => navigate('/')}
           onBackToLogin={handleReturnToLoginFromReset}
         />
+      ) : showImpressum ? (
+        <>
+          <Header onLoginClick={openLoginModal} />
+          <ImpressumPage />
+          <Footer
+            onNavigateDatenschutz={() => navigate('/datenschutz')}
+            onNavigateImpressum={() => navigate('/impressum')}
+          />
+        </>
+      ) : showDatenschutz ? (
+        <>
+          <Header onLoginClick={openLoginModal} />
+          <DatenschutzPage />
+          <Footer
+            onNavigateDatenschutz={() => navigate('/datenschutz')}
+            onNavigateImpressum={() => navigate('/impressum')}
+          />
+        </>
       ) : (
         <>
           <Header onLoginClick={openLoginModal} />
@@ -267,7 +305,10 @@ export default function App() {
             <PricingSection />
           </main>
 
-          <Footer />
+          <Footer
+            onNavigateDatenschutz={() => navigate('/datenschutz')}
+            onNavigateImpressum={() => navigate('/impressum')}
+          />
         </>
       )}
 
@@ -276,6 +317,7 @@ export default function App() {
         onClose={() => setIsLoginOpen(false)}
         onAuthenticated={handleAuthenticated}
       />
+      <CookieConsentBanner onOpenDatenschutz={() => navigate('/datenschutz')} />
     </div>
   );
 }

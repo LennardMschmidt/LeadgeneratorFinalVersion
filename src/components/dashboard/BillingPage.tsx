@@ -257,12 +257,15 @@ interface CurrentPlanModuleLabels {
   usedToday: string;
   remainingToday: string;
   usageProgress: string;
+  scrapeRefillRule: string;
+  scrapeRefillAt: string;
   aiTokensTitle: string;
   aiTotal: string;
   aiUsed: string;
   aiRemaining: string;
   aiUsageProgress: string;
-  aiPeriodEnds: string;
+  aiRefillRule: string;
+  aiRefillAt: string;
 }
 
 interface CurrentPlanModuleProps {
@@ -278,6 +281,10 @@ function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanMo
   const tokensRemainingToday = usage?.tokensRemainingToday ?? Math.max(0, dailyTokenLimit - tokensUsedToday);
   const usageProgress =
     dailyTokenLimit > 0 ? Math.max(0, Math.min(100, (tokensUsedToday / dailyTokenLimit) * 100)) : 0;
+  const now = new Date();
+  const nextDailyReset = new Date(now);
+  nextDailyReset.setHours(24, 0, 0, 0);
+  const dailyRefillAt = nextDailyReset.toLocaleString();
 
   const aiTokensTotal = usage?.aiTokensTotal ?? 0;
   const aiTokensUsed = usage?.aiTokensUsed ?? 0;
@@ -300,12 +307,6 @@ function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanMo
         style={{
           background: 'linear-gradient(135deg, #3B82F6 0%, #A855F7 100%)',
           opacity: 0.15,
-        }}
-      />
-      <div
-        className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full opacity-10 blur-3xl"
-        style={{
-          background: 'linear-gradient(135deg, #22D3EE 0%, #3B82F6 100%)',
         }}
       />
 
@@ -349,6 +350,10 @@ function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanMo
           </div>
 
           <AnimatedProgressBar percentage={usageProgress} variant="standard" label={labels.usageProgress} />
+          <p className="text-xs text-[#94A3B8]">{labels.scrapeRefillRule}</p>
+          <p className="text-xs text-[#64748B]">
+            {labels.scrapeRefillAt}: {dailyRefillAt}
+          </p>
         </div>
 
         <div
@@ -364,21 +369,6 @@ function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanMo
             <h3 className="text-lg text-[#F8FAFC]" style={{ marginTop: 20 }}>
               {labels.aiTokensTitle}
             </h3>
-            {aiPeriodEnd ? (
-              <div className="flex items-center gap-2 text-xs text-[#64748B]">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <span>
-                  {labels.aiPeriodEnds}: {aiPeriodEnd}
-                </span>
-              </div>
-            ) : null}
           </div>
 
           <div className="billing-metric-row" style={{ display: 'flex', gap: 16 }}>
@@ -388,6 +378,10 @@ function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanMo
           </div>
 
           <AnimatedProgressBar percentage={aiUsageProgress} variant="ai" label={labels.aiUsageProgress} />
+          <p className="text-xs text-[#94A3B8]">{labels.aiRefillRule}</p>
+          <p className="text-xs text-[#64748B]">
+            {labels.aiRefillAt}: {aiPeriodEnd ?? '-'}
+          </p>
         </div>
       </div>
 
@@ -519,12 +513,15 @@ export function BillingPage({
     usedToday: t('billingPage.currentPlan.usedToday'),
     remainingToday: t('billingPage.currentPlan.remainingToday'),
     usageProgress: t('billingPage.currentPlan.usageProgress'),
+    scrapeRefillRule: t('billingPage.currentPlan.scrapeRefillRule'),
+    scrapeRefillAt: t('billingPage.currentPlan.scrapeRefillAt'),
     aiTokensTitle: t('billingPage.currentPlan.aiTokensTitle'),
     aiTotal: t('billingPage.currentPlan.aiTotal'),
     aiUsed: t('billingPage.currentPlan.aiUsed'),
     aiRemaining: t('billingPage.currentPlan.aiRemaining'),
     aiUsageProgress: t('billingPage.currentPlan.aiUsageProgress'),
-    aiPeriodEnds: t('billingPage.currentPlan.aiPeriodEnds'),
+    aiRefillRule: t('billingPage.currentPlan.aiRefillRule'),
+    aiRefillAt: t('billingPage.currentPlan.aiRefillAt'),
   };
 
   return (

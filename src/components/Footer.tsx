@@ -1,7 +1,11 @@
-import { Sparkles } from 'lucide-react';
 import { useI18n } from '../i18n';
 
-export function Footer() {
+interface FooterProps {
+  onNavigateDatenschutz: () => void;
+  onNavigateImpressum: () => void;
+}
+
+export function Footer({ onNavigateDatenschutz, onNavigateImpressum }: FooterProps) {
   const { t } = useI18n();
 
   return (
@@ -10,9 +14,12 @@ export function Footer() {
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="Lead Generator logo"
+                className="shrink-0 rounded-lg object-cover"
+                style={{ width: '2.5rem', height: '2.5rem' }}
+              />
               <span className="text-xl font-semibold">{t('common.appName')}</span>
             </div>
             <p className="text-sm text-gray-500 max-w-md">{t('footer.disclaimer')}</p>
@@ -20,15 +27,20 @@ export function Footer() {
 
           <div className="flex flex-col md:items-end gap-4">
             <div className="flex flex-wrap gap-6 text-sm">
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              <button
+                type="button"
+                onClick={onNavigateDatenschutz}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 {t('footer.privacyPolicy')}
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
+              </button>
+              <button
+                type="button"
+                onClick={onNavigateImpressum}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
                 {t('footer.termsOfService')}
-              </a>
-              <a href="#" className="text-gray-400 hover:text-white transition-colors">
-                {t('footer.contact')}
-              </a>
+              </button>
             </div>
             <p className="text-sm text-gray-500">{t('footer.copyright')}</p>
           </div>

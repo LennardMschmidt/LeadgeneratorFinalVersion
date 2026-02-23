@@ -7,12 +7,14 @@ import {
   Mail,
   MapPinned,
   Phone,
+  Search,
   Star,
 } from 'lucide-react';
 import {
   type ComponentType,
   type MouseEvent as ReactMouseEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -35,8 +37,16 @@ interface LeadManagementTableProps {
   onSaveVisibleLeads: () => void;
   onSaveLead: (leadId: string) => void;
   onViewWebsiteAnalysis: (leadId: string) => void;
+  onNavigateSavedSearches: () => void;
   isSavingVisibleLeads?: boolean;
   savingLeadIds?: Record<string, boolean>;
+  saveSuccessHint?: string | null;
+  searchQuery: string;
+  onSearchQueryChange: (value: string) => void;
+  problemCategoryOptions: string[];
+  selectedProblemCategories: string[];
+  onToggleProblemCategory: (problem: string) => void;
+  onClearProblemCategories: () => void;
 }
 
 const CONTACT_BUTTON_CLASS =
@@ -128,8 +138,16 @@ export function LeadManagementTable({
   onSaveVisibleLeads,
   onSaveLead,
   onViewWebsiteAnalysis,
+  onNavigateSavedSearches,
   isSavingVisibleLeads = false,
   savingLeadIds = {},
+  saveSuccessHint = null,
+  searchQuery,
+  onSearchQueryChange,
+  problemCategoryOptions,
+  selectedProblemCategories,
+  onToggleProblemCategory,
+  onClearProblemCategories,
 }: LeadManagementTableProps) {
   const { t, tm } = useI18n();
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -141,6 +159,10 @@ export function LeadManagementTable({
   const isLeadExpanded = (leadId: string) => leadExpandedStates[leadId] ?? true;
   const hasAnyExpandedLead = leads.some((lead) => isLeadExpanded(lead.id));
   const canExpandOrCollapse = !isLoading && leads.length > 0;
+  const sortedProblemCategoryOptions = useMemo(
+    () => [...problemCategoryOptions].sort((left, right) => left.localeCompare(right)),
+    [problemCategoryOptions],
+  );
 
   const contactMeta = (
     channel: ParsedContactChannel,
@@ -239,8 +261,8 @@ export function LeadManagementTable({
     <section className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="space-y-1">
-            <label htmlFor="filter-tier" className="block text-xs uppercase tracking-wider text-gray-500">
+          <div>
+            <label htmlFor="filter-tier" className="mb-2 block text-xs uppercase tracking-wider text-gray-500">
               {t('dashboard.leadTable.filterByTier')}
             </label>
             <DashboardSelect
@@ -255,8 +277,8 @@ export function LeadManagementTable({
             />
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="filter-status" className="block text-xs uppercase tracking-wider text-gray-500">
+          <div>
+            <label htmlFor="filter-status" className="mb-2 block text-xs uppercase tracking-wider text-gray-500">
               {t('dashboard.leadTable.filterByStatus')}
             </label>
             <DashboardSelect
@@ -292,21 +314,39 @@ export function LeadManagementTable({
               {hasAnyExpandedLead ? t('dashboard.leadTable.collapseAll') : t('dashboard.leadTable.expandAll')}
             </button>
 
-            <button
-              type="button"
-              onClick={onSaveVisibleLeads}
-              disabled={isLoading || isSavingVisibleLeads || leads.length === 0}
-              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all enabled:hover:from-blue-600 enabled:hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isSavingVisibleLeads ? (
-                <>
-                  <Loader2 className="spin-loader h-4 w-4" />
-                  {t('dashboard.leadTable.savingLeads')}
-                </>
-              ) : (
-                t('dashboard.leadTable.saveLeads')
-              )}
-            </button>
+            <div className="relative flex flex-col items-start">
+              <button
+                type="button"
+                onClick={onSaveVisibleLeads}
+                disabled={isLoading || isSavingVisibleLeads || leads.length === 0}
+                className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all enabled:hover:from-blue-600 enabled:hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSavingVisibleLeads ? (
+                  <>
+                    <Loader2 className="spin-loader h-4 w-4" />
+                    {t('dashboard.leadTable.savingLeads')}
+                  </>
+                ) : (
+                  t('dashboard.leadTable.saveLeads')
+                )}
+              </button>
+
+              {saveSuccessHint ? (
+                <p
+                  className="absolute left-0 z-10 text-xs text-emerald-200"
+                  style={{ top: '100%', marginTop: '8px', maxWidth: '280px' }}
+                >
+                  {saveSuccessHint}{' '}
+                  <button
+                    type="button"
+                    onClick={onNavigateSavedSearches}
+                    className="font-semibold text-cyan-300 underline decoration-cyan-300/80 underline-offset-2 transition-colors hover:text-cyan-200"
+                  >
+                    {t('dashboard.leadTable.openSavedSearches')}
+                  </button>
+                </p>
+              ) : null}
+            </div>
 
             <div ref={exportMenuRef} className="relative">
               <button
@@ -373,6 +413,75 @@ export function LeadManagementTable({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
+        <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+          <label
+            htmlFor="dashboard-lead-search"
+            className="mb-2 block text-xs uppercase tracking-wider text-gray-500"
+          >
+            {t('dashboard.leadTable.searchLabel')}
+          </label>
+          <div className="flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3">
+            <Search className="h-4 w-4 shrink-0 text-gray-500" />
+            <input
+              id="dashboard-lead-search"
+              value={searchQuery}
+              onChange={(event) => onSearchQueryChange(event.target.value)}
+              placeholder={t('dashboard.leadTable.searchPlaceholder')}
+              className="h-full w-full bg-transparent pr-1 text-sm leading-5 text-white placeholder:text-gray-500 outline-none"
+            />
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <p className="text-xs uppercase tracking-wider text-gray-500">
+              {t('dashboard.leadTable.problemFilterLabel')}
+            </p>
+            {selectedProblemCategories.length > 0 ? (
+              <button
+                type="button"
+                onClick={onClearProblemCategories}
+                className="text-xs text-cyan-300 underline decoration-cyan-300/70 underline-offset-2 transition-colors hover:text-cyan-200"
+              >
+                {t('dashboard.leadTable.problemFilterClear')}
+              </button>
+            ) : null}
+          </div>
+
+          {sortedProblemCategoryOptions.length === 0 ? (
+            <p className="text-xs text-gray-500">{t('dashboard.leadTable.problemFilterEmpty')}</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {sortedProblemCategoryOptions.map((problem) => {
+                const isSelected = selectedProblemCategories.includes(problem);
+                return (
+                  <button
+                    key={problem}
+                    type="button"
+                    onClick={() => onToggleProblemCategory(problem)}
+                    className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-all"
+                    style={{
+                      borderColor: isSelected
+                        ? 'rgba(34, 211, 238, 0.68)'
+                        : 'rgba(255, 255, 255, 0.18)',
+                      backgroundColor: isSelected
+                        ? 'rgba(34, 211, 238, 0.16)'
+                        : 'rgba(255, 255, 255, 0.05)',
+                      color: isSelected
+                        ? 'rgba(165, 243, 252, 0.96)'
+                        : 'rgba(209, 213, 219, 1)',
+                    }}
+                  >
+                    {tm('problemCategories', problem)}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </section>
       </div>
 
       <div className="grid gap-6">

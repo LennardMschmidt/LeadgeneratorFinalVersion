@@ -11,6 +11,7 @@ import {
   saveVisibleLeadsToBackend,
 } from './api';
 import { DashboardHeader } from './DashboardHeader';
+import { getProblemCategoriesForBusinessType } from './businessTypeProblemCatalog';
 import { exportRowsToExcel, exportRowsToPdf } from './exportUtils';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
@@ -79,9 +80,12 @@ export function DashboardPage({
   const [deletingSavedSearchId, setDeletingSavedSearchId] = useState<string | null>(null);
   const [isSavingVisibleLeads, setIsSavingVisibleLeads] = useState(false);
   const [savingLeadIds, setSavingLeadIds] = useState<Record<string, boolean>>({});
+  const [dashboardSearchQuery, setDashboardSearchQuery] = useState('');
+  const [dashboardProblemAny, setDashboardProblemAny] = useState<string[]>([]);
   const [websiteAnalysisModalLeadId, setWebsiteAnalysisModalLeadId] = useState<string | null>(null);
   const [websiteAiSummaryLoadingLeadId, setWebsiteAiSummaryLoadingLeadId] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [saveSuccessHint, setSaveSuccessHint] = useState<string | null>(null);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -113,6 +117,18 @@ export function DashboardPage({
     };
   }, []);
 
+  useEffect(() => {
+    if (!saveSuccessHint) {
+      return;
+    }
+
+    const clearHintTimeout = window.setTimeout(() => {
+      setSaveSuccessHint(null);
+    }, 4000);
+
+    return () => window.clearTimeout(clearHintTimeout);
+  }, [saveSuccessHint]);
+
   const tierCounts = useMemo(
     () => ({
       'Tier 1': leads.filter((lead) => lead.tier === 'Tier 1').length,
@@ -122,14 +138,45 @@ export function DashboardPage({
     [leads],
   );
 
+  const availableDashboardProblemCategories = useMemo(
+    () => getProblemCategoriesForBusinessType(searchConfig.businessType),
+    [searchConfig.businessType],
+  );
+
+  useEffect(() => {
+    setDashboardProblemAny((current) =>
+      current.filter((problem) => availableDashboardProblemCategories.includes(problem)),
+    );
+  }, [availableDashboardProblemCategories]);
+
   const filteredLeads = useMemo(
-    () =>
-      leads.filter((lead) => {
+    () => {
+      const normalizedQuery = dashboardSearchQuery.trim().toLowerCase();
+      return leads.filter((lead) => {
         const tierMatches = filters.tier === 'All' ? true : lead.tier === filters.tier;
         const statusMatches = filters.status === 'All' ? true : lead.status === filters.status;
-        return tierMatches && statusMatches;
-      }),
-    [leads, filters],
+        const queryMatches =
+          normalizedQuery.length === 0
+            ? true
+            : [
+                lead.businessName,
+                lead.category,
+                lead.location,
+                lead.source ?? '',
+                lead.explanation,
+                lead.contactChannels.join(' '),
+              ]
+                .join(' ')
+                .toLowerCase()
+                .includes(normalizedQuery);
+        const problemMatches =
+          dashboardProblemAny.length === 0
+            ? true
+            : lead.problems.some((problem) => dashboardProblemAny.includes(problem));
+        return tierMatches && statusMatches && queryMatches && problemMatches;
+      });
+    },
+    [leads, filters, dashboardSearchQuery, dashboardProblemAny],
   );
 
   const maxRawScore = useMemo(
@@ -192,6 +239,14 @@ export function DashboardPage({
       ...currentFilters,
       status,
     }));
+  };
+
+  const toggleDashboardProblemFilter = (problem: string) => {
+    setDashboardProblemAny((current) =>
+      current.includes(problem)
+        ? current.filter((item) => item !== problem)
+        : [...current, problem],
+    );
   };
 
   const updateLeadStatus = (leadId: string, nextStatus: LeadStatus) => {
@@ -387,6 +442,7 @@ export function DashboardPage({
 
     if (filteredLeads.length === 0) {
       setActionNotice(null);
+      setSaveSuccessHint(null);
       setSearchError(t('dashboard.savedLeads.noLeadsToSave'));
       return;
     }
@@ -395,15 +451,15 @@ export function DashboardPage({
     try {
       const summary = await saveVisibleLeadsToBackend(filteredLeads);
       setSearchError(null);
-      setActionNotice(
-        t('dashboard.savedLeads.bulkSavedSuccess', {
-          requested: summary.requested,
-          saved: summary.insertedOrUpdated,
-          skipped: summary.skipped,
+      setActionNotice(null);
+      setSaveSuccessHint(
+        t('dashboard.leadTable.savedHintWithCount', {
+          count: summary.insertedOrUpdated,
         }),
       );
     } catch (error) {
       setActionNotice(null);
+      setSaveSuccessHint(null);
       if (error instanceof Error) {
         setSearchError(error.message);
       } else {
@@ -444,13 +500,11 @@ export function DashboardPage({
         ),
       );
       setSearchError(null);
-      setActionNotice(
-        t('dashboard.savedLeads.singleSavedSuccess', {
-          name: lead.businessName,
-        }),
-      );
+      setActionNotice(null);
+      setSaveSuccessHint(t('dashboard.leadTable.savedHint'));
     } catch (error) {
       setActionNotice(null);
+      setSaveSuccessHint(null);
       if (error instanceof Error) {
         setSearchError(error.message);
       } else {
@@ -591,6 +645,14 @@ export function DashboardPage({
             onViewWebsiteAnalysis={viewWebsiteAnalysis}
             isSavingVisibleLeads={isSavingVisibleLeads}
             savingLeadIds={savingLeadIds}
+            saveSuccessHint={saveSuccessHint}
+            onNavigateSavedSearches={onNavigateSavedSearches}
+            searchQuery={dashboardSearchQuery}
+            onSearchQueryChange={setDashboardSearchQuery}
+            problemCategoryOptions={availableDashboardProblemCategories}
+            selectedProblemCategories={dashboardProblemAny}
+            onToggleProblemCategory={toggleDashboardProblemFilter}
+            onClearProblemCategories={() => setDashboardProblemAny([])}
           />
         </section>
       </main>

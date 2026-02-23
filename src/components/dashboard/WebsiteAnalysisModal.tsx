@@ -44,134 +44,188 @@ const SECTION_LABELS: Record<SectionKey, string> = {
   domain: 'Domain',
 };
 
-const INFO_EXCLUDED_KEYS = new Set(['final_url', 'total_transfer_kb', 'domain_creation_date']);
+type FieldInfo = { what: string; ideal: string };
 
-const ATTRIBUTE_INFO_EN: Partial<Record<SectionKey, Record<string, { what: string; ideal: string }>>> = {
+const INFO_EXCLUDED_KEYS = new Set<string>();
+
+const ATTRIBUTE_INFO_EN: Partial<Record<SectionKey, Record<string, FieldInfo>>> = {
   accessibility: {
     reachable: {
-      what: 'Means the website could actually be reached during this check. In practical terms: the domain is live and users can open the homepage in a browser.',
+      what: 'This tells you whether the analyzer could open the homepage at all. If this is false, many other checks are limited because the page content could not be fetched.',
       ideal: 'Yes',
     },
     status_code: {
-      what: 'The HTTP response code from the homepage. It tells whether the page was delivered successfully or blocked/errored.',
+      what: 'HTTP status code returned by the homepage request. 200 means success, 3xx means redirects, and 4xx/5xx usually mean errors, blocking, or server problems.',
       ideal: '200',
     },
     uses_https: {
-      what: 'Checks if the site uses HTTPS (secure connection). HTTPS protects user data and is a trust/SEO baseline.',
+      what: 'Whether the final homepage URL uses HTTPS (encrypted connection). HTTPS is a baseline for trust, browser security warnings, and SEO.',
       ideal: 'Yes',
     },
     valid_ssl: {
-      what: 'SSL is the security certificate behind HTTPS. This checks whether that certificate is valid and trusted. Invalid SSL can show browser warnings and reduce trust.',
+      what: 'Whether the SSL/TLS certificate is valid and trusted by browsers. Invalid certificates can trigger browser warnings and reduce user trust immediately.',
       ideal: 'Yes',
     },
     load_time_ms: {
-      what: 'How long the homepage needed to respond in this scan. Higher values usually mean slower user experience.',
+      what: 'Measured response time in milliseconds for the homepage request. Lower is generally better for UX, conversions, and perceived quality.',
       ideal: 'Below 1000 ms',
     },
     proxy_used: {
-      what: 'Shows whether the request used a proxy server. A proxy is an intermediate server/IP used to fetch the page when direct requests may be blocked.',
-      ideal: 'Informational (either is acceptable)',
+      what: 'Whether the analyzer used a proxy IP instead of a direct request. This is mainly a data-collection/network detail and does not directly describe website quality.',
+      ideal: 'Informational',
     },
     proxy_endpoint: {
-      what: 'The proxy endpoint used for this run (if any). Helpful for debugging blocked requests and comparing proxy performance.',
+      what: 'Which proxy gateway was used for this run (masked). Useful for debugging blocked requests, retries, and network behavior during analysis.',
       ideal: 'Informational',
     },
     request_attempts: {
-      what: 'How many tries were needed to get a response. Multiple attempts can indicate instability or anti-bot protection.',
+      what: 'How many request attempts were needed before the analyzer returned a final result. Higher values can indicate unstable hosting, throttling, or anti-bot protection.',
       ideal: '1',
     },
     blocked_or_forbidden: {
-      what: 'Indicates the site refused access (for example 403, challenge page, or anti-bot block).',
+      what: 'Flags whether the homepage request was blocked or forbidden (for example 401/403/429 responses or challenge pages).',
       ideal: 'No',
+    },
+    final_url: {
+      what: 'The final homepage URL after redirects. This helps confirm canonical routing (for example www/non-www, http to https, locale redirects).',
+      ideal: 'A clean, expected canonical URL',
+    },
+    total_transfer_kb: {
+      what: 'Approximate amount of downloaded data (headers + content) during the accessibility request attempts, measured in kilobytes.',
+      ideal: 'As low as practical',
+    },
+    error: {
+      what: 'Technical error message captured when the request failed (for example timeout, DNS, SSL, or blocked access).',
+      ideal: 'No error message',
+    },
+    url: {
+      what: 'Input URL that was submitted for analysis before redirects were followed.',
+      ideal: 'A valid homepage URL',
     },
   },
   seo: {
     has_title: {
-      what: 'Checks whether the homepage has a title tag for search results.',
+      what: 'Checks whether a <title> tag exists. The title is the main clickable headline in search results and browser tabs.',
       ideal: 'Yes',
     },
     title_length: {
-      what: 'Length of the page title text.',
+      what: 'Character length of the <title> text. Titles that are too short or too long can reduce clarity in search results.',
       ideal: '30-60 characters',
     },
     has_meta_description: {
-      what: 'Checks if a meta description is present for search previews.',
+      what: 'Checks whether a meta description exists. This often appears as preview text in search results and influences click-through behavior.',
       ideal: 'Yes',
     },
     meta_description_length: {
-      what: 'Length of the meta description.',
+      what: 'Character length of the meta description text.',
       ideal: '120-160 characters',
     },
     h1_count: {
-      what: 'How many main headings (H1) exist on the homepage.',
+      what: 'Number of H1 headings on the homepage. H1 is the primary page heading and helps structure content for users and search engines.',
       ideal: '1',
     },
+    images_total: {
+      what: 'Total number of <img> elements found on the homepage.',
+      ideal: 'Informational',
+    },
     images_missing_alt: {
-      what: 'How many images are missing alt text.',
+      what: 'Number of images missing alt text. Alt text supports accessibility (screen readers) and gives search engines context about images.',
       ideal: '0',
     },
     has_sitemap: {
-      what: 'Checks if sitemap.xml exists so search engines can discover pages.',
+      what: 'Checks whether `/sitemap.xml` is reachable. A sitemap helps search engines discover and crawl important pages efficiently.',
       ideal: 'Yes',
     },
     has_robots_txt: {
-      what: 'robots.txt is a small file for search engines. It tells crawlers which parts of the site may or may not be crawled.',
+      what: 'Checks whether `/robots.txt` exists. This file communicates crawl guidance to search bots and prevents accidental crawl issues.',
       ideal: 'Yes',
     },
     has_structured_data: {
-      what: 'Checks if structured data/schema markup is present.',
+      what: 'Checks for schema/structured-data markup (JSON-LD). Structured data can improve search understanding and rich-result eligibility.',
       ideal: 'Yes',
     },
   },
   conversion: {
     has_contact_form: {
-      what: 'Checks if users can contact the business via a form.',
+      what: 'Checks if a usable contact form is present on the homepage (form with interactive fields).',
       ideal: 'Yes',
     },
+    has_booking_keyword: {
+      what: 'Checks for booking/reservation intent words (for example “book”, “booking”, “reservation”, “termin”) in visible content.',
+      ideal: 'Yes, if bookings are part of your sales flow',
+    },
     has_phone_number: {
-      what: 'Checks if a visible phone number is present.',
+      what: 'Checks whether a phone number is visible or linked (`tel:`), so users can contact the business directly.',
       ideal: 'Yes',
     },
     has_email: {
-      what: 'Checks if a visible email contact is present.',
+      what: 'Checks whether an email address is visible or linked (`mailto:`) on the homepage.',
       ideal: 'Yes',
     },
     has_cta_keywords: {
-      what: 'Checks if clear call-to-action wording is present.',
+      what: 'Checks for call-to-action wording (for example contact, get offer, book now). CTAs guide visitors toward the next conversion step.',
       ideal: 'Yes',
     },
   },
   trust: {
     has_impressum: {
-      what: 'Checks if an Impressum/legal notice is visible.',
+      what: 'Checks for a visible legal notice (Impressum / provider identification), especially important in German-speaking markets.',
       ideal: 'Yes',
     },
     has_privacy_policy: {
-      what: 'Checks if a privacy policy is visible.',
+      what: 'Checks for a visible privacy policy (Datenschutz / Privacy Policy), which is essential for legal trust and data transparency.',
       ideal: 'Yes',
     },
+    has_dsgvo_reference: {
+      what: 'Checks whether GDPR/DSGVO references are present in page text or links.',
+      ideal: 'Yes, if GDPR compliance applies',
+    },
     has_cookie_banner: {
-      what: 'Checks if cookie consent appears when needed.',
+      what: 'Checks for cookie consent/banner signals (for example Cookiebot, Onetrust, consent wording).',
+      ideal: 'Yes',
+    },
+    has_copyright_notice: {
+      what: 'Checks for copyright indicators (for example ©, “All rights reserved”, “Urheberrecht”).',
       ideal: 'Yes',
     },
   },
   performance: {
     page_size_kb: {
-      what: 'Estimated amount of data loaded by the homepage.',
+      what: 'Approximate homepage payload size in kilobytes, based on response content. Larger payloads often slow down first-load experience.',
       ideal: 'Below 500 KB',
     },
     script_count: {
-      what: 'Number of JavaScript resources on the homepage.',
+      what: 'Number of JavaScript tags/resources on the homepage. Too many scripts can increase load time and execution overhead.',
       ideal: 'As low as practical',
     },
     stylesheet_count: {
-      what: 'Number of stylesheet resources on the homepage.',
+      what: 'Number of stylesheet resources linked on the homepage. More stylesheets can increase request overhead and render blocking.',
       ideal: 'As low as practical',
+    },
+  },
+  technology: {
+    generator_meta: {
+      what: 'Value of the HTML generator meta tag (if present), which may reveal CMS/framework/version information.',
+      ideal: 'Informational',
+    },
+    detected_cms: {
+      what: 'Detected content management system/platform from HTML and headers (for example WordPress, Shopify, Wix, Webflow). If empty, no reliable CMS fingerprint was found.',
+      ideal: 'Informational',
+    },
+  },
+  domain: {
+    domain_creation_date: {
+      what: 'Domain creation date from WHOIS records for the root domain. Older domains can indicate a longer online presence, but age alone is not a quality guarantee.',
+      ideal: 'Informational',
+    },
+    whois_error: {
+      what: 'WHOIS lookup error message when domain registration data could not be retrieved (for example privacy masking, registry limits, or timeout).',
+      ideal: 'No error message',
     },
   },
 };
 
-const ATTRIBUTE_INFO_DE: Partial<Record<SectionKey, Record<string, { what: string; ideal: string }>>> = {
+const ATTRIBUTE_INFO_DE: Partial<Record<SectionKey, Record<string, FieldInfo>>> = {
   accessibility: {
     reachable: {
       what: 'Zeigt, ob die Startseite überhaupt geöffnet werden konnte.',
@@ -193,7 +247,119 @@ const ATTRIBUTE_INFO_DE: Partial<Record<SectionKey, Record<string, { what: strin
       what: 'Antwortzeit der Startseite bei diesem Check.',
       ideal: 'Unter 1000 ms',
     },
+    proxy_used: {
+      what: 'Zeigt, ob der Abruf über eine Proxy-IP lief. Das ist ein technischer Abrufhinweis und kein direktes Qualitätsmerkmal der Website.',
+      ideal: 'Informational',
+    },
+    proxy_endpoint: {
+      what: 'Genutzter Proxy-Endpunkt (maskiert) für diesen Lauf. Hilft beim Debuggen von Blockierungen.',
+      ideal: 'Informational',
+    },
   },
+};
+
+const getFallbackFieldInfo = (
+  sectionName: SectionKey,
+  key: string,
+  value: unknown,
+  language: 'en' | 'de',
+): FieldInfo => {
+  const label = labelize(key);
+
+  if (language === 'de') {
+    if (key.startsWith('has_')) {
+      return {
+        what: `Dieses Feld prüft, ob "${labelize(key.slice(4))}" auf der Startseite vorhanden ist.`,
+        ideal: 'Ja',
+      };
+    }
+    if (key.endsWith('_count')) {
+      return {
+        what: `Dieses Feld gibt an, wie viele Elemente bei "${label}" erkannt wurden.`,
+        ideal: 'Möglichst niedrig bzw. passend zum Inhalt',
+      };
+    }
+    if (key.endsWith('_length')) {
+      return {
+        what: `Dieses Feld zeigt die Zeichenlänge von "${label}" an.`,
+        ideal: 'Im empfohlenen Bereich',
+      };
+    }
+    if (key.endsWith('_ms')) {
+      return {
+        what: `Dieses Feld ist eine Zeitmessung in Millisekunden für "${label}".`,
+        ideal: 'Möglichst niedrig',
+      };
+    }
+    if (key.endsWith('_kb')) {
+      return {
+        what: `Dieses Feld ist eine Größenangabe in Kilobyte für "${label}".`,
+        ideal: 'Möglichst niedrig',
+      };
+    }
+    if (key.includes('detected')) {
+      return {
+        what: `Dieses Feld zeigt, was bei "${label}" automatisch erkannt wurde.`,
+        ideal: 'Informational',
+      };
+    }
+    return {
+      what: `"${label}" ist ein Messwert im Bereich ${SECTION_LABELS[sectionName]}. Er beschreibt den aktuellen technischen Zustand dieses Teilbereichs.`,
+      ideal:
+        typeof value === 'boolean'
+          ? 'Je nach Feld idealerweise Ja'
+          : typeof value === 'number'
+            ? 'Ein stabiler, nutzerfreundlicher Wert'
+            : 'Ein nachvollziehbarer, erwarteter Wert',
+    };
+  }
+
+  if (key.startsWith('has_')) {
+    return {
+      what: `This field checks whether "${labelize(key.slice(4))}" is present on the homepage.`,
+      ideal: 'Yes',
+    };
+  }
+  if (key.endsWith('_count')) {
+    return {
+      what: `This field reports how many items were detected for "${label}".`,
+      ideal: 'As low as practical or context-appropriate',
+    };
+  }
+  if (key.endsWith('_length')) {
+    return {
+      what: `This field reports the text length for "${label}" (character count).`,
+      ideal: 'Within recommended range',
+    };
+  }
+  if (key.endsWith('_ms')) {
+    return {
+      what: `This field is a timing metric in milliseconds for "${label}".`,
+      ideal: 'Lower is generally better',
+    };
+  }
+  if (key.endsWith('_kb')) {
+    return {
+      what: `This field is a size metric in kilobytes for "${label}".`,
+      ideal: 'Lower is generally better',
+    };
+  }
+  if (key.includes('detected')) {
+    return {
+      what: `This field lists what was automatically detected for "${label}".`,
+      ideal: 'Informational',
+    };
+  }
+
+  return {
+    what: `"${label}" is a metric from the ${SECTION_LABELS[sectionName]} scan and describes the current technical state of this area.`,
+    ideal:
+      typeof value === 'boolean'
+        ? 'For many checks, Yes is preferred'
+        : typeof value === 'number'
+          ? 'A stable user-friendly value'
+          : 'A clear expected value',
+  };
 };
 
 const labelize = (value: string): string =>
@@ -287,6 +453,25 @@ const parseAiBullets = (raw: string): string[] => {
     .map((item) => sanitizeAiBullet(item.endsWith('.') ? item : `${item}.`))
     .filter((item) => item.length > 0)
     .slice(0, 4);
+};
+
+const formatAiSummaryFallbackText = (rawSummary: string): string => {
+  const aliases = Object.values(AI_SUMMARY_HEADING_ALIASES)
+    .flat()
+    .sort((a, b) => b.length - a.length);
+
+  let formatted = rawSummary.replace(/\r/g, '').trim();
+
+  aliases.forEach((alias) => {
+    const escapedAlias = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const pattern = new RegExp(`\\s*${escapedAlias}\\s*[:\\-]?\\s*`, 'gi');
+    formatted = formatted.replace(pattern, (match, offset) => {
+      const cleanedHeading = match.replace(/[:\-]\s*$/, '').trim();
+      return `${offset === 0 ? '' : '\n\n'}${cleanedHeading}\n`;
+    });
+  });
+
+  return formatted.replace(/\n{3,}/g, '\n\n').trim();
 };
 
 const extractAiSummarySections = (
@@ -497,7 +682,7 @@ const renderSection = (
         {entries.map(([key, value], index) => {
           const rowKey = `${sectionName}-${key}`;
           const isOpen = openInfoKey === rowKey;
-          const info = infoMap[sectionName]?.[key];
+          const info = infoMap[sectionName]?.[key] ?? getFallbackFieldInfo(sectionName, key, value, language);
           return (
             <div key={rowKey}>
               <div
@@ -551,15 +736,10 @@ const renderSection = (
               </div>
               {isOpen ? (
                 <div className="mx-2 mt-2 rounded-lg border border-cyan-300/35 bg-cyan-500/[0.09] px-4 py-3 text-sm text-cyan-100">
-                  <p>
-                    {info?.what ??
-                      (language === 'de'
-                        ? 'Dieser Wert zeigt, wie stark dieser Bereich auf der Startseite aktuell ist.'
-                        : 'This value shows how strong this homepage area currently is.')}
-                  </p>
+                  <p>{info.what}</p>
                   <p className="mt-1 text-cyan-50/95">
                     {language === 'de' ? 'Ideal:' : 'Ideal:'}{' '}
-                    {info?.ideal ?? (typeof value === 'boolean' ? (language === 'de' ? 'Ja' : 'Yes') : language === 'de' ? 'ein starker nutzerfreundlicher Wert' : 'a strong user-friendly value')}
+                    {info.ideal}
                   </p>
                 </div>
               ) : null}
@@ -783,9 +963,13 @@ export function WebsiteAnalysisModal({
               <div className="space-y-4 rounded-xl border border-cyan-200/35 bg-slate-950/30 px-6 py-6">
                 {typeof aiSummary === 'string' && aiSummary.trim().length > 0 ? (
                   parsedAiSummarySections.length > 0 ? (
-                    <div className="space-y-5">
+                    <div>
                       {parsedAiSummarySections.map((section) => (
-                        <section key={`ai-summary-${section.key}`} className="space-y-2">
+                        <section
+                          key={`ai-summary-${section.key}`}
+                          className="space-y-2"
+                          style={{ marginBottom: '20px' }}
+                        >
                           <h4 className="text-base font-semibold text-cyan-100">{section.title}</h4>
                           <ul className="list-disc space-y-1 pl-5 text-base leading-relaxed text-slate-50">
                             {section.bullets.map((bullet, index) => (
@@ -796,7 +980,9 @@ export function WebsiteAnalysisModal({
                       ))}
                     </div>
                   ) : (
-                    <p className="whitespace-pre-wrap text-lg leading-relaxed text-slate-50">{aiSummary}</p>
+                    <p className="whitespace-pre-wrap text-lg leading-relaxed text-slate-50">
+                      {`${formatAiSummaryFallbackText(aiSummary)}\n\n`}
+                    </p>
                   )
                 ) : (
                   <p className="text-base text-slate-200">
@@ -815,7 +1001,7 @@ export function WebsiteAnalysisModal({
             No analysis data is available.
           </div>
         ) : (
-          <div className="space-y-12 pt-4 pb-2">
+          <div className="pt-4 pb-2" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {SECTION_KEYS.map((sectionKey) =>
               renderSection(
                 sectionKey,

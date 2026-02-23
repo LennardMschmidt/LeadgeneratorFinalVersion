@@ -92,7 +92,10 @@ export function SavedSearchesPage({
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
   const [isWebsiteBlockedDialogOpen, setIsWebsiteBlockedDialogOpen] = useState(false);
   const [websiteBlockedDialogMessage, setWebsiteBlockedDialogMessage] = useState('');
-  const [listSearchQuery, setListSearchQuery] = useState('');
+  const [queryDraft, setQueryDraft] = useState('');
+  const [queryApplied, setQueryApplied] = useState('');
+  const [problemAny, setProblemAny] = useState<string[]>([]);
+  const [problemCounts, setProblemCounts] = useState<Record<string, number>>({});
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
   const canGoPrevious = offset > 0;
@@ -103,26 +106,18 @@ export function SavedSearchesPage({
     () => Math.max(1, savedLeads.reduce((currentMax, lead) => Math.max(currentMax, lead.score), 0)),
     [savedLeads],
   );
-  const filteredSavedLeads = useMemo(() => {
-    const normalizedQuery = listSearchQuery.trim().toLowerCase();
-    if (!normalizedQuery) {
-      return savedLeads;
-    }
-    return savedLeads.filter((lead) => {
-      const haystack = [
-        lead.businessName,
-        lead.category,
-        lead.location,
-        lead.source ?? '',
-        lead.status,
-        lead.explanation,
-        lead.contactChannels.join(' '),
-      ]
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(normalizedQuery);
-    });
-  }, [savedLeads, listSearchQuery]);
+  const sortedProblemOptions = useMemo(
+    () =>
+      Object.entries(problemCounts)
+        .filter(([problem]) => problem.trim().length > 0)
+        .sort((a, b) => {
+          if (b[1] !== a[1]) {
+            return b[1] - a[1];
+          }
+          return a[0].localeCompare(b[0]);
+        }),
+    [problemCounts],
+  );
 
   const tierFilterLabel =
     tierFilter === 'All'
@@ -165,6 +160,8 @@ export function SavedSearchesPage({
     nextOffset: number,
     nextStatus: LeadStatus | 'All',
     nextTier: LeadTier | 'All',
+    nextQuery: string,
+    nextProblemAny: string[],
   ) => {
     setIsLoading(true);
     setErrorMessage(null);
@@ -175,11 +172,14 @@ export function SavedSearchesPage({
         offset: nextOffset,
         status: nextStatus,
         tier: nextTier,
+        query: nextQuery,
+        problemAny: nextProblemAny,
       });
 
       setSavedLeads(response.items);
       setTotal(response.total);
       setTierCounts(response.tierCounts);
+      setProblemCounts(response.problemCounts);
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage(error.message);
@@ -192,8 +192,18 @@ export function SavedSearchesPage({
   };
 
   useEffect(() => {
-    void loadSavedLeads(offset, statusFilter, tierFilter);
-  }, [offset, statusFilter, tierFilter]);
+    void loadSavedLeads(offset, statusFilter, tierFilter, queryApplied, problemAny);
+  }, [offset, statusFilter, tierFilter, queryApplied, problemAny]);
+
+  useEffect(() => {
+    const debounceId = window.setTimeout(() => {
+      const normalized = queryDraft.trim();
+      setOffset(0);
+      setQueryApplied(normalized);
+    }, 300);
+
+    return () => window.clearTimeout(debounceId);
+  }, [queryDraft]);
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -224,6 +234,20 @@ export function SavedSearchesPage({
   const closeLeadDetail = () => {
     setIsDetailOpen(false);
     setSelectedLead(null);
+  };
+
+  const toggleProblemFilter = (problem: string) => {
+    setOffset(0);
+    setProblemAny((current) =>
+      current.includes(problem)
+        ? current.filter((item) => item !== problem)
+        : [...current, problem],
+    );
+  };
+
+  const clearProblemFilters = () => {
+    setOffset(0);
+    setProblemAny([]);
   };
 
   const mergeUpdatedLead = (updatedLead: SavedLead) => {
@@ -488,10 +512,12 @@ export function SavedSearchesPage({
       const response = await deleteFilteredSavedLeadsFromBackend({
         status: statusFilter,
         tier: tierFilter,
+        query: queryApplied,
+        problemAny,
       });
       const nextOffset = 0;
       setOffset(nextOffset);
-      await loadSavedLeads(nextOffset, statusFilter, tierFilter);
+      await loadSavedLeads(nextOffset, statusFilter, tierFilter, queryApplied, problemAny);
       if (selectedLead) {
         closeLeadDetail();
       }
@@ -759,11 +785,61 @@ export function SavedSearchesPage({
               <Search className="h-4 w-4 shrink-0 text-gray-500" />
               <input
                 id="saved-lead-search"
-                value={listSearchQuery}
-                onChange={(event) => setListSearchQuery(event.target.value)}
+                value={queryDraft}
+                onChange={(event) => setQueryDraft(event.target.value)}
                 placeholder={t('dashboard.savedLeads.searchPlaceholder')}
                 className="h-full w-full bg-transparent pr-1 text-sm leading-5 text-white placeholder:text-gray-500 outline-none"
               />
+            </div>
+
+            <div style={{ marginTop: '8px' }}>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="text-xs uppercase tracking-wider text-gray-500">
+                  {t('dashboard.savedLeads.problemFilterLabel')}
+                </p>
+                {problemAny.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={clearProblemFilters}
+                    className="text-xs text-cyan-300 underline decoration-cyan-300/70 underline-offset-2 transition-colors hover:text-cyan-200"
+                  >
+                    {t('dashboard.savedLeads.problemFilterClear')}
+                  </button>
+                ) : null}
+              </div>
+              {sortedProblemOptions.length === 0 ? (
+                <p className="text-xs text-gray-500">
+                  {t('dashboard.savedLeads.problemFilterEmpty')}
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {sortedProblemOptions.map(([problem, count]) => {
+                    const isSelected = problemAny.includes(problem);
+                    return (
+                      <button
+                        key={problem}
+                        type="button"
+                        onClick={() => toggleProblemFilter(problem)}
+                        className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-all"
+                        style={{
+                          borderColor: isSelected
+                            ? 'rgba(34, 211, 238, 0.68)'
+                            : 'rgba(255, 255, 255, 0.18)',
+                          backgroundColor: isSelected
+                            ? 'rgba(34, 211, 238, 0.16)'
+                            : 'rgba(255, 255, 255, 0.05)',
+                          color: isSelected
+                            ? 'rgba(165, 243, 252, 0.96)'
+                            : 'rgba(209, 213, 219, 1)',
+                        }}
+                      >
+                        <span>{tm('problemCategories', problem)}</span>
+                        <span className="text-[11px] text-gray-400">({count})</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </section>
 
@@ -789,7 +865,7 @@ export function SavedSearchesPage({
                 <Loader2 className="spin-loader h-5 w-5" />
                 {t('dashboard.savedLeads.loading')}
               </div>
-            ) : filteredSavedLeads.length === 0 ? (
+            ) : savedLeads.length === 0 ? (
               <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center">
                 <p className="text-base text-gray-200">{t('dashboard.savedLeads.emptyTitle')}</p>
                 <p className="mt-2 text-sm text-gray-400">{t('dashboard.savedLeads.emptySubtitle')}</p>
@@ -829,7 +905,7 @@ export function SavedSearchesPage({
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSavedLeads.map((lead) => (
+                    {savedLeads.map((lead) => (
                       <tr
                         key={lead.savedLeadId}
                         className="group cursor-pointer align-top transition-colors hover:bg-white/[0.03]"
@@ -932,10 +1008,10 @@ export function SavedSearchesPage({
                   totalPages,
                 })}
               </p>
-              {listSearchQuery.trim() ? (
+              {queryApplied || problemAny.length > 0 ? (
                 <p className="text-xs text-gray-500">
                   {t('dashboard.savedLeads.searchMatchesOnPage', {
-                    count: filteredSavedLeads.length,
+                    count: savedLeads.length,
                   })}
                 </p>
               ) : null}

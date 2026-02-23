@@ -4,7 +4,6 @@ import { useI18n } from '../../i18n';
 import {
   getProblemCategoriesForBusinessType,
 } from './businessTypeProblemCatalog';
-import { CONTACT_PREFERENCE_OPTIONS } from './mockData';
 import { SEARCH_SOURCE_OPTIONS } from './searchSources';
 import { DashboardSelect } from './DashboardSelect';
 import { SavedSearch, SearchConfiguration } from './types';
@@ -167,7 +166,7 @@ export function SearchConfigurationPanel({
     }
 
     const parsed = Number.parseInt(digitsOnly, 10);
-    const normalized = Number.isFinite(parsed) ? Math.min(300, parsed) : 20;
+    const normalized = Number.isFinite(parsed) ? Math.min(120, parsed) : 20;
     setMaxResultsDraft(String(normalized));
     onUpdateSearchConfig({
       ...searchConfig,
@@ -177,7 +176,7 @@ export function SearchConfigurationPanel({
 
   const commitMaxResults = () => {
     const parsed = Number.parseInt(maxResultsDraft, 10);
-    const normalized = Number.isFinite(parsed) ? Math.max(20, Math.min(300, parsed)) : 20;
+    const normalized = Number.isFinite(parsed) ? Math.max(20, Math.min(120, parsed)) : 20;
     setMaxResultsDraft(String(normalized));
     onUpdateSearchConfig({
       ...searchConfig,
@@ -340,26 +339,6 @@ export function SearchConfigurationPanel({
             </div>
           </div>
 
-          <div className="space-y-3 md:max-w-md">
-            <label htmlFor="contact-preference" className="block text-sm text-gray-300">
-              {t('dashboard.searchPanel.contactPreferenceLabel')}
-            </label>
-            <DashboardSelect
-              id="contact-preference"
-              value={searchConfig.contactPreference}
-              onValueChange={(nextValue) =>
-                onUpdateSearchConfig({
-                  ...searchConfig,
-                  contactPreference: nextValue as SearchConfiguration['contactPreference'],
-                })
-              }
-              options={CONTACT_PREFERENCE_OPTIONS.map((option) => ({
-                value: option,
-                label: tm('contactPreferences', option),
-              }))}
-            />
-          </div>
-
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -473,7 +452,7 @@ export function SearchConfigurationPanel({
               id="search-max-results"
               type="number"
               min={20}
-              max={300}
+              max={120}
               value={maxResultsDraft}
               onChange={(event) => setMaxResults(event.target.value)}
               onBlur={commitMaxResults}

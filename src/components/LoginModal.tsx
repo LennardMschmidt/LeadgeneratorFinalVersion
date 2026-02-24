@@ -9,6 +9,10 @@ import {
   signInWithGoogle,
   signUpWithEmail,
 } from '../lib/supabaseAuth';
+import {
+  clearPendingCheckout,
+  savePendingCheckout,
+} from '../lib/pendingCheckout';
 import { toFriendlyErrorMessage } from '../lib/errorMessaging';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
 import { AppAlertToast } from './ui/AppAlertToast';
@@ -52,19 +56,21 @@ const FALLBACK_PLANS: BillingPlan[] = [
   },
 ];
 
-const PLAN_VISUALS: Record<
+type PlanVisual = {
+  price: string;
+  period: string;
+  description: string;
+  cta: string;
+  badge?: string;
+  features: string[];
+};
+
+const PLAN_VISUALS_EN: Record<
   BillingPlanCode,
-  {
-    price: string;
-    period: string;
-    description: string;
-    cta: string;
-    badge?: string;
-    features: string[];
-  }
+  PlanVisual
 > = {
   STANDARD: {
-    price: '$29',
+    price: '€29',
     period: '/per month',
     description: 'Perfect to start local outreach with Google Maps and website checks.',
     cta: 'Choose Standard',
@@ -77,7 +83,7 @@ const PLAN_VISUALS: Record<
     ],
   },
   PRO: {
-    price: '$49',
+    price: '€49',
     period: '/per month',
     description:
       'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
@@ -95,7 +101,7 @@ const PLAN_VISUALS: Record<
     ],
   },
   EXPERT: {
-    price: '$79',
+    price: '€79',
     period: '/per month',
     description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     cta: 'Upgrade to Expert',
@@ -109,6 +115,60 @@ const PLAN_VISUALS: Record<
       'AI website summary',
       'AI contact suggestions (email, LinkedIn, phone)',
       'Save qualified leads and export them',
+    ],
+  },
+};
+
+const PLAN_VISUALS_DE: Record<
+  BillingPlanCode,
+  PlanVisual
+> = {
+  STANDARD: {
+    price: '€29',
+    period: '/pro Monat',
+    description: 'Perfekt für den Start mit lokaler Akquise über Google Maps und Website-Checks.',
+    cta: 'Standard wählen',
+    features: [
+      '180 Such-Tokens/Tag',
+      'Keine KI-Auswertungen enthalten',
+      'Google-Maps-Lead-Suche',
+      'Website-Analyse',
+      'Qualifizierte Leads speichern und exportieren',
+    ],
+  },
+  PRO: {
+    price: '€49',
+    period: '/pro Monat',
+    description:
+      'Enthält KI-Website-Analyse und direkte KI-Vorschläge sowie LinkedIn-Profilsuche für smartere Akquise.',
+    cta: 'Zu Pro wechseln',
+    badge: 'BELIEBTESTER TARIF',
+    features: [
+      '380 Such-Tokens/Tag',
+      '500 KI-Auswertungs-Tokens/Monat',
+      'Google-Maps-Lead-Suche',
+      'LinkedIn-Profilsuche',
+      'Website-Analyse',
+      'KI-Website-Zusammenfassung',
+      'KI-Kontaktvorschläge (E-Mail, LinkedIn, Telefon)',
+      'Qualifizierte Leads speichern und exportieren',
+    ],
+  },
+  EXPERT: {
+    price: '€79',
+    period: '/pro Monat',
+    description: 'Maximales Volumen mit KI-Website-Analyse und direkten KI-Vorschlägen im großen Maßstab.',
+    cta: 'Auf Expert upgraden',
+    badge: 'BESTER WERT',
+    features: [
+      '700 Such-Tokens/Tag',
+      '1200 KI-Auswertungs-Tokens/Monat',
+      'Google-Maps-Lead-Suche',
+      'LinkedIn-Profilsuche',
+      'Website-Analyse',
+      'KI-Website-Zusammenfassung',
+      'KI-Kontaktvorschläge (E-Mail, LinkedIn, Telefon)',
+      'Qualifizierte Leads speichern und exportieren',
     ],
   },
 };
@@ -167,7 +227,7 @@ const getAuthFailureMessage = (result: unknown): string => {
 };
 
 export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) {
-  const { t } = useI18n();
+  const { t, language } = useI18n();
 
   const [view, setView] = useState<AuthView>('login');
   const [registerStep, setRegisterStep] = useState<RegisterStep>(1);
@@ -272,6 +332,11 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
       (a, b) => order.indexOf(a.code as BillingPlanCode) - order.indexOf(b.code as BillingPlanCode),
     );
   }, [availablePlans]);
+
+  const localizedPlanVisuals = useMemo<Record<BillingPlanCode, PlanVisual>>(
+    () => (language === 'de' ? PLAN_VISUALS_DE : PLAN_VISUALS_EN),
+    [language],
+  );
 
   useEffect(() => {
     const codes = orderedPlans.map((plan) => plan.code as BillingPlanCode);
@@ -435,6 +500,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     try {
       const result = await signUpWithEmail(email.trim(), password, {
         name: fullName.trim(),
+        redirectPath: '/dashboard',
       });
 
       if (!result.ok) {
@@ -450,17 +516,24 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
           return;
         }
 
-        setStatusMessage(toFriendlyErrorMessage(REGISTER_SIGNUP_FAILED_MESSAGE));
+        setStatusMessage(
+          toFriendlyErrorMessage(failureMessage, REGISTER_SIGNUP_FAILED_MESSAGE),
+        );
         return;
       }
 
       if (result.requiresEmailConfirmation) {
+        savePendingCheckout({
+          plan: selectedPlan,
+          email: email.trim(),
+        });
         setEmailConfirmationNotice({ email: email.trim() });
         setStatusMessage(null);
         setInlineErrors({});
         return;
       }
 
+      clearPendingCheckout();
       const checkout = await createCheckoutSessionInBackend(selectedPlan);
       window.location.assign(checkout.url);
     } catch (error) {
@@ -774,39 +847,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                     >
                       <X className="h-5 w-5" />
                     </button>
-
-                    {emailConfirmationNotice ? (
-                      <div
-                        className="absolute inset-0 z-20 flex items-center justify-center p-4 sm:p-6"
-                        style={{ background: 'rgba(6, 8, 18, 0.68)', backdropFilter: 'blur(4px)' }}
-                      >
-                        <div
-                          className="relative w-full max-w-xl rounded-2xl border p-6 sm:p-7"
-                          style={{
-                            background: 'linear-gradient(145deg, rgba(20, 18, 33, 0.92), rgba(15, 23, 42, 0.88))',
-                            borderColor: 'rgba(96, 165, 250, 0.45)',
-                            boxShadow:
-                              '0 0 0 1px rgba(96, 165, 250, 0.35), 0 0 42px rgba(59, 130, 246, 0.28)',
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={onClose}
-                            aria-label={t('login.close')}
-                            className="absolute text-gray-300 transition-colors hover:text-white"
-                            style={{ right: '1rem', top: '1rem' }}
-                          >
-                            <X className="h-5 w-5" />
-                          </button>
-                          <h3 className="mb-2 pr-8 text-2xl font-semibold text-white">You're almost there</h3>
-                          <p className="text-sm leading-relaxed text-gray-200">
-                            Just confirm your account by clicking the link we sent to{' '}
-                            <span className="font-medium text-blue-200">{emailConfirmationNotice.email}</span>.
-                          </p>
-                          <p className="mt-3 text-sm text-gray-300">After confirming, you can log in right away.</p>
-                        </div>
-                      </div>
-                    ) : null}
 
                     <div className="mb-6">
                       <h2 className="mb-2 text-2xl text-white">Create your account</h2>
@@ -1281,6 +1321,265 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
               )}
             </AnimatePresence>
           </div>
+          <AnimatePresence>
+            {emailConfirmationNotice ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed inset-0 flex items-center justify-center p-4 sm:p-6"
+                onClick={onClose}
+                style={{
+                  zIndex: 10001,
+                  pointerEvents: 'auto',
+                  background: 'rgba(2, 8, 25, 0.8)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  overflow: 'hidden',
+                }}
+              >
+                <motion.div
+                  aria-hidden="true"
+                  className="absolute rounded-full"
+                  style={{
+                    width: 520,
+                    height: 520,
+                    top: '-180px',
+                    right: '-140px',
+                    background:
+                      'radial-gradient(circle, rgba(56, 189, 248, 0.32) 0%, rgba(56, 189, 248, 0) 70%)',
+                    filter: 'blur(6px)',
+                  }}
+                  animate={{ opacity: [0.46, 0.8, 0.46], scale: [0.94, 1.06, 0.94] }}
+                  transition={{ duration: 5.4, repeat: Infinity, ease: 'easeInOut' }}
+                />
+
+                <motion.div
+                  aria-hidden="true"
+                  className="absolute rounded-full"
+                  style={{
+                    width: 460,
+                    height: 460,
+                    bottom: '-170px',
+                    left: '-120px',
+                    background:
+                      'radial-gradient(circle, rgba(139, 92, 246, 0.26) 0%, rgba(139, 92, 246, 0) 72%)',
+                    filter: 'blur(10px)',
+                  }}
+                  animate={{ opacity: [0.42, 0.7, 0.42], scale: [1.03, 0.94, 1.03] }}
+                  transition={{ duration: 6.2, repeat: Infinity, ease: 'easeInOut' }}
+                />
+
+                <motion.div
+                  initial={{ opacity: 0, y: 22, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 14, scale: 0.98 }}
+                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                  onClick={(event) => event.stopPropagation()}
+                  className="relative w-full overflow-hidden rounded-3xl border p-6 sm:p-8"
+                  style={{
+                    maxWidth: '780px',
+                    borderColor: 'rgba(96, 165, 250, 0.45)',
+                    background:
+                      'linear-gradient(152deg, rgba(17, 24, 39, 0.95), rgba(13, 20, 44, 0.94) 58%, rgba(22, 28, 56, 0.95) 100%)',
+                    boxShadow:
+                      '0 0 0 1px rgba(96, 165, 250, 0.35), 0 24px 70px rgba(2, 6, 23, 0.62), 0 0 60px rgba(59, 130, 246, 0.22)',
+                  }}
+                >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      background:
+                        'linear-gradient(120deg, rgba(56, 189, 248, 0.1), rgba(139, 92, 246, 0.06) 45%, rgba(56, 189, 248, 0.12) 100%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label={t('login.close')}
+                    className="absolute transition-colors hover:text-white"
+                    style={{
+                      right: '1rem',
+                      top: '1rem',
+                      zIndex: 2,
+                      color: 'rgba(203, 213, 225, 0.88)',
+                    }}
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+
+                  <div
+                    className="relative"
+                    style={{ zIndex: 1, display: 'flex', flexDirection: 'column', gap: 18 }}
+                  >
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        borderRadius: 9999,
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        background:
+                          'linear-gradient(135deg, rgba(30, 64, 175, 0.4), rgba(139, 92, 246, 0.24))',
+                        color: 'rgb(226, 232, 240)',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        letterSpacing: 0.2,
+                        padding: '7px 14px',
+                        width: 'fit-content',
+                      }}
+                    >
+                      Account confirmation needed
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '64px 1fr', gap: 16 }}>
+                      <motion.div
+                        aria-hidden="true"
+                        style={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: 18,
+                          border: '1px solid rgba(147, 197, 253, 0.42)',
+                          display: 'grid',
+                          placeItems: 'center',
+                          background:
+                            'linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(139, 92, 246, 0.85))',
+                          color: 'white',
+                          boxShadow:
+                            '0 10px 28px rgba(56, 189, 248, 0.33), 0 8px 24px rgba(139, 92, 246, 0.24)',
+                        }}
+                        animate={{
+                          boxShadow: [
+                            '0 10px 28px rgba(56, 189, 248, 0.33), 0 8px 24px rgba(139, 92, 246, 0.24)',
+                            '0 14px 36px rgba(56, 189, 248, 0.5), 0 12px 32px rgba(139, 92, 246, 0.32)',
+                            '0 10px 28px rgba(56, 189, 248, 0.33), 0 8px 24px rgba(139, 92, 246, 0.24)',
+                          ],
+                          scale: [1, 1.035, 1],
+                        }}
+                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                      >
+                        <Mail className="h-7 w-7" />
+                      </motion.div>
+
+                      <div>
+                        <h3
+                          style={{
+                            margin: 0,
+                            marginBottom: 10,
+                            color: 'rgb(248, 250, 252)',
+                            fontSize: 'clamp(2rem, 3vw, 2.7rem)',
+                            lineHeight: 1.08,
+                            letterSpacing: '-0.02em',
+                            fontWeight: 700,
+                          }}
+                        >
+                          You&apos;re almost there
+                        </h3>
+                        <p
+                          style={{
+                            margin: 0,
+                            color: 'rgba(226, 232, 240, 0.94)',
+                            fontSize: 17,
+                            lineHeight: 1.55,
+                          }}
+                        >
+                          Just confirm your account by clicking the link we sent to{' '}
+                          <span style={{ color: 'rgba(147, 197, 253, 0.98)', fontWeight: 500 }}>
+                            {emailConfirmationNotice.email}
+                          </span>
+                          .
+                        </p>
+                        <p
+                          style={{
+                            marginTop: 8,
+                            marginBottom: 0,
+                            color: 'rgba(203, 213, 225, 0.9)',
+                            fontSize: 16,
+                            lineHeight: 1.55,
+                          }}
+                        >
+                          After confirming, you can log in right away.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'grid',
+                        gap: 10,
+                        padding: '14px 14px',
+                        borderRadius: 14,
+                        border: '1px solid rgba(148, 163, 184, 0.23)',
+                        background: 'rgba(15, 23, 42, 0.5)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '24px 1fr',
+                          gap: 10,
+                          alignItems: 'start',
+                          color: 'rgba(203, 213, 225, 0.95)',
+                          fontSize: 14,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 9999,
+                            display: 'grid',
+                            placeItems: 'center',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: 'white',
+                            background:
+                              'linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(139, 92, 246, 0.82))',
+                          }}
+                        >
+                          1
+                        </span>
+                        Check your inbox and click the verification link.
+                      </div>
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '24px 1fr',
+                          gap: 10,
+                          alignItems: 'start',
+                          color: 'rgba(203, 213, 225, 0.95)',
+                          fontSize: 14,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 9999,
+                            display: 'grid',
+                            placeItems: 'center',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: 'white',
+                            background:
+                              'linear-gradient(135deg, rgba(56, 189, 248, 0.95), rgba(139, 92, 246, 0.82))',
+                          }}
+                        >
+                          2
+                        </span>
+                        Then log in to continue with your subscription setup.
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
           <AppAlertToast
             message={statusMessage}
             onClose={() => setStatusMessage(null)}

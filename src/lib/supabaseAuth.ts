@@ -263,6 +263,17 @@ const parseUserFromPayload = (payload: SupabaseAuthResponse | null): AuthUser | 
   return null;
 };
 
+const isRedirectConfigurationError = (message: string): boolean => {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("redirect") &&
+    (normalized.includes("not allowed") ||
+      normalized.includes("allow list") ||
+      normalized.includes("allowlist") ||
+      normalized.includes("invalid"))
+  );
+};
+
 const toStoredSession = (payload: SupabaseAuthResponse): StoredSession | null => {
   const source = payload.session ?? payload;
   if (!source || typeof source !== 'object') {
@@ -426,7 +437,7 @@ export const getSupabaseAccessToken = async (): Promise<string | null> => {
 export const signUpWithEmail = async (
   email: string,
   password: string,
-  options?: { rememberMe?: boolean; name?: string },
+  options?: { rememberMe?: boolean; name?: string; redirectPath?: string },
 ): Promise<AuthActionResult> => {
   if (!hasSupabaseConfig()) {
     return {
@@ -437,15 +448,38 @@ export const signUpWithEmail = async (
 
   const mode = setSessionStorageMode();
 
-  const response = await authRequest('signup', {
-    body: {
-      email,
-      password,
-      ...(options?.name && options.name.trim().length > 0
-        ? { data: { full_name: options.name.trim() } }
-        : {}),
-    },
+  const requestedPath = options?.redirectPath ?? '/dashboard';
+  const normalizedPath = requestedPath.startsWith('/') ? requestedPath : '/dashboard';
+  const redirectTo = isBrowser ? `${window.location.origin}${normalizedPath}` : null;
+  const signUpBody: Record<string, unknown> = {
+    email,
+    password,
+    ...(options?.name && options.name.trim().length > 0
+      ? { data: { full_name: options.name.trim() } }
+      : {}),
+  };
+  if (redirectTo) {
+    signUpBody.email_redirect_to = redirectTo;
+  }
+
+  let response = await authRequest('signup', {
+    body: signUpBody,
   });
+
+  if (!response.ok && redirectTo) {
+    const firstFailureMessage = parseErrorMessage(response.payload);
+    if (isRedirectConfigurationError(firstFailureMessage)) {
+      response = await authRequest('signup', {
+        body: {
+          email,
+          password,
+          ...(options?.name && options.name.trim().length > 0
+            ? { data: { full_name: options.name.trim() } }
+            : {}),
+        },
+      });
+    }
+  }
 
   if (!response.ok) {
     return {
@@ -471,6 +505,15 @@ export const signUpWithEmail = async (
     ok: true,
     requiresEmailConfirmation: true,
   };
+};
+
+export const getSupabaseSessionUser = (): AuthUser | null => {
+  const existing = readStoredSession();
+  if (!existing) {
+    return null;
+  }
+
+  return existing.session.user;
 };
 
 export const signInWithEmail = async (

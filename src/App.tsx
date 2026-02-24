@@ -18,7 +18,17 @@ import { BusinessProfilePage } from './components/dashboard/BusinessProfilePage'
 import { SavedSearchesPage } from './components/dashboard/SavedSearchesPage';
 import { BillingPage } from './components/dashboard/BillingPage';
 import { AccountSettingsPage } from './components/dashboard/AccountSettingsPage';
-import { restoreSupabaseSession, signOutFromSupabase } from './lib/supabaseAuth';
+import {
+  BackendApiError,
+  createCheckoutSessionInBackend,
+  fetchAccountDetailsFromBackend,
+} from './components/dashboard/api';
+import { clearPendingCheckout, getPendingCheckout } from './lib/pendingCheckout';
+import {
+  getSupabaseSessionUser,
+  restoreSupabaseSession,
+  signOutFromSupabase,
+} from './lib/supabaseAuth';
 
 type AppRoute =
   | '/'
@@ -121,6 +131,8 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isResumingPendingCheckout, setIsResumingPendingCheckout] = useState(false);
+  const [hasBillingAccess, setHasBillingAccess] = useState<boolean | null>(null);
   const [route, setRoute] = useState<AppRoute>(() =>
     getRouteFromPathname(normalizeRecoveryRouteFromHash()),
   );
@@ -132,6 +144,10 @@ export default function App() {
       const hasSession = await restoreSupabaseSession();
       if (!isMounted) {
         return;
+      }
+
+      if (hasSession && getPendingCheckout()) {
+        setIsResumingPendingCheckout(true);
       }
 
       setIsAuthenticated(hasSession);
@@ -163,7 +179,146 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (isAuthLoading || isAuthenticated) {
+      return;
+    }
+
+    let isMounted = true;
+
+    const refreshAuthFromStorage = async () => {
+      const hasSession = await restoreSupabaseSession();
+      if (!isMounted || !hasSession) {
+        return;
+      }
+
+      if (getPendingCheckout()) {
+        setIsResumingPendingCheckout(true);
+      }
+      setIsAuthenticated(true);
+      setIsLoginOpen(false);
+    };
+
+    const handleFocus = () => {
+      void refreshAuthFromStorage();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        void refreshAuthFromStorage();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthLoading, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthLoading || !isAuthenticated) {
+      return;
+    }
+
+    const pendingCheckout = getPendingCheckout();
+    if (!pendingCheckout) {
+      setIsResumingPendingCheckout(false);
+      return;
+    }
+
+    const sessionUser = getSupabaseSessionUser();
+    if (
+      sessionUser?.email &&
+      sessionUser.email.trim().toLowerCase() !== pendingCheckout.email
+    ) {
+      clearPendingCheckout();
+      setIsResumingPendingCheckout(false);
+      return;
+    }
+
+    let isMounted = true;
+    setIsResumingPendingCheckout(true);
+    setIsLoginOpen(false);
+
+    const resumeCheckout = async () => {
+      try {
+        const checkout = await createCheckoutSessionInBackend(pendingCheckout.plan);
+        clearPendingCheckout();
+        window.location.assign(checkout.url);
+        return;
+      } catch (error) {
+        clearPendingCheckout();
+        if (
+          isMounted &&
+          error instanceof BackendApiError &&
+          error.code === 'SUBSCRIPTION_ALREADY_ACTIVE'
+        ) {
+          navigate('/dashboard');
+        }
+      } finally {
+        if (isMounted) {
+          setIsResumingPendingCheckout(false);
+        }
+      }
+    };
+
+    void resumeCheckout();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthLoading, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthLoading || !isAuthenticated) {
+      setHasBillingAccess(null);
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadBillingAccess = async () => {
+      try {
+        const account = await fetchAccountDetailsFromBackend();
+        if (!isMounted) {
+          return;
+        }
+
+        const status = account.subscriptionStatus.toLowerCase();
+        const periodEnd = account.currentPeriodEnd
+          ? Date.parse(account.currentPeriodEnd)
+          : Number.NaN;
+        const hasFuturePeriodEnd = Number.isFinite(periodEnd) && periodEnd > Date.now();
+        const canUseApp =
+          status === 'active' ||
+          status === 'trialing' ||
+          status === 'past_due' ||
+          (status === 'cancelled' && hasFuturePeriodEnd);
+        setHasBillingAccess(canUseApp);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setHasBillingAccess(null);
+      }
+    };
+
+    void loadBillingAccess();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthLoading, isAuthenticated, route]);
+
+  useEffect(() => {
     if (isAuthLoading) {
+      return;
+    }
+
+    if (isResumingPendingCheckout) {
       return;
     }
 
@@ -184,14 +339,29 @@ export default function App() {
 
     if (route === '__protected_unknown__' && isAuthenticated) {
       navigate('/dashboard');
+      return;
     }
-  }, [route, isAuthenticated, isAuthLoading]);
+
+    if (
+      isAuthenticated &&
+      hasBillingAccess === false &&
+      route !== '/billing' &&
+      route !== '/billing/success' &&
+      route !== '/billing/cancel' &&
+      route !== '/billing/portal-return'
+    ) {
+      navigate('/billing');
+    }
+  }, [route, isAuthenticated, isAuthLoading, hasBillingAccess, isResumingPendingCheckout]);
 
   const openLoginModal = () => {
     setIsLoginOpen(true);
   };
 
   const handleAuthenticated = () => {
+    if (getPendingCheckout()) {
+      setIsResumingPendingCheckout(true);
+    }
     setIsAuthenticated(true);
     setIsLoginOpen(false);
     navigate('/dashboard');
@@ -200,6 +370,7 @@ export default function App() {
   const handleLogout = async () => {
     await signOutFromSupabase();
     setIsAuthenticated(false);
+    setIsResumingPendingCheckout(false);
     setIsLoginOpen(false);
     navigate('/');
   };
@@ -209,17 +380,56 @@ export default function App() {
     setIsLoginOpen(true);
   };
 
-  const showDashboard = route === '/dashboard' && isAuthenticated;
-  const showBusinessProfile = route === '/business-profile' && isAuthenticated;
-  const showSavedSearches = route === '/saved-searches' && isAuthenticated;
+  const hasFeatureAccess = hasBillingAccess === true;
+  const showDashboard = route === '/dashboard' && isAuthenticated && hasFeatureAccess;
+  const showBusinessProfile =
+    route === '/business-profile' && isAuthenticated && hasFeatureAccess;
+  const showSavedSearches =
+    route === '/saved-searches' && isAuthenticated && hasFeatureAccess;
   const showBilling = route === '/billing' && isAuthenticated;
   const showBillingSuccess = route === '/billing/success';
   const showBillingCancel = route === '/billing/cancel';
   const showBillingPortalReturn = route === '/billing/portal-return';
-  const showAccountSettings = route === '/account-settings' && isAuthenticated;
+  const showAccountSettings =
+    route === '/account-settings' && isAuthenticated && hasFeatureAccess;
   const showResetPassword = route === '/reset-password';
   const showImpressum = route === '/impressum';
   const showDatenschutz = route === '/datenschutz';
+
+  if (isResumingPendingCheckout && isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] text-white">
+        <div
+          className="fixed inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.18), transparent 45%), radial-gradient(circle at 82% 88%, rgba(139, 92, 246, 0.16), transparent 44%)',
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (
+    isAuthenticated &&
+    hasBillingAccess === null &&
+    (route === '/dashboard' ||
+      route === '/business-profile' ||
+      route === '/saved-searches' ||
+      route === '/account-settings')
+  ) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0f] text-white">
+        <div
+          className="fixed inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.18), transparent 45%), radial-gradient(circle at 82% 88%, rgba(139, 92, 246, 0.16), transparent 44%)',
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white">

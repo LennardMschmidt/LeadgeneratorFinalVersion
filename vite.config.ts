@@ -3,9 +3,10 @@
   import react from '@vitejs/plugin-react-swc';
   import path from 'path';
 
-  const backendProxyTarget = process.env.VITE_API_PROXY_TARGET?.trim() || 'http://localhost:4000';
+  const backendProxyTarget = 'http://localhost:4000';
 
   export default defineConfig({
+    base: '/LeadgeneratorFinalVersion/',
     plugins: [react()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],

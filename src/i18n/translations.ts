@@ -208,6 +208,60 @@ export const translations = {
         },
       ],
     },
+    subscriptionPlans: {
+      intro: 'Choose the plan that fits your needs',
+      selected: 'Selected',
+      plans: {
+        STANDARD: {
+          price: '€29',
+          period: 'per month',
+          description: 'Perfect to start local outreach with Google Maps and website checks.',
+          cta: 'Choose Standard',
+          features: [
+            '180 search tokens/day',
+            'AI evaluations not included',
+            'Google Maps lead search',
+            'Website analysis',
+            'Save qualified leads and export them',
+          ],
+        },
+        PRO: {
+          price: '€49',
+          period: 'per month',
+          description:
+            'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
+          cta: 'Switch to Pro',
+          badge: 'MOST POPULAR',
+          features: [
+            '380 search tokens/day',
+            '500 AI evaluation tokens/month',
+            'Google Maps lead search',
+            'LinkedIn profile discovery',
+            'Website analysis',
+            'AI website summary',
+            'AI contact suggestions (email, LinkedIn, phone)',
+            'Save qualified leads and export them',
+          ],
+        },
+        EXPERT: {
+          price: '€79',
+          period: 'per month',
+          description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
+          cta: 'Upgrade to Expert',
+          badge: 'BEST VALUE',
+          features: [
+            '700 search tokens/day',
+            '1200 AI evaluation tokens/month',
+            'Google Maps lead search',
+            'LinkedIn profile discovery',
+            'Website analysis',
+            'AI website summary',
+            'AI contact suggestions (email, LinkedIn, phone)',
+            'Save qualified leads and export them',
+          ],
+        },
+      },
+    },
     footer: {
       disclaimer:
         'Lead Generator analyzes publicly available business information including websites, ratings, and social media presence. All data is sourced from public directories and platforms.',
@@ -251,7 +305,7 @@ export const translations = {
       alreadyHaveAccount: 'Already have an account? Log in',
       authenticating: 'Authenticating...',
       authNotConfigured:
-        'Auth is not configured yet. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in frontend env.',
+        'Authentication is currently disabled in this hosted build.',
       googleLoginClicked:
         'Redirecting to Google login...',
       googleRegisterClicked:
@@ -1043,6 +1097,61 @@ export const translations = {
         },
       ],
     },
+    subscriptionPlans: {
+      intro: 'Wähle den Tarif, der zu dir passt',
+      selected: 'Ausgewählt',
+      plans: {
+        STANDARD: {
+          price: '€29',
+          period: 'pro Monat',
+          description: 'Perfekt für den Einstieg in lokale Akquise mit Google Maps und Website-Checks.',
+          cta: 'Standard wählen',
+          features: [
+            '180 Such-Tokens/Tag',
+            'Keine KI-Auswertungen enthalten',
+            'Google-Maps-Lead-Suche',
+            'Website-Analyse',
+            'Qualifizierte Leads speichern und exportieren',
+          ],
+        },
+        PRO: {
+          price: '€49',
+          period: 'pro Monat',
+          description:
+            'Mit KI-Website-Analyse, direkten KI-Vorschlägen und LinkedIn-Profilsuche für smartere Akquise.',
+          cta: 'Zu Pro wechseln',
+          badge: 'AM BELIEBTESTEN',
+          features: [
+            '380 Such-Tokens/Tag',
+            '500 KI-Evaluation-Tokens/Monat',
+            'Google-Maps-Lead-Suche',
+            'LinkedIn-Profilsuche',
+            'Website-Analyse',
+            'KI-Website-Zusammenfassung',
+            'KI-Kontaktvorschläge (E-Mail, LinkedIn, Telefon)',
+            'Qualifizierte Leads speichern und exportieren',
+          ],
+        },
+        EXPERT: {
+          price: '€79',
+          period: 'pro Monat',
+          description:
+            'Maximales Volumen mit KI-Website-Analyse und direkten KI-Vorschlägen im großen Maßstab.',
+          cta: 'Auf Expert upgraden',
+          badge: 'BESTER WERT',
+          features: [
+            '700 Such-Tokens/Tag',
+            '1200 KI-Evaluation-Tokens/Monat',
+            'Google-Maps-Lead-Suche',
+            'LinkedIn-Profilsuche',
+            'Website-Analyse',
+            'KI-Website-Zusammenfassung',
+            'KI-Kontaktvorschläge (E-Mail, LinkedIn, Telefon)',
+            'Qualifizierte Leads speichern und exportieren',
+          ],
+        },
+      },
+    },
     footer: {
       disclaimer:
         'Lead Generator analysiert öffentlich verfügbare Unternehmensdaten wie Websites, Bewertungen und Social-Media-Präsenz. Alle Daten stammen aus öffentlichen Verzeichnissen und Plattformen.',
@@ -1088,7 +1197,7 @@ export const translations = {
       alreadyHaveAccount: 'Du hast schon ein Konto? Einloggen',
       authenticating: 'Authentifizierung...',
       authNotConfigured:
-        'Auth ist noch nicht konfiguriert. Setze VITE_SUPABASE_URL und VITE_SUPABASE_PUBLISHABLE_KEY in den Frontend-Umgebungsvariablen.',
+        'Authentifizierung ist in diesem gehosteten Build derzeit deaktiviert.',
       googleLoginClicked:
         'Weiterleitung zum Google-Login...',
       googleRegisterClicked:

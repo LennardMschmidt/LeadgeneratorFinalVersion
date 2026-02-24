@@ -14,8 +14,9 @@ import {
 } from './types';
 import { canonicalizeSearchSource } from './searchSources';
 import { getSupabaseAccessToken } from '../../lib/supabaseAuth';
+import { HOSTING_CONFIG } from '../../config/hostingConfig';
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
+const API_BASE_URL = HOSTING_CONFIG.apiBaseUrl.trim().replace(/\/+$/, '');
 
 const API_LEAD_STATUSES: LeadStatus[] = ['New', 'Pending', 'Contacted', 'Won', 'Lost', 'Archived'];
 const API_LEAD_TIERS: LeadTier[] = ['Tier 1', 'Tier 2', 'Tier 3'];

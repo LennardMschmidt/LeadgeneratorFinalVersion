@@ -63,8 +63,8 @@ const PLAN_VISUALS: Record<
   }
 > = {
   STANDARD: {
-    price: '$29',
-    period: '/per month',
+    price: '€29',
+    period: 'per month',
     description: 'Perfect to start local outreach with Google Maps and website checks.',
     cta: 'Choose Standard',
     features: [
@@ -76,8 +76,8 @@ const PLAN_VISUALS: Record<
     ],
   },
   PRO: {
-    price: '$49',
-    period: '/per month',
+    price: '€49',
+    period: 'per month',
     description:
       'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
     cta: 'Switch to Pro',
@@ -94,8 +94,8 @@ const PLAN_VISUALS: Record<
     ],
   },
   EXPERT: {
-    price: '$79',
-    period: '/per month',
+    price: '€79',
+    period: 'per month',
     description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     cta: 'Upgrade to Expert',
     badge: 'BEST VALUE',
@@ -181,7 +181,7 @@ const getAuthFailureMessage = (result: unknown): string => {
 };
 
 export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) {
-  const { t } = useI18n();
+  const { t, raw } = useI18n();
 
   const [view, setView] = useState<AuthView>('login');
   const [registerStep, setRegisterStep] = useState<RegisterStep>(1);
@@ -203,6 +203,8 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   const [inlineErrors, setInlineErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailConfirmationNotice, setEmailConfirmationNotice] = useState<{ email: string } | null>(null);
+  const localizedPlanVisuals =
+    raw<typeof PLAN_VISUALS | undefined>('subscriptionPlans.plans') ?? PLAN_VISUALS;
 
   const clearExistingAccountInlineError = () => {
     setInlineErrors((current) => {
@@ -1108,12 +1110,12 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                             className="space-y-4"
                             style={{ marginBottom: '40px' }}
                           >
-                            <p className="mb-4 text-gray-300">Choose the plan that fits your needs</p>
+                            <p className="mb-4 text-gray-300">{t('subscriptionPlans.intro')}</p>
                             <LayoutGroup id="register-plan-selection">
                               <div className="grid gap-6 md:grid-cols-3">
                                 {orderedPlans.map((plan) => {
                                   const code = plan.code as BillingPlanCode;
-                                  const visual = PLAN_VISUALS[code];
+                                  const visual = localizedPlanVisuals[code];
                                   const isCurrent = selectedPlan === code;
                                   const isPro = code === 'PRO';
                                   const isExpert = code === 'EXPERT';
@@ -1215,7 +1217,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                                 : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                                           } disabled:cursor-not-allowed disabled:opacity-60`}
                                         >
-                                          {isCurrent ? 'Selected' : visual.cta}
+                                          {isCurrent ? t('subscriptionPlans.selected') : visual.cta}
                                         </button>
 
                                         <ul className="space-y-4">

@@ -24,20 +24,22 @@ interface BillingPageProps {
 
 const planOrder: Array<'STANDARD' | 'PRO' | 'EXPERT'> = ['STANDARD', 'PRO', 'EXPERT'];
 
-const billingPlanVisuals: Record<
+type SubscriptionPlanVisual = {
+  price: string;
+  period: string;
+  description: string;
+  cta: string;
+  badge?: string;
+  features: string[];
+};
+
+const FALLBACK_SUBSCRIPTION_PLAN_VISUALS: Record<
   'STANDARD' | 'PRO' | 'EXPERT',
-  {
-    price: string;
-    period: string;
-    description: string;
-    cta: string;
-    badge?: string;
-    features: string[];
-  }
+  SubscriptionPlanVisual
 > = {
   STANDARD: {
-    price: '$29',
-    period: '/per month',
+    price: '€29',
+    period: 'per month',
     description: 'Perfect to start local outreach with Google Maps and website checks.',
     cta: 'Choose Standard',
     features: [
@@ -49,8 +51,8 @@ const billingPlanVisuals: Record<
     ],
   },
   PRO: {
-    price: '$49',
-    period: '/per month',
+    price: '€49',
+    period: 'per month',
     description:
       'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
     cta: 'Switch to Pro',
@@ -67,8 +69,8 @@ const billingPlanVisuals: Record<
     ],
   },
   EXPERT: {
-    price: '$79',
-    period: '/per month',
+    price: '€79',
+    period: 'per month',
     description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     cta: 'Upgrade to Expert',
     badge: 'BEST VALUE',
@@ -410,7 +412,7 @@ export function BillingPage({
   onNavigateAccountSettings,
   onLogout,
 }: BillingPageProps) {
-  const { t } = useI18n();
+  const { t, raw } = useI18n();
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [usage, setUsage] = useState<BillingUsage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -423,6 +425,10 @@ export function BillingPage({
   const [mockExpiry, setMockExpiry] = useState('12/29');
   const [mockCvc, setMockCvc] = useState('123');
   const [mockCardholderName, setMockCardholderName] = useState('Lead Generator User');
+  const subscriptionPlanVisuals =
+    raw<Record<'STANDARD' | 'PRO' | 'EXPERT', SubscriptionPlanVisual> | undefined>(
+      'subscriptionPlans.plans',
+    ) ?? FALLBACK_SUBSCRIPTION_PLAN_VISUALS;
 
   const orderedPlans = useMemo(
     () =>
@@ -580,7 +586,7 @@ export function BillingPage({
               {orderedPlans.map((plan) => {
                 const isCurrent = usage?.plan === plan.code;
                 const isPending = isChangingPlan === plan.code;
-                const visual = billingPlanVisuals[plan.code as 'STANDARD' | 'PRO' | 'EXPERT'];
+                const visual = subscriptionPlanVisuals[plan.code as 'STANDARD' | 'PRO' | 'EXPERT'];
                 const isPro = plan.code === 'PRO';
                 const isExpert = plan.code === 'EXPERT';
                 const showPlanBadge = Boolean(visual.badge) && !isExpert;

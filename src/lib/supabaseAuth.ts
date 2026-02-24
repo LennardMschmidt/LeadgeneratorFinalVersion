@@ -1,3 +1,5 @@
+import { HOSTING_CONFIG } from '../config/hostingConfig';
+
 type AuthUser = {
   id: string;
   email: string | null;
@@ -26,11 +28,10 @@ const SESSION_STORAGE_KEY = 'leadgen.auth.session';
 const SESSION_STORAGE_MODE_KEY = 'leadgen.auth.session_mode';
 const EXPIRY_REFRESH_BUFFER_SECONDS = 30;
 
-const getSupabaseUrl = (): string => (import.meta.env.VITE_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
+const getSupabaseUrl = (): string => HOSTING_CONFIG.supabaseUrl.trim().replace(/\/+$/, '');
 
 const getSupabasePublishableKey = (): string =>
-  (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY ?? '')
-    .trim();
+  (HOSTING_CONFIG.supabasePublishableKey || HOSTING_CONFIG.supabaseAnonKey || '').trim();
 
 const isBrowser = typeof window !== 'undefined';
 

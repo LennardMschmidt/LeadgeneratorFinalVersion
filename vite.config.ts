@@ -3,7 +3,7 @@
   import react from '@vitejs/plugin-react-swc';
   import path from 'path';
 
-  const backendProxyTarget = process.env.VITE_API_PROXY_TARGET?.trim() || 'http://localhost:4000';
+  const backendProxyTarget = process.env.VITE_API_PROXY_TARGET?.trim() || 'http://127.0.0.1:4000';
 
   export default defineConfig({
     plugins: [react()],

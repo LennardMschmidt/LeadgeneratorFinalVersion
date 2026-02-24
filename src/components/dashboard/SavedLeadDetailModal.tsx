@@ -156,11 +156,6 @@ const META_LABEL_STYLE: CSSProperties = {
   fontWeight: 600,
 };
 
-const PROBLEM_CHIP_CLASS =
-  'rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-300';
-const PROBLEM_CHIP_EMPTY_CLASS =
-  'rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300';
-
 const FIGMA_BUTTON_BASE_STYLE: CSSProperties = {
   minHeight: '2.5rem',
   padding: '0.55rem 1rem',
@@ -212,6 +207,8 @@ const AI_CONTACT_CHANNELS: Array<{
   { channel: 'phone', labelKey: 'dashboard.savedLeads.detailModal.aiContact.channels.phone' },
 ];
 
+const NO_WEBSITE_PROBLEM_KEYS = new Set(['no website', 'no website linked']);
+
 const copyToClipboard = async (value: string): Promise<boolean> => {
   if (!value.trim()) {
     return false;
@@ -260,6 +257,7 @@ interface SavedLeadDetailModalProps {
   scoreDenominator: number;
   statusUpdating: boolean;
   deleting: boolean;
+  canUseAiEvaluations?: boolean;
   websiteAnalysisLoading?: boolean;
   aiSummaryLoading?: boolean;
   aiContactSuggestionLoadingByChannel?: Partial<Record<AiContactSuggestionChannel, boolean>>;
@@ -444,6 +442,7 @@ export function SavedLeadDetailModal({
   scoreDenominator,
   statusUpdating,
   deleting,
+  canUseAiEvaluations = false,
   websiteAnalysisLoading = false,
   aiSummaryLoading = false,
   aiContactSuggestionLoadingByChannel,
@@ -479,13 +478,29 @@ export function SavedLeadDetailModal({
       ? lead.contactAiSuggestions[selectedAiChannel]
       : '';
   const hasWebsiteAnalysis = !!lead.websiteAnalysis;
-  const canGenerateAiContact = hasWebsiteAnalysis && typeof onGenerateAiContactSuggestion === 'function';
+  const canGenerateWithoutWebsiteAnalysis = lead.problems.some((problem) =>
+    NO_WEBSITE_PROBLEM_KEYS.has(problem.trim().toLowerCase()),
+  );
+  const isAiPlanLocked = !canUseAiEvaluations;
+  const canGenerateAiContact =
+    (hasWebsiteAnalysis || canGenerateWithoutWebsiteAnalysis) &&
+    !isAiPlanLocked &&
+    typeof onGenerateAiContactSuggestion === 'function';
   const anyAiContactSuggestionLoading = Object.values(aiContactSuggestionLoadingByChannel ?? {}).some(Boolean);
   const isSelectedAiChannelLoading = !!aiContactSuggestionLoadingByChannel?.[selectedAiChannel];
 
   const requestAiSuggestion = async () => {
     const channel = selectedAiChannel;
-    if (!onGenerateAiContactSuggestion || !hasWebsiteAnalysis) {
+    if (isAiPlanLocked) {
+      setAiSuggestionError(t('dashboard.savedLeads.aiUpgradeRequired'));
+      setShowUpgradePrompt(true);
+      return;
+    }
+
+    if (
+      !onGenerateAiContactSuggestion ||
+      (!hasWebsiteAnalysis && !canGenerateWithoutWebsiteAnalysis)
+    ) {
       return;
     }
 
@@ -501,7 +516,7 @@ export function SavedLeadDetailModal({
           ? error.message
           : t('dashboard.savedLeads.detailModal.aiContact.errors.default');
       setAiSuggestionError(message);
-      if (/insufficient|remaining|token|limit/i.test(message)) {
+      if (/insufficient|remaining|token|limit|feature|plan/i.test(message)) {
         setShowUpgradePrompt(true);
       }
     }
@@ -755,12 +770,15 @@ export function SavedLeadDetailModal({
                   <div className="flex flex-wrap" style={{ gap: '0.55rem' }}>
                     {lead.problems.length > 0 ? (
                       lead.problems.map((problem) => (
-                        <span key={`${lead.savedLeadId}-${problem}`} className={PROBLEM_CHIP_CLASS}>
+                        <span
+                          key={`${lead.savedLeadId}-${problem}`}
+                          className="px-3 py-1 rounded-lg bg-red-500/10 text-red-300 text-xs font-medium border border-red-500/20"
+                        >
                           {tm('problemCategories', problem)}
                         </span>
                       ))
                     ) : (
-                      <span className={PROBLEM_CHIP_EMPTY_CLASS}>
+                      <span className="px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 text-xs font-medium border border-emerald-500/20">
                         {t('dashboard.savedLeads.detailModal.noProblemsDetected')}
                       </span>
                     )}
@@ -949,16 +967,22 @@ export function SavedLeadDetailModal({
                       <button
                         key={`${lead.savedLeadId}-ai-contact-${channel}`}
                         type="button"
-                        disabled={!hasWebsiteAnalysis || anyAiContactSuggestionLoading}
+                        disabled={
+                          isAiPlanLocked ||
+                          (!hasWebsiteAnalysis && !canGenerateWithoutWebsiteAnalysis) ||
+                          anyAiContactSuggestionLoading
+                        }
                         onClick={() => {
                           setSelectedAiChannel(channel);
                           setAiSuggestionError(null);
                           setCopySuccessMessage(null);
                         }}
                         title={
-                          !hasWebsiteAnalysis
-                            ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
-                            : undefined
+                          isAiPlanLocked
+                            ? t('dashboard.savedLeads.aiUpgradeRequired')
+                            : !hasWebsiteAnalysis && !canGenerateWithoutWebsiteAnalysis
+                              ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
+                              : undefined
                         }
                         className="inline-flex items-center rounded-lg text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
                         style={{
@@ -980,14 +1004,16 @@ export function SavedLeadDetailModal({
                 <div className="flex flex-wrap" style={{ gap: '0.55rem', marginTop: '0.8rem' }}>
                   <button
                     type="button"
-                    disabled={!canGenerateAiContact || anyAiContactSuggestionLoading}
+                    disabled={isAiPlanLocked || !canGenerateAiContact || anyAiContactSuggestionLoading}
                     onClick={() => {
                       void requestAiSuggestion();
                     }}
                     title={
-                      !hasWebsiteAnalysis
-                        ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
-                        : undefined
+                      isAiPlanLocked
+                        ? t('dashboard.savedLeads.aiUpgradeRequired')
+                        : !hasWebsiteAnalysis && !canGenerateWithoutWebsiteAnalysis
+                          ? t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')
+                          : undefined
                     }
                     className="inline-flex items-center rounded-lg text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-55"
                     style={{
@@ -1002,7 +1028,24 @@ export function SavedLeadDetailModal({
                   </button>
                 </div>
 
-                {!hasWebsiteAnalysis ? (
+                {isAiPlanLocked ? (
+                  <div
+                    style={{
+                      marginTop: '0.75rem',
+                      border: '1px solid rgba(167, 139, 250, 0.38)',
+                      borderRadius: '0.75rem',
+                      background:
+                        'linear-gradient(120deg, rgba(59, 130, 246, 0.2), rgba(168, 85, 247, 0.2))',
+                      padding: '0.6rem 0.7rem',
+                    }}
+                  >
+                    <p className="text-xs text-violet-100">
+                      {t('dashboard.savedLeads.aiUpgradeRequired')}
+                    </p>
+                  </div>
+                ) : null}
+
+                {!hasWebsiteAnalysis && !canGenerateWithoutWebsiteAnalysis ? (
                   <div
                     style={{
                       marginTop: '0.75rem',
@@ -1014,6 +1057,22 @@ export function SavedLeadDetailModal({
                   >
                     <p className="text-xs text-amber-200">
                       {t('dashboard.savedLeads.detailModal.aiContact.runWebsiteAnalysisFirst')}
+                    </p>
+                  </div>
+                ) : null}
+
+                {!hasWebsiteAnalysis && canGenerateWithoutWebsiteAnalysis ? (
+                  <div
+                    style={{
+                      marginTop: '0.75rem',
+                      border: '1px solid rgba(125, 211, 252, 0.34)',
+                      borderRadius: '0.75rem',
+                      background: 'rgba(14, 116, 144, 0.14)',
+                      padding: '0.55rem 0.7rem',
+                    }}
+                  >
+                    <p className="text-xs text-cyan-100">
+                      {t('dashboard.savedLeads.detailModal.aiContact.noWebsiteMode')}
                     </p>
                   </div>
                 ) : null}
@@ -1032,7 +1091,7 @@ export function SavedLeadDetailModal({
                   </div>
                 ) : null}
 
-                {showUpgradePrompt && onNavigateBilling ? (
+                {(showUpgradePrompt || isAiPlanLocked) && onNavigateBilling ? (
                   <div
                     style={{
                       marginTop: '0.75rem',
@@ -1110,7 +1169,6 @@ export function SavedLeadDetailModal({
 
             <section style={SECTION_CARD_STYLE}>
               <h2 style={SECTION_TITLE_STYLE}>{t('dashboard.savedLeads.detailModal.metadata')}</h2>
-
               <div style={METADATA_GRID_STYLE}>
                 <div style={METADATA_CARD_STYLE}>
                   <p style={META_LABEL_STYLE}>{t('dashboard.savedLeads.columns.savedAt')}</p>
@@ -1213,6 +1271,7 @@ export function SavedLeadDetailModal({
         businessName={lead.businessName}
         aiSummary={lead.websiteAiSummary}
         aiSummaryLoading={aiSummaryLoading}
+        aiSummaryLocked={!canUseAiEvaluations}
         onGenerateAiSummary={
           onGenerateAiSummary
             ? async () => {

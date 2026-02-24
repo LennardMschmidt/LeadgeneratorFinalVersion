@@ -2,9 +2,11 @@ import { ChevronDown, Loader2, Search, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
 import {
+  BackendApiError,
   deleteFilteredSavedLeadsFromBackend,
   removeWebsiteAnalysisForSavedLead,
   deleteSavedLeadFromBackend,
+  fetchBillingUsageFromBackend,
   fetchSavedLeadsFromBackend,
   generateAiContactSuggestionForSavedLead,
   generateAiSummaryForSavedLead,
@@ -14,7 +16,7 @@ import {
 import type { AiContactSuggestionChannel } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSelect } from './DashboardSelect';
-import { exportRowsToExcel, exportRowsToPdf } from './exportUtils';
+import { exportRowsToExcel } from './exportUtils';
 import { SavedLeadDetailModal } from './SavedLeadDetailModal';
 import { STATUS_VISUALS, TIER_BADGE_STYLES } from './leadVisuals';
 import { STATUS_OPTIONS } from './mockData';
@@ -96,6 +98,7 @@ export function SavedSearchesPage({
   const [queryApplied, setQueryApplied] = useState('');
   const [problemAny, setProblemAny] = useState<string[]>([]);
   const [problemCounts, setProblemCounts] = useState<Record<string, number>>({});
+  const [canUseAiEvaluations, setCanUseAiEvaluations] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
 
   const canGoPrevious = offset > 0;
@@ -194,6 +197,30 @@ export function SavedSearchesPage({
   useEffect(() => {
     void loadSavedLeads(offset, statusFilter, tierFilter, queryApplied, problemAny);
   }, [offset, statusFilter, tierFilter, queryApplied, problemAny]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEntitlements = async () => {
+      try {
+        const usage = await fetchBillingUsageFromBackend();
+        if (!isMounted) {
+          return;
+        }
+        setCanUseAiEvaluations(usage.entitlements.canUseAiEvaluations);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setCanUseAiEvaluations(false);
+      }
+    };
+
+    void loadEntitlements();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const debounceId = window.setTimeout(() => {
@@ -434,6 +461,12 @@ export function SavedSearchesPage({
       return;
     }
 
+    if (!canUseAiEvaluations) {
+      setNoticeMessage(null);
+      setErrorMessage(t('dashboard.savedLeads.aiUpgradeRequired'));
+      throw new Error(t('dashboard.savedLeads.aiUpgradeRequired'));
+    }
+
     setAiSummaryLoadingIds((current) => ({ ...current, [savedLeadId]: true }));
     try {
       const updated = await generateAiSummaryForSavedLead(savedLeadId);
@@ -442,6 +475,11 @@ export function SavedSearchesPage({
       setErrorMessage(null);
     } catch (error) {
       setNoticeMessage(null);
+      if (error instanceof BackendApiError && error.code === 'FEATURE_NOT_IN_PLAN') {
+        const message = t('dashboard.savedLeads.aiUpgradeRequired');
+        setErrorMessage(message);
+        throw new Error(message);
+      }
       const message =
         error instanceof Error ? error.message : t('dashboard.savedLeads.aiSummary.failed');
       setErrorMessage(message);
@@ -464,6 +502,12 @@ export function SavedSearchesPage({
       return;
     }
 
+    if (!canUseAiEvaluations) {
+      setNoticeMessage(null);
+      setErrorMessage(t('dashboard.savedLeads.aiUpgradeRequired'));
+      throw new Error(t('dashboard.savedLeads.aiUpgradeRequired'));
+    }
+
     setAiContactLoadingByLead((current) => ({
       ...current,
       [savedLeadId]: {
@@ -479,6 +523,11 @@ export function SavedSearchesPage({
       setErrorMessage(null);
     } catch (error) {
       setNoticeMessage(null);
+      if (error instanceof BackendApiError && error.code === 'FEATURE_NOT_IN_PLAN') {
+        const message = t('dashboard.savedLeads.aiUpgradeRequired');
+        setErrorMessage(message);
+        throw new Error(message);
+      }
       const message =
         error instanceof Error ? error.message : t('dashboard.savedLeads.aiContact.failed');
       setErrorMessage(message);
@@ -571,38 +620,6 @@ export function SavedSearchesPage({
     ]);
 
     exportRowsToExcel(headers, rows, 'saved-leads-current-view.xlsx');
-  };
-
-  const exportSavedLeadsPdf = () => {
-    if (savedLeads.length === 0) {
-      return;
-    }
-
-    const headers = [
-      t('dashboard.savedLeads.columns.business'),
-      t('dashboard.savedLeads.columns.category'),
-      t('dashboard.savedLeads.columns.location'),
-      t('dashboard.savedLeads.columns.source'),
-      t('dashboard.savedLeads.columns.tier'),
-      t('dashboard.savedLeads.columns.score'),
-      t('dashboard.savedLeads.columns.status'),
-      t('dashboard.savedLeads.columns.contactChannels'),
-      t('dashboard.savedLeads.columns.savedAt'),
-    ];
-
-    const rows = savedLeads.map((lead) => [
-      lead.businessName,
-      lead.category,
-      lead.location,
-      lead.source || t('dashboard.leadTable.defaultSource'),
-      `${tm('leadTierLabels', lead.tier)} (${tm('leadTiers', lead.tier)})`,
-      String(lead.score),
-      tm('leadStatuses', lead.status),
-      lead.contactChannels.join(' ; '),
-      formatSavedAt(lead.savedAt),
-    ]);
-
-    exportRowsToPdf(t('dashboard.savedLeads.title'), headers, rows);
   };
 
   return (
@@ -701,21 +718,9 @@ export function SavedSearchesPage({
                         style={{
                           cursor: 'pointer',
                           backgroundColor: 'rgba(255, 255, 255, 0.025)',
-                          borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
                         }}
                       >
                         {t('dashboard.leadTable.exportExcel')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          exportSavedLeadsPdf();
-                          setIsExportMenuOpen(false);
-                        }}
-                        className="block w-full cursor-pointer whitespace-nowrap px-5 py-3 text-left text-sm text-gray-300 transition-all duration-150"
-                        style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.025)' }}
-                      >
-                        {t('dashboard.leadTable.exportPdf')}
                       </button>
                     </div>
                   ) : null}
@@ -1057,6 +1062,7 @@ export function SavedSearchesPage({
         onRemoveWebsiteAnalysis={removeWebsiteAnalysis}
         onGenerateAiSummary={generateAiSummary}
         onGenerateAiContactSuggestion={generateAiContactSuggestion}
+        canUseAiEvaluations={canUseAiEvaluations}
         onNavigateBilling={onNavigateBilling}
       />
 

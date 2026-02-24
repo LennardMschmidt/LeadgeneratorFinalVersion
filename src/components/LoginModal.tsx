@@ -65,47 +65,49 @@ const PLAN_VISUALS: Record<
   STANDARD: {
     price: '$29',
     period: '/per month',
-    description: 'Essential tools for solo operators and early projects.',
+    description: 'Perfect to start local outreach with Google Maps and website checks.',
     cta: 'Choose Standard',
     features: [
-      '180 tokens/day included',
-      'Google Maps search',
+      '180 search tokens/day',
+      'AI evaluations not included',
+      'Google Maps lead search',
       'Website analysis',
-      'Basic lead management',
-      'Saved leads',
-      'Email support',
+      'Save qualified leads and export them',
     ],
   },
   PRO: {
     price: '$49',
     period: '/per month',
-    description: 'Full access for growing teams',
+    description:
+      'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
     cta: 'Switch to Pro',
     badge: 'MOST POPULAR',
     features: [
-      '380 tokens/day included',
-      'LinkedIn + Google Maps search',
-      'Advanced website analysis',
-      'CSV & CRM export',
-      'Saved searches',
-      'Lead scoring & tiers',
-      'Priority support',
+      '380 search tokens/day',
+      '500 AI evaluation tokens/month',
+      'Google Maps lead search',
+      'LinkedIn profile discovery',
+      'Website analysis',
+      'AI website summary',
+      'AI contact suggestions (email, LinkedIn, phone)',
+      'Save qualified leads and export them',
     ],
   },
   EXPERT: {
     price: '$79',
     period: '/per month',
-    description: 'Maximum volume and speed for high-output prospecting.',
+    description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     cta: 'Upgrade to Expert',
     badge: 'BEST VALUE',
     features: [
-      '700 tokens/day included',
-      'Highest daily throughput',
-      'Priority execution lane',
-      'All Pro features',
-      'Advanced usage visibility',
-      'Fast-track support',
-      'API-ready workflow',
+      '700 search tokens/day',
+      '1200 AI evaluation tokens/month',
+      'Google Maps lead search',
+      'LinkedIn profile discovery',
+      'Website analysis',
+      'AI website summary',
+      'AI contact suggestions (email, LinkedIn, phone)',
+      'Save qualified leads and export them',
     ],
   },
 };
@@ -1116,10 +1118,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                   const isPro = code === 'PRO';
                                   const isExpert = code === 'EXPERT';
                                   const showPlanBadge = Boolean(visual.badge) && !isExpert;
-                                  const planFeatures = [
-                                    `${plan.aiTokensPerMonth} AI evaluation tokens/month`,
-                                    ...visual.features,
-                                  ];
+                                  const planFeatures = visual.features;
                                   const scaledCardStyle = {
                                     zoom: 0.51,
                                     fontSize: '182%',

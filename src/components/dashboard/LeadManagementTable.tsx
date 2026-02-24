@@ -33,7 +33,6 @@ interface LeadManagementTableProps {
   onStatusFilterChange: (status: LeadFilters['status']) => void;
   onLeadStatusChange: (leadId: string, status: LeadStatus) => void;
   onExportExcel: () => void;
-  onExportPdf: () => void;
   onSaveVisibleLeads: () => void;
   onSaveLead: (leadId: string) => void;
   onViewWebsiteAnalysis: (leadId: string) => void;
@@ -134,7 +133,6 @@ export function LeadManagementTable({
   onStatusFilterChange,
   onLeadStatusChange,
   onExportExcel,
-  onExportPdf,
   onSaveVisibleLeads,
   onSaveLead,
   onViewWebsiteAnalysis,
@@ -394,19 +392,6 @@ export function LeadManagementTable({
                     }}
                   >
                     {t('dashboard.leadTable.exportExcel')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onExportPdf();
-                      setIsExportMenuOpen(false);
-                    }}
-                    onMouseEnter={handleExportItemMouseEnter}
-                    onMouseLeave={handleExportItemMouseLeave}
-                    className={exportDropdownItemClass}
-                    style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.025)' }}
-                  >
-                    {t('dashboard.leadTable.exportPdf')}
                   </button>
                 </div>
               ) : null}

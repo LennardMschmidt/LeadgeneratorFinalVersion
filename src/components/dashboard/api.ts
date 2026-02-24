@@ -698,21 +698,66 @@ const mapSavedLead = (item: BackendSavedLead): SavedLead | null => {
   return mapped;
 };
 
-const parseBackendError = async (response: Response): Promise<string> => {
+type BackendErrorPayload = {
+  message: string;
+  code: string | null;
+};
+
+export class BackendApiError extends Error {
+  readonly status: number;
+  readonly code: string | null;
+
+  constructor(input: { message: string; status: number; code?: string | null }) {
+    super(input.message);
+    this.name = 'BackendApiError';
+    this.status = input.status;
+    this.code = input.code ?? null;
+  }
+}
+
+const parseBackendErrorPayload = async (
+  response: Response,
+): Promise<BackendErrorPayload> => {
   if (response.status === 401) {
-    return 'Your session expired or is invalid. Please log in again.';
+    return {
+      message: 'Your session expired or is invalid. Please log in again.',
+      code: null,
+    };
   }
 
   try {
-    const payload = (await response.json()) as { error?: unknown };
+    const payload = (await response.json()) as { error?: unknown; code?: unknown };
     if (typeof payload.error === 'string' && payload.error.trim().length > 0) {
-      return payload.error;
+      return {
+        message: payload.error,
+        code:
+          typeof payload.code === 'string' && payload.code.trim().length > 0
+            ? payload.code
+            : null,
+      };
     }
   } catch {
     // Ignore parse errors and fall back to HTTP status text.
   }
 
-  return `Request failed (${response.status})`;
+  return {
+    message: `Request failed (${response.status})`,
+    code: null,
+  };
+};
+
+const parseBackendError = async (response: Response): Promise<string> => {
+  const payload = await parseBackendErrorPayload(response);
+  return payload.message;
+};
+
+const throwBackendApiError = async (response: Response): Promise<never> => {
+  const payload = await parseBackendErrorPayload(response);
+  throw new BackendApiError({
+    message: payload.message,
+    status: response.status,
+    code: payload.code,
+  });
 };
 
 type BusinessProfileApiResponse = {
@@ -785,7 +830,7 @@ export const fetchBusinessProfileFromBackend = async (): Promise<BusinessProfile
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as BusinessProfileApiResponse;
@@ -807,7 +852,7 @@ export const saveBusinessProfileToBackend = async (
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as BusinessProfileApiResponse;
@@ -830,7 +875,7 @@ export const clearBusinessProfileInBackend = async (): Promise<void> => {
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 };
 
@@ -888,7 +933,7 @@ export const generateLeadsFromBackend = async (
   }
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as BackendLead[] | BackendLeadResponse;
@@ -927,7 +972,7 @@ export const fetchSavedSearchesFromBackend = async (): Promise<SavedSearch[]> =>
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as SavedSearchListResponse;
@@ -965,7 +1010,7 @@ export const createSavedSearchInBackend = async (
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as SavedSearchCreateResponse;
@@ -1255,7 +1300,7 @@ export const generateAiSummaryForSavedLead = async (
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as SavedLeadMutationResponse;
@@ -1286,7 +1331,7 @@ export const generateAiContactSuggestionForSavedLead = async (
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as SavedLeadMutationResponse;
@@ -1381,11 +1426,17 @@ type BillingPlanTokenCosts = {
   website_analysis: number;
 };
 
+type BillingEntitlements = {
+  canUseLinkedInSearch: boolean;
+  canUseAiEvaluations: boolean;
+};
+
 export type BillingPlan = {
   code: BackendBillingPlanCode;
   name: string;
   dailyTokenLimit: number;
   aiTokensPerMonth: number;
+  entitlements: BillingEntitlements;
   tokenCosts: BillingPlanTokenCosts;
 };
 
@@ -1396,6 +1447,7 @@ export type BillingUsage = {
   tokensUsedToday: number;
   tokensRemainingToday: number;
   usageDate: string;
+  entitlements: BillingEntitlements;
   aiTokensTotal: number;
   aiTokensUsed: number;
   aiTokensRemaining: number;
@@ -1422,6 +1474,7 @@ type BillingUsageResponse = {
   tokensUsedToday?: unknown;
   tokensRemainingToday?: unknown;
   usageDate?: unknown;
+  entitlements?: unknown;
   aiTokensTotal?: unknown;
   aiTokensUsed?: unknown;
   aiTokensRemaining?: unknown;
@@ -1435,6 +1488,7 @@ type BillingChangePlanResponse = {
     subscriptionStatus?: unknown;
     dailyTokenLimit?: unknown;
     aiTokensPerMonth?: unknown;
+    entitlements?: unknown;
     aiTokensTotal?: unknown;
     aiTokensUsed?: unknown;
     aiTokensRemaining?: unknown;
@@ -1490,6 +1544,7 @@ const parseBillingPlan = (value: unknown): BillingPlan | null => {
     name?: unknown;
     dailyTokenLimit?: unknown;
     aiTokensPerMonth?: unknown;
+    entitlements?: unknown;
     tokenCosts?: unknown;
   };
 
@@ -1502,6 +1557,20 @@ const parseBillingPlan = (value: unknown): BillingPlan | null => {
     return null;
   }
   const aiTokensPerMonth = toInteger(payload.aiTokensPerMonth) ?? 0;
+  const entitlementsPayload = payload.entitlements;
+  const entitlements: BillingEntitlements = {
+    canUseLinkedInSearch: false,
+    canUseAiEvaluations: false,
+  };
+  if (
+    typeof entitlementsPayload === 'object' &&
+    entitlementsPayload !== null &&
+    !Array.isArray(entitlementsPayload)
+  ) {
+    const values = entitlementsPayload as Record<string, unknown>;
+    entitlements.canUseLinkedInSearch = values.canUseLinkedInSearch === true;
+    entitlements.canUseAiEvaluations = values.canUseAiEvaluations === true;
+  }
 
   const tokenCosts = payload.tokenCosts;
   const normalizedCosts: BillingPlanTokenCosts = {
@@ -1522,6 +1591,7 @@ const parseBillingPlan = (value: unknown): BillingPlan | null => {
     name: payload.name,
     dailyTokenLimit,
     aiTokensPerMonth,
+    entitlements,
     tokenCosts: normalizedCosts,
   };
 };
@@ -1579,6 +1649,21 @@ export const fetchBillingUsageFromBackend = async (): Promise<BillingUsage> => {
     throw new Error('Billing usage response is invalid.');
   }
 
+  const entitlementPayload = payload.entitlements;
+  const entitlements: BillingEntitlements = {
+    canUseLinkedInSearch: false,
+    canUseAiEvaluations: false,
+  };
+  if (
+    typeof entitlementPayload === 'object' &&
+    entitlementPayload !== null &&
+    !Array.isArray(entitlementPayload)
+  ) {
+    const values = entitlementPayload as Record<string, unknown>;
+    entitlements.canUseLinkedInSearch = values.canUseLinkedInSearch === true;
+    entitlements.canUseAiEvaluations = values.canUseAiEvaluations === true;
+  }
+
   return {
     plan: payload.plan,
     subscriptionStatus: typeof payload.subscriptionStatus === 'string' ? payload.subscriptionStatus : 'inactive',
@@ -1586,6 +1671,7 @@ export const fetchBillingUsageFromBackend = async (): Promise<BillingUsage> => {
     tokensUsedToday: toInteger(payload.tokensUsedToday) ?? 0,
     tokensRemainingToday: toInteger(payload.tokensRemainingToday) ?? 0,
     usageDate: typeof payload.usageDate === 'string' ? payload.usageDate : '',
+    entitlements,
     aiTokensTotal: toInteger(payload.aiTokensTotal) ?? 0,
     aiTokensUsed: toInteger(payload.aiTokensUsed) ?? 0,
     aiTokensRemaining: toInteger(payload.aiTokensRemaining) ?? 0,

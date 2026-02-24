@@ -11,6 +11,7 @@ interface WebsiteAnalysisModalProps {
   aiSummary?: string;
   onGenerateAiSummary?: () => Promise<void> | void;
   aiSummaryLoading?: boolean;
+  aiSummaryLocked?: boolean;
   onNavigateBilling?: () => void;
 }
 
@@ -759,6 +760,7 @@ export function WebsiteAnalysisModal({
   aiSummary,
   onGenerateAiSummary,
   aiSummaryLoading = false,
+  aiSummaryLocked = false,
   onNavigateBilling,
 }: WebsiteAnalysisModalProps) {
   const { language } = useI18n();
@@ -793,11 +795,15 @@ export function WebsiteAnalysisModal({
     setShowUpgradePrompt(false);
   }, [normalizedAnalysis, businessName, currentLanguage, aiSummary]);
 
-  const canGenerateSummary = !!normalizedAnalysis && !!onGenerateAiSummary;
+  const canGenerateSummary = !!normalizedAnalysis && !!onGenerateAiSummary && !aiSummaryLocked;
   const disabledGenerateMessage = !normalizedAnalysis
     ? currentLanguage === 'de'
       ? 'Führe zuerst eine Website-Analyse aus.'
       : 'Run website analysis first.'
+    : aiSummaryLocked
+      ? currentLanguage === 'de'
+        ? 'AI-Zusammenfassung ist in deinem aktuellen Plan nicht enthalten.'
+        : 'AI summary is not included in your current plan.'
     : !onGenerateAiSummary
       ? currentLanguage === 'de'
         ? 'Speichere den Lead zuerst, um die AI-Zusammenfassung zu nutzen.'
@@ -805,7 +811,7 @@ export function WebsiteAnalysisModal({
       : undefined;
 
   const handleGenerateSummary = async () => {
-    if (!onGenerateAiSummary || !normalizedAnalysis || aiSummaryLoading) {
+    if (!onGenerateAiSummary || !normalizedAnalysis || aiSummaryLoading || aiSummaryLocked) {
       return;
     }
 
@@ -946,14 +952,14 @@ export function WebsiteAnalysisModal({
             </div>
           ) : null}
 
-          {showUpgradePrompt && onNavigateBilling ? (
+          {(showUpgradePrompt || aiSummaryLocked) && onNavigateBilling ? (
             <div className="mt-4">
               <button
                 type="button"
                 onClick={onNavigateBilling}
                 className="rounded-lg border border-cyan-300/55 bg-cyan-400/15 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/25"
               >
-                {currentLanguage === 'de' ? 'Upgrade für mehr AI-Tokens' : 'Upgrade for more AI tokens'}
+                {currentLanguage === 'de' ? 'Upgrade für AI-Features' : 'Upgrade for AI features'}
               </button>
             </div>
           ) : null}

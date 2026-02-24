@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
 import {
+  BackendApiError,
   cancelBackendSearch,
   createSavedSearchInBackend,
   deleteSavedSearchFromBackend,
+  fetchBillingUsageFromBackend,
   fetchSavedSearchesFromBackend,
   generateAiSummaryForSavedLead,
   generateLeadsFromBackend,
@@ -12,7 +14,7 @@ import {
 } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { getProblemCategoriesForBusinessType } from './businessTypeProblemCatalog';
-import { exportRowsToExcel, exportRowsToPdf } from './exportUtils';
+import { exportRowsToExcel } from './exportUtils';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
 import { TierOverviewCards } from './TierOverviewCards';
@@ -86,6 +88,8 @@ export function DashboardPage({
   const [websiteAiSummaryLoadingLeadId, setWebsiteAiSummaryLoadingLeadId] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [saveSuccessHint, setSaveSuccessHint] = useState<string | null>(null);
+  const [canUseLinkedInSearch, setCanUseLinkedInSearch] = useState(false);
+  const [canUseAiEvaluations, setCanUseAiEvaluations] = useState(false);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -128,6 +132,33 @@ export function DashboardPage({
 
     return () => window.clearTimeout(clearHintTimeout);
   }, [saveSuccessHint]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadEntitlements = async () => {
+      try {
+        const usage = await fetchBillingUsageFromBackend();
+        if (!isMounted) {
+          return;
+        }
+
+        setCanUseLinkedInSearch(usage.entitlements.canUseLinkedInSearch);
+        setCanUseAiEvaluations(usage.entitlements.canUseAiEvaluations);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setCanUseLinkedInSearch(false);
+        setCanUseAiEvaluations(false);
+      }
+    };
+
+    void loadEntitlements();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const tierCounts = useMemo(
     () => ({
@@ -276,6 +307,12 @@ export function DashboardPage({
       return;
     }
 
+    if (searchConfig.searchSource === 'linkedin' && !canUseLinkedInSearch) {
+      setSearchError(t('dashboard.errors.linkedinRequiresPro'));
+      setActionNotice(t('dashboard.errors.upgradeForLinkedIn'));
+      return;
+    }
+
     setSearchError(null);
     setSearchMeta(null);
     const selectedProblemCount = isGoogleMapsSource
@@ -296,6 +333,12 @@ export function DashboardPage({
       setSearchMeta(result.meta ?? null);
     } catch (error) {
       if (error instanceof Error) {
+        if (error instanceof BackendApiError && error.code === 'FEATURE_NOT_IN_PLAN') {
+          setSearchError(t('dashboard.errors.linkedinRequiresPro'));
+          setActionNotice(t('dashboard.errors.upgradeForLinkedIn'));
+          return;
+        }
+
         const unreachablePrefix = 'Could not reach backend at ';
         const unreachableSuffix =
           '. Verify the backend is running and URL settings are correct.';
@@ -370,9 +413,19 @@ export function DashboardPage({
       return;
     }
 
+    const requestedSearchSource = savedSearch.config.searchSource ?? '';
+    const normalizedSearchSource =
+      requestedSearchSource === 'linkedin' && !canUseLinkedInSearch
+        ? 'google_maps'
+        : requestedSearchSource;
+
+    if (requestedSearchSource === 'linkedin' && !canUseLinkedInSearch) {
+      setActionNotice(t('dashboard.errors.upgradeForLinkedIn'));
+    }
+
     setSearchConfig({
       ...savedSearch.config,
-      searchSource: savedSearch.config.searchSource ?? '',
+      searchSource: normalizedSearchSource,
       businessType: savedSearch.config.businessType ?? '',
       problemCategoriesSelected:
         savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],
@@ -419,20 +472,6 @@ export function DashboardPage({
       lead.contactChannels.join(' ; '),
     ]);
     exportRowsToExcel(headers, rows, t('dashboard.csv.fileName').replace('.csv', '.xlsx'));
-  };
-
-  const exportPdf = () => {
-    const headers = raw<string[]>('dashboard.csv.headers');
-    const rows = filteredLeads.map((lead) => [
-      lead.businessName,
-      lead.location,
-      lead.category,
-      lead.tier,
-      String(toDisplayScore(lead.score, scoreDenominator)),
-      lead.status,
-      lead.contactChannels.join(' ; '),
-    ]);
-    exportRowsToPdf(t('dashboard.title'), headers, rows);
   };
 
   const saveVisibleLeads = async () => {
@@ -526,10 +565,11 @@ export function DashboardPage({
   const selectedWebsiteAnalysisLead = websiteAnalysisModalLeadId
     ? leads.find((lead) => lead.id === websiteAnalysisModalLeadId) ?? null
     : null;
-  const canGenerateModalAiSummary = !!selectedWebsiteAnalysisLead?.savedLeadId;
+  const canGenerateModalAiSummary = !!selectedWebsiteAnalysisLead?.savedLeadId && canUseAiEvaluations;
 
   const generateModalAiSummary = async () => {
-    if (!selectedWebsiteAnalysisLead?.savedLeadId) {
+    if (!selectedWebsiteAnalysisLead?.savedLeadId || !canUseAiEvaluations) {
+      setActionNotice(t('dashboard.errors.upgradeForAi'));
       return;
     }
 
@@ -603,6 +643,8 @@ export function DashboardPage({
             deletingSavedSearchId={deletingSavedSearchId}
             isRunningSearch={isRunningSearch}
             isSavingSearch={isSavingSearch}
+            canUseLinkedInSearch={canUseLinkedInSearch}
+            onNavigateBilling={onNavigateBilling}
             onSelectSavedSearch={selectSavedSearch}
             onDeleteSavedSearch={deleteSavedSearch}
             onUpdateSearchConfig={setSearchConfig}
@@ -639,7 +681,6 @@ export function DashboardPage({
             onStatusFilterChange={updateStatusFilter}
             onLeadStatusChange={updateLeadStatus}
             onExportExcel={exportExcel}
-            onExportPdf={exportPdf}
             onSaveVisibleLeads={saveVisibleLeads}
             onSaveLead={saveLead}
             onViewWebsiteAnalysis={viewWebsiteAnalysis}
@@ -667,6 +708,7 @@ export function DashboardPage({
           websiteAiSummaryLoadingLeadId === selectedWebsiteAnalysisLead.id
         }
         onGenerateAiSummary={canGenerateModalAiSummary ? generateModalAiSummary : undefined}
+        aiSummaryLocked={!canUseAiEvaluations}
         onNavigateBilling={onNavigateBilling}
       />
     </>

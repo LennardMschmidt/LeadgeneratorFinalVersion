@@ -15,6 +15,8 @@ interface SearchConfigurationPanelProps {
   deletingSavedSearchId: string | null;
   isRunningSearch: boolean;
   isSavingSearch: boolean;
+  canUseLinkedInSearch?: boolean;
+  onNavigateBilling?: () => void;
   onSelectSavedSearch: (savedSearchId: string) => void;
   onDeleteSavedSearch: (savedSearchId: string) => void;
   onUpdateSearchConfig: (nextConfig: SearchConfiguration) => void;
@@ -30,6 +32,8 @@ export function SearchConfigurationPanel({
   deletingSavedSearchId,
   isRunningSearch,
   isSavingSearch,
+  canUseLinkedInSearch = false,
+  onNavigateBilling,
   onSelectSavedSearch,
   onDeleteSavedSearch,
   onUpdateSearchConfig,
@@ -48,6 +52,7 @@ export function SearchConfigurationPanel({
   const [maxResultsDraft, setMaxResultsDraft] = useState(String(searchConfig.maxResults));
   const loadingSteps = raw<string[]>('dashboard.searchPanel.loadingSteps');
   const isLinkedInSource = searchConfig.searchSource === 'linkedin';
+  const isLinkedInLocked = !canUseLinkedInSearch;
   const normalizedBusinessTypeValue =
     searchConfig.businessType === AVAILABLE_BUSINESS_TYPE
       ? searchConfig.businessType
@@ -81,6 +86,17 @@ export function SearchConfigurationPanel({
   useEffect(() => {
     setMaxResultsDraft(String(searchConfig.maxResults));
   }, [searchConfig.maxResults]);
+
+  useEffect(() => {
+    if (!isLinkedInLocked || searchConfig.searchSource !== 'linkedin') {
+      return;
+    }
+
+    onUpdateSearchConfig({
+      ...searchConfig,
+      searchSource: 'google_maps',
+    });
+  }, [isLinkedInLocked, onUpdateSearchConfig, searchConfig]);
 
   useEffect(() => {
     if (!isRunningSearch) {
@@ -316,15 +332,19 @@ export function SearchConfigurationPanel({
               <DashboardSelect
                 id="search-source"
                 value={searchConfig.searchSource || noSearchSourceValue}
-                onValueChange={(nextValue) =>
+                onValueChange={(nextValue) => {
+                  if (nextValue === 'linkedin' && isLinkedInLocked) {
+                    return;
+                  }
+
                   onUpdateSearchConfig({
                     ...searchConfig,
                     searchSource:
                       nextValue === noSearchSourceValue
                         ? ''
                         : (nextValue as Exclude<SearchConfiguration['searchSource'], ''>),
-                  })
-                }
+                  });
+                }}
                 options={[
                   {
                     value: noSearchSourceValue,
@@ -333,9 +353,26 @@ export function SearchConfigurationPanel({
                   ...SEARCH_SOURCE_OPTIONS.map((option) => ({
                     value: option.value,
                     label: t(option.labelKey),
+                    disabled: option.value === 'linkedin' && isLinkedInLocked,
                   })),
                 ]}
               />
+              {isLinkedInLocked ? (
+                <div className="rounded-xl border border-violet-300/30 bg-violet-500/10 px-3 py-2">
+                  <p className="text-xs text-violet-100">
+                    {t('dashboard.searchPanel.linkedinRequiresPro')}
+                  </p>
+                  {onNavigateBilling ? (
+                    <button
+                      type="button"
+                      onClick={onNavigateBilling}
+                      className="mt-2 rounded-lg border border-violet-200/40 bg-violet-400/15 px-3 py-1.5 text-xs font-medium text-violet-100 transition hover:bg-violet-400/25"
+                    >
+                      {t('dashboard.searchPanel.upgradeCta')}
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
 

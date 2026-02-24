@@ -1,7 +1,9 @@
 import { FormEvent, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, CheckCircle2, Mail, X } from 'lucide-react';
+import { toFriendlyErrorMessage } from '../lib/errorMessaging';
 import { sendPasswordResetEmail } from '../lib/supabaseAuth';
+import { AppAlertToast } from './ui/AppAlertToast';
 
 interface ForgotPasswordModalProps {
   onClose: () => void;
@@ -61,13 +63,13 @@ export function ForgotPasswordModal({
         redirectPath: '/reset-password',
       });
       if (!result.ok) {
-        setStatusMessage(getAuthFailureMessage(result));
+        setStatusMessage(toFriendlyErrorMessage(getAuthFailureMessage(result)));
         return;
       }
 
       setIsSubmitted(true);
     } catch {
-      setStatusMessage('Could not send reset email right now. Please try again.');
+      setStatusMessage(toFriendlyErrorMessage('Could not send reset email right now. Please try again.'));
     } finally {
       setIsLoading(false);
     }
@@ -153,15 +155,6 @@ export function ForgotPasswordModal({
                   disabled={isLoading}
                 />
               </div>
-
-              {statusMessage ? (
-                <p
-                  className="rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200"
-                  style={{ marginBottom: '20px' }}
-                >
-                  {statusMessage}
-                </p>
-              ) : null}
 
               <div
                 className="flex items-center gap-3"
@@ -284,12 +277,6 @@ export function ForgotPasswordModal({
               </div>
             </div>
 
-            {statusMessage ? (
-              <p className="mb-3 rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200">
-                {statusMessage}
-              </p>
-            ) : null}
-
             <div className="flex flex-col gap-3">
               <button
                 type="button"
@@ -341,6 +328,11 @@ export function ForgotPasswordModal({
           </motion.div>
         )}
       </div>
+      <AppAlertToast
+        message={statusMessage}
+        onClose={() => setStatusMessage(null)}
+        variant="error"
+      />
     </motion.div>
   );
 }

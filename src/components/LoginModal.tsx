@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
-import { ArrowLeft, Check, Mail, Shield, X } from 'lucide-react';
+import { ArrowLeft, Check, Mail, X } from 'lucide-react';
 import { useI18n } from '../i18n';
 import {
   isSupabaseAuthConfigured,
@@ -9,12 +9,13 @@ import {
   signInWithGoogle,
   signUpWithEmail,
 } from '../lib/supabaseAuth';
+import { toFriendlyErrorMessage } from '../lib/errorMessaging';
 import { ForgotPasswordModal } from './ForgotPasswordModal';
+import { AppAlertToast } from './ui/AppAlertToast';
 import {
   BillingPlan,
-  changeBillingPlanInBackend,
+  createCheckoutSessionInBackend,
   fetchPublicBillingPlansFromBackend,
-  mockBillingPaymentInBackend,
 } from './dashboard/api';
 
 interface LoginModalProps {
@@ -25,7 +26,7 @@ interface LoginModalProps {
 
 type AuthView = 'login' | 'register' | 'forgot-password';
 type BillingPlanCode = 'STANDARD' | 'PRO' | 'EXPERT';
-type RegisterStep = 1 | 2 | 3;
+type RegisterStep = 1 | 2;
 
 const FALLBACK_PLANS: BillingPlan[] = [
   {
@@ -112,21 +113,6 @@ const PLAN_VISUALS: Record<
   },
 };
 
-const formatCardNumber = (value: string): string =>
-  value
-    .replace(/\D+/g, '')
-    .slice(0, 19)
-    .replace(/(\d{4})(?=\d)/g, '$1 ')
-    .trim();
-
-const formatExpiry = (value: string): string => {
-  const digits = value.replace(/\D+/g, '').slice(0, 4);
-  if (digits.length <= 2) {
-    return digits;
-  }
-  return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-};
-
 const getPasswordStrength = (value: string): { label: string; color: string; width: string } => {
   if (!value) {
     return { label: '', color: '', width: '0%' };
@@ -194,11 +180,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   const [selectedPlan, setSelectedPlan] = useState<BillingPlanCode | null>('PRO');
   const [availablePlans, setAvailablePlans] = useState<BillingPlan[]>(FALLBACK_PLANS);
 
-  const [cardholderName, setCardholderName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiry, setExpiry] = useState('');
-  const [cvc, setCvc] = useState('');
-
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [inlineErrors, setInlineErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -251,11 +232,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
     setSelectedPlan('PRO');
     setAvailablePlans(FALLBACK_PLANS);
-
-    setCardholderName('');
-    setCardNumber('');
-    setExpiry('');
-    setCvc('');
 
     setStatusMessage(null);
     setInlineErrors({});
@@ -343,12 +319,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
   const stepTwoValid = selectedPlan !== null;
 
-  const stepThreeValid =
-    cardholderName.trim().length >= 2 &&
-    cardNumber.replace(/\s+/g, '').length >= 12 &&
-    expiry.trim().length >= 4 &&
-    cvc.trim().length >= 3;
-
   const validateStepOne = (): boolean => {
     const nextErrors: Record<string, string> = {};
 
@@ -397,26 +367,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     );
   }, [hasExistingAccountInlineError, inlineErrors, registerStep, stepOneBlockingMessage, stepOneValid]);
 
-  const validateStepThree = (): boolean => {
-    const nextErrors: Record<string, string> = {};
-
-    if (cardholderName.trim().length < 2) {
-      nextErrors.cardholderName = 'Please enter the cardholder name.';
-    }
-    if (cardNumber.replace(/\s+/g, '').length < 12) {
-      nextErrors.cardNumber = 'Please enter a valid card number.';
-    }
-    if (expiry.trim().length < 4) {
-      nextErrors.expiry = 'Please enter a valid expiry date.';
-    }
-    if (cvc.trim().length < 3) {
-      nextErrors.cvc = 'Please enter a valid CVC.';
-    }
-
-    setInlineErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
-
   const handleGoogleLogin = async () => {
     if (isSubmitting) {
       return;
@@ -433,11 +383,11 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     }
 
     setIsSubmitting(true);
-    setStatusMessage(t('login.googleLoginClicked'));
+    setStatusMessage(null);
 
     const result = await signInWithGoogle('/dashboard');
     if (!result.ok) {
-      setStatusMessage(getAuthFailureMessage(result));
+      setStatusMessage(toFriendlyErrorMessage(getAuthFailureMessage(result)));
       setIsSubmitting(false);
     }
   };
@@ -458,11 +408,10 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
     try {
       const result = await signInWithEmail(email.trim(), password);
       if (!result.ok) {
-        setStatusMessage(getAuthFailureMessage(result));
+        setStatusMessage(toFriendlyErrorMessage(getAuthFailureMessage(result)));
         return;
       }
 
-      setStatusMessage(t('login.emailLoginCaptured', { email }));
       onAuthenticated?.();
     } finally {
       setIsSubmitting(false);
@@ -472,10 +421,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
   const completeRegistration = async () => {
     if (!selectedPlan) {
       setStatusMessage('Please choose a plan before you continue.');
-      return;
-    }
-
-    if (!validateStepThree()) {
       return;
     }
 
@@ -505,7 +450,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
           return;
         }
 
-        setStatusMessage(REGISTER_SIGNUP_FAILED_MESSAGE);
+        setStatusMessage(toFriendlyErrorMessage(REGISTER_SIGNUP_FAILED_MESSAGE));
         return;
       }
 
@@ -516,16 +461,14 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
         return;
       }
 
-      await changeBillingPlanInBackend(selectedPlan);
-      await mockBillingPaymentInBackend({
-        cardholderName: cardholderName.trim(),
-        cardNumber,
-        expiry,
-        cvc,
-      });
-
-      setStatusMessage("You're all set. Welcome aboard.");
-      onAuthenticated?.();
+      const checkout = await createCheckoutSessionInBackend(selectedPlan);
+      window.location.assign(checkout.url);
+    } catch (error) {
+      if (error instanceof Error) {
+        setStatusMessage(toFriendlyErrorMessage(error.message));
+      } else {
+        setStatusMessage(toFriendlyErrorMessage(t('login.checkoutFailed')));
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -543,16 +486,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
         return;
       }
       setRegisterStep(2);
-      setInlineErrors({});
-      return;
-    }
-
-    if (registerStep === 2) {
-      if (!selectedPlan) {
-        setStatusMessage('Please select one plan to continue.');
-        return;
-      }
-      setRegisterStep(3);
       setInlineErrors({});
       return;
     }
@@ -792,11 +725,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                       </button>
                     </div>
 
-                    {statusMessage ? (
-                      <p className="mt-4 rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200">
-                        {statusMessage}
-                      </p>
-                    ) : null}
                   </div>
                 </motion.div>
               ) : view === 'register' ? (
@@ -887,11 +815,11 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
 
                     <div className="mb-8">
                       <div className="mb-3 flex items-center">
-                        {([1, 2, 3] as RegisterStep[]).map((step) => (
+                        {([1, 2] as RegisterStep[]).map((step) => (
                           <div
                             key={step}
                             className="flex items-center"
-                            style={{ flex: step < 3 ? 1 : '0 0 auto' }}
+                            style={{ flex: step < 2 ? 1 : '0 0 auto' }}
                           >
                             <div className="flex items-center gap-2">
                               <div
@@ -913,10 +841,10 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                                   registerStep >= step ? 'text-gray-300' : 'text-gray-500'
                                 }`}
                               >
-                                {step === 1 ? 'Account' : step === 2 ? 'Package' : 'Payment'}
+                                {step === 1 ? 'Account' : 'Plan'}
                               </span>
                             </div>
-                            {step < 3 ? (
+                            {step < 2 ? (
                               <div
                                 style={{
                                   flex: 1,
@@ -1113,7 +1041,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                               <div className="grid gap-6 md:grid-cols-3">
                                 {orderedPlans.map((plan) => {
                                   const code = plan.code as BillingPlanCode;
-                                  const visual = PLAN_VISUALS[code];
+                                  const visual = localizedPlanVisuals[code];
                                   const isCurrent = selectedPlan === code;
                                   const isPro = code === 'PRO';
                                   const isExpert = code === 'EXPERT';
@@ -1241,155 +1169,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                           </motion.div>
                         ) : null}
 
-                        {registerStep === 3 ? (
-                          <motion.div
-                            key="step3"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.2 }}
-                            className="space-y-0"
-                          >
-                            <motion.div
-                              className="flex items-center rounded-xl"
-                              style={{
-                                marginBottom: '16px',
-                                padding: '12px',
-                                gap: '8px',
-                                borderRadius: '12px',
-                                border: '1px solid rgba(16, 185, 129, 0.35)',
-                                background: 'rgba(16, 185, 129, 0.12)',
-                              }}
-                              animate={{
-                                boxShadow: [
-                                  '0 0 0 rgba(16, 185, 129, 0)',
-                                  '0 0 16px rgba(16, 185, 129, 0.22)',
-                                  '0 0 0 rgba(16, 185, 129, 0)',
-                                ],
-                              }}
-                              transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                            >
-                              <motion.span
-                                style={{ display: 'inline-flex' }}
-                                animate={{ scale: [1, 1.06, 1] }}
-                                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-                              >
-                                <Shield className="h-5 w-5" style={{ color: 'rgb(52, 211, 153)' }} />
-                              </motion.span>
-                              <span className="text-sm" style={{ color: 'rgb(110, 231, 183)', lineHeight: '1.35' }}>
-                                Secure payment - Your data is encrypted
-                              </span>
-                            </motion.div>
-
-                            <div style={fieldWrapperStyle}>
-                              <label htmlFor="cardholder-name" className="text-gray-300" style={fieldLabelStyle}>
-                                Cardholder name
-                              </label>
-                              <input
-                                id="cardholder-name"
-                                type="text"
-                                value={cardholderName}
-                                onChange={(event) => {
-                                  setCardholderName(event.target.value);
-                                  if (inlineErrors.cardholderName) {
-                                    setInlineErrors((current) => ({ ...current, cardholderName: '' }));
-                                  }
-                                }}
-                                placeholder="John Doe"
-                                className={inputClassName}
-                                style={fieldHeightStyle}
-                                required
-                              />
-                              {inlineErrors.cardholderName ? (
-                                <p className="text-xs" style={errorTextStyle}>
-                                  {inlineErrors.cardholderName}
-                                </p>
-                              ) : null}
-                            </div>
-
-                            <div style={fieldWrapperStyle}>
-                              <label htmlFor="card-number" className="text-gray-300" style={fieldLabelStyle}>
-                                Card number
-                              </label>
-                              <input
-                                id="card-number"
-                                type="text"
-                                value={cardNumber}
-                                onChange={(event) => {
-                                  setCardNumber(formatCardNumber(event.target.value));
-                                  if (inlineErrors.cardNumber) {
-                                    setInlineErrors((current) => ({ ...current, cardNumber: '' }));
-                                  }
-                                }}
-                                placeholder="1234 5678 9012 3456"
-                                className={inputClassName}
-                                style={fieldHeightStyle}
-                                required
-                              />
-                              {inlineErrors.cardNumber ? (
-                                <p className="text-xs" style={errorTextStyle}>
-                                  {inlineErrors.cardNumber}
-                                </p>
-                              ) : null}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-5" style={{ marginBottom: '20px' }}>
-                              <div>
-                                <label htmlFor="card-expiry" className="text-gray-300" style={fieldLabelStyle}>
-                                  Expiry date
-                                </label>
-                                <input
-                                  id="card-expiry"
-                                  type="text"
-                                  value={expiry}
-                                  onChange={(event) => {
-                                    setExpiry(formatExpiry(event.target.value));
-                                    if (inlineErrors.expiry) {
-                                      setInlineErrors((current) => ({ ...current, expiry: '' }));
-                                    }
-                                  }}
-                                  placeholder="MM/YY"
-                                  maxLength={5}
-                                  className={inputClassName}
-                                  style={fieldHeightStyle}
-                                  required
-                                />
-                                {inlineErrors.expiry ? (
-                                  <p className="text-xs" style={errorTextStyle}>
-                                    {inlineErrors.expiry}
-                                  </p>
-                                ) : null}
-                              </div>
-
-                              <div>
-                                <label htmlFor="card-cvc" className="text-gray-300" style={fieldLabelStyle}>
-                                  CVC
-                                </label>
-                                <input
-                                  id="card-cvc"
-                                  type="text"
-                                  value={cvc}
-                                  onChange={(event) => {
-                                    setCvc(event.target.value.replace(/\D+/g, '').slice(0, 4));
-                                    if (inlineErrors.cvc) {
-                                      setInlineErrors((current) => ({ ...current, cvc: '' }));
-                                    }
-                                  }}
-                                  placeholder="123"
-                                  maxLength={4}
-                                  className={inputClassName}
-                                  style={fieldHeightStyle}
-                                  required
-                                />
-                                {inlineErrors.cvc ? (
-                                  <p className="text-xs" style={errorTextStyle}>
-                                    {inlineErrors.cvc}
-                                  </p>
-                                ) : null}
-                              </div>
-                            </div>
-                          </motion.div>
-                        ) : null}
                       </AnimatePresence>
 
                       <div
@@ -1433,8 +1212,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                           disabled={
                             isSubmitting ||
                             (registerStep === 1 && !stepOneValid) ||
-                            (registerStep === 2 && !stepTwoValid) ||
-                            (registerStep === 3 && !stepThreeValid)
+                            (registerStep === 2 && !stepTwoValid)
                           }
                           className="whitespace-nowrap rounded-xl px-6 sm:px-8 transition disabled:cursor-not-allowed disabled:opacity-50"
                           style={{
@@ -1451,7 +1229,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                           <span>
                             {isSubmitting
                               ? t('login.authenticating')
-                              : registerStep < 3
+                              : registerStep < 2
                                 ? 'Continue'
                                 : 'Start my subscription'}
                           </span>
@@ -1477,11 +1255,6 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
                       </button>
                     </div>
 
-                    {statusMessage ? (
-                      <p className="mt-4 rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200">
-                        {statusMessage}
-                      </p>
-                    ) : null}
                   </div>
                 </motion.div>
               ) : (
@@ -1508,6 +1281,11 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
               )}
             </AnimatePresence>
           </div>
+          <AppAlertToast
+            message={statusMessage}
+            onClose={() => setStatusMessage(null)}
+            variant="error"
+          />
         </>
       ) : null}
     </AnimatePresence>,

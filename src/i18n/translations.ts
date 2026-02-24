@@ -225,7 +225,7 @@ export const translations = {
       createAccount: 'Create your account',
       loginSubtitle: 'Sign in to continue finding your next best leads.',
       registerSubtitle: 'Register to start finding your next best leads.',
-      registerPlanSubtitle: 'Choose your plan and complete mock payment to activate your subscription.',
+      registerPlanSubtitle: 'Choose your plan and continue to secure Stripe checkout.',
       continueWithGoogle: 'Continue with Google',
       registerWithGoogle: 'Register with Google',
       registerGoogleDisabledForBilling: 'Please register with email to choose a plan and activate billing.',
@@ -264,6 +264,52 @@ export const translations = {
         'Account created for {{email}}. Please confirm your email before logging in.',
       registerNeedsConfirmationWithPlan:
         'Account created for {{email}} with plan {{plan}}. Please confirm your email, then log in to activate billing.',
+      redirectingToCheckout: 'Redirecting to Stripe checkout...',
+      checkoutFailed: 'Could not start Stripe checkout. Please try again.',
+    },
+    stripeReturn: {
+      badge: 'Stripe billing status',
+      nextTitle: 'What happens next',
+      success: {
+        title: 'Subscription activated',
+        description:
+          'Your checkout completed in Stripe. It can take a few seconds until the updated billing status appears in your account.',
+        steps: [
+          'Stripe confirmed your payment and subscription start.',
+          'Your billing state syncs to your account in a few seconds.',
+          'Open Billing to review plan, renewal date, and invoices.',
+        ],
+      },
+      cancel: {
+        title: 'Checkout canceled',
+        description:
+          'The Stripe checkout was canceled. No subscription change was completed.',
+        steps: [
+          'No payment was captured and no plan change was applied.',
+          'Your current account access remains unchanged.',
+          'You can start checkout again anytime from the Billing page.',
+        ],
+      },
+      portal: {
+        title: 'Returned from Billing Portal',
+        description:
+          'You are back from the Stripe Billing Portal. Payment methods and invoices are managed there.',
+        steps: [
+          'Payment method and billing edits were handled in Stripe.',
+          'Subscription details sync back to your account state.',
+          'Open Billing to verify your latest plan and payment status.',
+        ],
+      },
+      authenticatedHint:
+        'If your status has not refreshed yet, open Billing again in a few seconds.',
+      unauthenticatedHint:
+        'Log in to see your current subscription status and manage your billing.',
+      actions: {
+        goBilling: 'Go to Billing',
+        goDashboard: 'Go to Dashboard',
+        goHome: 'Go Home',
+        openLogin: 'Log in',
+      },
     },
     billingPage: {
       title: 'Billing',
@@ -292,17 +338,41 @@ export const translations = {
         dailyTokens: '{{count}} tokens/day',
         switchButton: 'Switch Plan',
         updating: 'Updating...',
+        dialogTitle: 'Confirm plan change',
+        dialogDescription: 'You are about to switch to {{plan}} ({{price}} {{period}}).',
+        dialogProrationNote:
+          'Stripe applies this change immediately and creates a prorated charge or credit based on your current billing cycle.',
+        dialogDowngradeCreditNote:
+          'If you downgrade now, unused value from your current higher plan becomes Stripe credit and can reduce upcoming invoices.',
+        dialogUpgradeChargeNote:
+          'If you upgrade now, Stripe can charge a prorated amount immediately for the rest of this billing period.',
+        dialogDirectionUpgrade: 'Upgrade',
+        dialogDirectionDowngrade: 'Downgrade',
+        dialogDirectionChange: 'Plan change',
+        dialogCurrentPlanLabel: 'Current plan',
+        dialogNewPlanLabel: 'New plan',
+        dialogCurrentCycleEnd: 'Current billing cycle end: {{date}}',
+        dialogCancel: 'Keep current plan',
+        dialogConfirm: 'Confirm plan change',
       },
       paymentMethod: {
         title: 'Payment Method',
-        description: 'Mock payment flow for development until Stripe is integrated.',
-        mockCard: 'Mock Card •••• 4242',
-        updateButton: 'Update Payment Method',
-        modalTitle: 'Update Payment Method',
-        cardNumberLabel: 'Card Number',
-        expiryLabel: 'Expiry',
-        cvcLabel: 'CVC',
-        cardholderLabel: 'Cardholder Name',
+        description: 'Manage your payment methods securely in the Stripe Billing Portal.',
+        stripeManaged: 'Managed securely via Stripe',
+        updateButton: 'Open Billing Portal',
+      },
+      cancellation: {
+        title: 'Cancel Subscription',
+        description:
+          'Cancel at period end. Your account remains active until your current paid period ends.',
+        currentPeriodEnd: 'Current period end',
+        action: 'Cancel at Period End',
+        cancelling: 'Cancelling...',
+        dialogTitle: 'Cancel subscription?',
+        dialogDescription:
+          'Do you want to cancel at period end? You can keep using your account until the current period ends.',
+        dialogCancel: 'Keep subscription',
+        dialogConfirm: 'Yes, cancel subscription',
       },
       deleteAccount: {
         title: 'Cancel Subscription & Delete Account',
@@ -323,12 +393,17 @@ export const translations = {
       },
       notices: {
         planUpdated: 'Plan updated successfully.',
-        paymentUpdated: 'Payment method updated and subscription activated.',
+        redirectingToCheckout: 'Redirecting to Stripe checkout...',
+        redirectingToPortal: 'Redirecting to Stripe Billing Portal...',
+        cancellationScheduledWithDate: 'Subscription cancelled. Access remains active until {{date}}.',
+        cancellationScheduled: 'Subscription cancelled at period end.',
       },
       errors: {
         loadFailed: 'Failed to load billing data.',
         planUpdateFailed: 'Failed to update plan.',
-        paymentFailed: 'Failed to process mock payment.',
+        checkoutFailed: 'Failed to start Stripe checkout.',
+        portalFailed: 'Failed to open Stripe Billing Portal.',
+        cancelFailed: 'Failed to cancel subscription.',
         deleteAccountFailed: 'Failed to delete account.',
         deleteAccountConfirmMismatch: 'Please type DELETE to confirm account deletion.',
       },
@@ -353,6 +428,29 @@ export const translations = {
         cancelling: 'Cancelling...',
         tempDeleteAccount: 'Temp Delete Account',
         deletingAccount: 'Deleting account...',
+      },
+      changePassword: {
+        title: 'Change Password',
+        description: 'Set a new password for your account. Your current password is required.',
+        currentPasswordLabel: 'Current password',
+        currentPasswordPlaceholder: 'Enter your current password',
+        newPasswordLabel: 'New password',
+        newPasswordPlaceholder: 'At least 8 characters',
+        confirmPasswordLabel: 'Confirm new password',
+        confirmPasswordPlaceholder: 'Repeat your new password',
+        cancel: 'Cancel',
+        confirm: 'Update password',
+        saving: 'Updating...',
+        success: 'Password updated successfully.',
+        errors: {
+          currentPasswordRequired: 'Please enter your current password.',
+          currentPasswordInvalid: 'Current password is incorrect.',
+          emailMissing: 'Could not verify your account email. Reload the page and try again.',
+          newPasswordMin: 'New password must be at least 8 characters.',
+          confirmMismatch: 'New passwords do not match.',
+          newMustDiffer: 'New password must be different from your current password.',
+          updateFailed: 'Could not update password. Please try again.',
+        },
       },
       cancellation: {
         title: 'Subscription Cancellation',
@@ -1061,7 +1159,7 @@ export const translations = {
       loginSubtitle: 'Melde dich an und finde deine nächsten Top-Leads.',
       registerSubtitle: 'Registriere dich und finde deine nächsten Top-Leads.',
       registerPlanSubtitle:
-        'Wähle deinen Tarif und schließe die Mock-Zahlung ab, um dein Abo zu aktivieren.',
+        'Wähle deinen Tarif und fahre mit dem sicheren Stripe-Checkout fort.',
       continueWithGoogle: 'Mit Google fortfahren',
       registerWithGoogle: 'Mit Google registrieren',
       registerGoogleDisabledForBilling:
@@ -1101,6 +1199,52 @@ export const translations = {
         'Konto für {{email}} erstellt. Bitte bestätige zuerst deine E-Mail, bevor du dich einloggst.',
       registerNeedsConfirmationWithPlan:
         'Konto für {{email}} mit Tarif {{plan}} erstellt. Bitte bestätige deine E-Mail und logge dich dann ein, um Billing zu aktivieren.',
+      redirectingToCheckout: 'Weiterleitung zum Stripe-Checkout...',
+      checkoutFailed: 'Stripe-Checkout konnte nicht gestartet werden. Bitte versuche es erneut.',
+    },
+    stripeReturn: {
+      badge: 'Stripe-Billingstatus',
+      nextTitle: 'Wie geht es weiter?',
+      success: {
+        title: 'Abonnement aktiviert',
+        description:
+          'Dein Checkout bei Stripe wurde abgeschlossen. Es kann ein paar Sekunden dauern, bis der aktualisierte Billing-Status in deinem Konto erscheint.',
+        steps: [
+          'Stripe hat deine Zahlung und den Start des Abos bestätigt.',
+          'Der Billing-Status wird innerhalb weniger Sekunden in dein Konto synchronisiert.',
+          'Öffne die Abrechnung, um Tarif, Verlängerungsdatum und Rechnungen zu prüfen.',
+        ],
+      },
+      cancel: {
+        title: 'Checkout abgebrochen',
+        description:
+          'Der Stripe-Checkout wurde abgebrochen. Es wurde keine Abo-Änderung abgeschlossen.',
+        steps: [
+          'Es wurde keine Zahlung erfasst und keine Tarifänderung durchgeführt.',
+          'Dein aktueller Zugriff bleibt unverändert.',
+          'Du kannst den Checkout jederzeit über die Abrechnungsseite erneut starten.',
+        ],
+      },
+      portal: {
+        title: 'Zurück aus dem Billing Portal',
+        description:
+          'Du bist vom Stripe Billing Portal zurück. Zahlungsmethoden und Rechnungen werden dort verwaltet.',
+        steps: [
+          'Zahlungsmethode und Abrechnungsänderungen wurden in Stripe übernommen.',
+          'Abo-Details werden zurück in deinen Kontostatus synchronisiert.',
+          'Öffne die Abrechnung, um Tarif und Zahlungsstatus zu prüfen.',
+        ],
+      },
+      authenticatedHint:
+        'Falls dein Status noch nicht aktualisiert ist, öffne die Abrechnung in ein paar Sekunden erneut.',
+      unauthenticatedHint:
+        'Logge dich ein, um deinen aktuellen Abostatus zu sehen und Billing zu verwalten.',
+      actions: {
+        goBilling: 'Zur Abrechnung',
+        goDashboard: 'Zum Dashboard',
+        goHome: 'Zur Startseite',
+        openLogin: 'Einloggen',
+      },
     },
     billingPage: {
       title: 'Abrechnung',
@@ -1129,17 +1273,41 @@ export const translations = {
         dailyTokens: '{{count}} Tokens/Tag',
         switchButton: 'Tarif wechseln',
         updating: 'Aktualisiere...',
+        dialogTitle: 'Tarifwechsel bestätigen',
+        dialogDescription: 'Du wechselst zu {{plan}} ({{price}} {{period}}).',
+        dialogProrationNote:
+          'Stripe wendet die Änderung sofort an und erstellt je nach laufendem Abrechnungszeitraum eine anteilige Nachbelastung oder Gutschrift.',
+        dialogDowngradeCreditNote:
+          'Wenn du jetzt auf einen günstigeren Tarif wechselst, wird ungenutzter Wert deines aktuellen höheren Tarifs als Stripe-Guthaben angerechnet und kann kommende Rechnungen reduzieren.',
+        dialogUpgradeChargeNote:
+          'Wenn du jetzt auf einen höheren Tarif wechselst, kann Stripe sofort einen anteiligen Betrag für den Rest dieses Abrechnungszeitraums berechnen.',
+        dialogDirectionUpgrade: 'Upgrade',
+        dialogDirectionDowngrade: 'Downgrade',
+        dialogDirectionChange: 'Tarifwechsel',
+        dialogCurrentPlanLabel: 'Aktueller Tarif',
+        dialogNewPlanLabel: 'Neuer Tarif',
+        dialogCurrentCycleEnd: 'Aktuelles Abrechnungsende: {{date}}',
+        dialogCancel: 'Aktuellen Tarif behalten',
+        dialogConfirm: 'Tarifwechsel bestätigen',
       },
       paymentMethod: {
         title: 'Zahlungsmethode',
-        description: 'Mock-Zahlungsfluss für Entwicklung bis Stripe integriert ist.',
-        mockCard: 'Mock-Karte •••• 4242',
-        updateButton: 'Zahlungsmethode aktualisieren',
-        modalTitle: 'Zahlungsmethode aktualisieren',
-        cardNumberLabel: 'Kartennummer',
-        expiryLabel: 'Ablauf',
-        cvcLabel: 'CVC',
-        cardholderLabel: 'Karteninhaber',
+        description: 'Verwalte deine Zahlungsmethoden sicher im Stripe Billing Portal.',
+        stripeManaged: 'Sicher über Stripe verwaltet',
+        updateButton: 'Billing Portal öffnen',
+      },
+      cancellation: {
+        title: 'Abo kündigen',
+        description:
+          'Kündige zum Periodenende. Dein Konto bleibt bis zum Ende deiner aktuellen Zahlungsperiode aktiv.',
+        currentPeriodEnd: 'Aktuelles Periodenende',
+        action: 'Zum Periodenende kündigen',
+        cancelling: 'Kündige...',
+        dialogTitle: 'Abo kündigen?',
+        dialogDescription:
+          'Möchtest du zum Periodenende kündigen? Du kannst dein Konto bis zum Ende der laufenden Periode weiter nutzen.',
+        dialogCancel: 'Abo behalten',
+        dialogConfirm: 'Ja, Abo kündigen',
       },
       deleteAccount: {
         title: 'Abo kündigen & Konto löschen',
@@ -1160,12 +1328,17 @@ export const translations = {
       },
       notices: {
         planUpdated: 'Tarif erfolgreich aktualisiert.',
-        paymentUpdated: 'Zahlungsmethode aktualisiert und Abo aktiviert.',
+        redirectingToCheckout: 'Weiterleitung zum Stripe-Checkout...',
+        redirectingToPortal: 'Weiterleitung zum Stripe Billing Portal...',
+        cancellationScheduledWithDate: 'Abo gekündigt. Zugriff bleibt bis {{date}} aktiv.',
+        cancellationScheduled: 'Abo zum Periodenende gekündigt.',
       },
       errors: {
         loadFailed: 'Abrechnungsdaten konnten nicht geladen werden.',
         planUpdateFailed: 'Tarif konnte nicht aktualisiert werden.',
-        paymentFailed: 'Mock-Zahlung fehlgeschlagen.',
+        checkoutFailed: 'Stripe-Checkout konnte nicht gestartet werden.',
+        portalFailed: 'Stripe Billing Portal konnte nicht geöffnet werden.',
+        cancelFailed: 'Abo konnte nicht gekündigt werden.',
         deleteAccountFailed: 'Konto konnte nicht gelöscht werden.',
         deleteAccountConfirmMismatch:
           'Bitte gib DELETE ein, um die Kontolöschung zu bestätigen.',
@@ -1191,6 +1364,31 @@ export const translations = {
         cancelling: 'Kündige...',
         tempDeleteAccount: 'Temporär Konto löschen',
         deletingAccount: 'Konto wird gelöscht...',
+      },
+      changePassword: {
+        title: 'Passwort ändern',
+        description:
+          'Lege ein neues Passwort für dein Konto fest. Dein aktuelles Passwort ist erforderlich.',
+        currentPasswordLabel: 'Aktuelles Passwort',
+        currentPasswordPlaceholder: 'Gib dein aktuelles Passwort ein',
+        newPasswordLabel: 'Neues Passwort',
+        newPasswordPlaceholder: 'Mindestens 8 Zeichen',
+        confirmPasswordLabel: 'Neues Passwort bestätigen',
+        confirmPasswordPlaceholder: 'Wiederhole dein neues Passwort',
+        cancel: 'Abbrechen',
+        confirm: 'Passwort aktualisieren',
+        saving: 'Aktualisiere...',
+        success: 'Passwort erfolgreich aktualisiert.',
+        errors: {
+          currentPasswordRequired: 'Bitte gib dein aktuelles Passwort ein.',
+          currentPasswordInvalid: 'Das aktuelle Passwort ist nicht korrekt.',
+          emailMissing:
+            'Deine Konto-E-Mail konnte nicht geprüft werden. Lade die Seite neu und versuche es erneut.',
+          newPasswordMin: 'Das neue Passwort muss mindestens 8 Zeichen haben.',
+          confirmMismatch: 'Die neuen Passwörter stimmen nicht überein.',
+          newMustDiffer: 'Das neue Passwort muss sich vom aktuellen Passwort unterscheiden.',
+          updateFailed: 'Passwort konnte nicht aktualisiert werden. Bitte versuche es erneut.',
+        },
       },
       cancellation: {
         title: 'Abonnement kündigen',

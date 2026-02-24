@@ -7,6 +7,7 @@ interface FooterProps {
 
 export function Footer({ onNavigateDatenschutz, onNavigateImpressum }: FooterProps) {
   const { t } = useI18n();
+  const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
 
   return (
     <footer className="border-t border-white/5 bg-white/[0.02] backdrop-blur-sm">
@@ -15,7 +16,7 @@ export function Footer({ onNavigateDatenschutz, onNavigateImpressum }: FooterPro
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img
-                src="/logo.png"
+                src={logoSrc}
                 alt="Lead Generator logo"
                 className="shrink-0 rounded-lg object-cover"
                 style={{ width: '2.5rem', height: '2.5rem' }}

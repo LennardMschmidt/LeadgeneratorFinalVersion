@@ -15,10 +15,12 @@ import {
 import { DashboardHeader } from './DashboardHeader';
 import { getProblemCategoriesForBusinessType } from './businessTypeProblemCatalog';
 import { exportRowsToExcel } from './exportUtils';
+import { AppAlertToast } from '../ui/AppAlertToast';
 import { LeadManagementTable } from './LeadManagementTable';
 import { SearchConfigurationPanel } from './SearchConfigurationPanel';
 import { TierOverviewCards } from './TierOverviewCards';
 import { WebsiteAnalysisModal } from './WebsiteAnalysisModal';
+import { toFriendlyErrorFromUnknown } from '../../lib/errorMessaging';
 import {
   Lead,
   LeadFilters,
@@ -108,7 +110,7 @@ export function DashboardPage({
         }
 
         if (error instanceof Error) {
-          setSearchError(error.message);
+          setSearchError(toFriendlyErrorFromUnknown(error));
         } else {
           setSearchError('Failed to load saved searches.');
         }
@@ -355,7 +357,7 @@ export function DashboardPage({
           );
           setSearchError(t('dashboard.errors.backendUnreachable', { target }));
         } else {
-          setSearchError(error.message);
+          setSearchError(toFriendlyErrorFromUnknown(error));
         }
       } else {
         setSearchError(t('dashboard.errors.failedGenerate'));
@@ -392,7 +394,7 @@ export function DashboardPage({
       setSelectedSavedSearchId(created.id);
     } catch (error) {
       if (error instanceof Error) {
-        setSearchError(error.message);
+        setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
         setSearchError('Failed to save search.');
       }
@@ -451,7 +453,7 @@ export function DashboardPage({
       }
     } catch (error) {
       if (error instanceof Error) {
-        setSearchError(error.message);
+        setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
         setSearchError('Failed to delete saved search.');
       }
@@ -500,7 +502,7 @@ export function DashboardPage({
       setActionNotice(null);
       setSaveSuccessHint(null);
       if (error instanceof Error) {
-        setSearchError(error.message);
+        setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
         setSearchError(t('dashboard.savedLeads.bulkSavedError'));
       }
@@ -545,7 +547,7 @@ export function DashboardPage({
       setActionNotice(null);
       setSaveSuccessHint(null);
       if (error instanceof Error) {
-        setSearchError(error.message);
+        setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
         setSearchError(t('dashboard.savedLeads.singleSavedError'));
       }
@@ -598,7 +600,7 @@ export function DashboardPage({
     } catch (error) {
       setActionNotice(null);
       if (error instanceof Error) {
-        setSearchError(error.message);
+        setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
         setSearchError(t('dashboard.savedLeads.aiSummary.failed'));
       }
@@ -654,23 +656,6 @@ export function DashboardPage({
           />
         </section>
 
-        {searchError ? (
-          <section className="mt-4">
-            <div className="rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-              {searchError}
-            </div>
-            <br />
-          </section>
-        ) : null}
-
-        {actionNotice ? (
-          <section className="mt-4">
-            <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-              {actionNotice}
-            </div>
-          </section>
-        ) : null}
-
         <section className="mt-24">
           <LeadManagementTable
             leads={filteredLeads}
@@ -710,6 +695,16 @@ export function DashboardPage({
         onGenerateAiSummary={canGenerateModalAiSummary ? generateModalAiSummary : undefined}
         aiSummaryLocked={!canUseAiEvaluations}
         onNavigateBilling={onNavigateBilling}
+      />
+      <AppAlertToast
+        message={searchError}
+        onClose={() => setSearchError(null)}
+        variant="error"
+      />
+      <AppAlertToast
+        message={actionNotice}
+        onClose={() => setActionNotice(null)}
+        variant="info"
       />
     </>
   );

@@ -23,6 +23,7 @@ export function DashboardHeader({
   onLogout,
 }: DashboardHeaderProps) {
   const { t } = useI18n();
+  const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const dropdownItemClass =
@@ -58,7 +59,7 @@ export function DashboardHeader({
       <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <button type="button" onClick={onNavigateHome} className="flex items-center gap-2">
           <img
-            src="/logo.png"
+            src={logoSrc}
             alt="Lead Generator logo"
             className="shrink-0 rounded-lg object-cover"
             style={{ width: '2.5rem', height: '2.5rem' }}

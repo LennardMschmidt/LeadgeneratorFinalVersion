@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { Check, ChevronDown, Sparkles, X as CloseX } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { toFriendlyErrorFromUnknown } from '../../lib/errorMessaging';
+import { AppAlertToast } from '../ui/AppAlertToast';
 import { Dialog, DialogClose, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 interface WebsiteAnalysisModalProps {
@@ -821,8 +823,12 @@ export function WebsiteAnalysisModal({
       await onGenerateAiSummary();
       setIsSummaryOpen(true);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : currentLanguage === 'de' ? 'Fehlgeschlagen.' : 'Failed.';
+      const message = toFriendlyErrorFromUnknown(
+        error,
+        currentLanguage === 'de'
+          ? 'Oh nein, etwas ist schiefgelaufen. Bitte versuche es erneut.'
+          : 'Oh no, something went wrong. Please try again.',
+      );
       setSummaryError(message);
       if (/insufficient|remaining|token|limit/i.test(message)) {
         setShowUpgradePrompt(true);
@@ -831,20 +837,21 @@ export function WebsiteAnalysisModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent
-        overlayStyle={overlayStyle}
-        style={contentStyle}
-        hideCloseButton
-        className="max-h-[90vh] overflow-y-auto border-white/25 bg-slate-950/98 text-white sm:max-w-[980px]"
-      >
-        <DialogClose
-          aria-label="Close website analysis"
-          className="absolute right-4 top-4 z-[360] p-1 text-slate-200/90 transition-colors hover:text-white focus:outline-none"
-          style={{ right: '1rem', left: 'auto', top: '1rem' }}
+    <>
+      <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+        <DialogContent
+          overlayStyle={overlayStyle}
+          style={contentStyle}
+          hideCloseButton
+          className="max-h-[90vh] overflow-y-auto border-white/25 bg-slate-950/98 text-white sm:max-w-[980px]"
         >
-          <CloseX className="h-8 w-8 transition-transform duration-300 ease-out hover:rotate-90 hover:scale-110" />
-        </DialogClose>
+          <DialogClose
+            aria-label="Close website analysis"
+            className="absolute right-4 top-4 z-[360] p-1 text-slate-200/90 transition-colors hover:text-white focus:outline-none"
+            style={{ right: '1rem', left: 'auto', top: '1rem' }}
+          >
+            <CloseX className="h-8 w-8 transition-transform duration-300 ease-out hover:rotate-90 hover:scale-110" />
+          </DialogClose>
 
         <DialogHeader>
           <DialogTitle className="pr-14 leading-tight">
@@ -946,12 +953,6 @@ export function WebsiteAnalysisModal({
             </button>
           </div>
 
-          {summaryError ? (
-            <div className="mt-4 rounded-lg border border-rose-300/30 bg-rose-500/15 px-4 py-3 text-sm text-rose-100">
-              {summaryError}
-            </div>
-          ) : null}
-
           {(showUpgradePrompt || aiSummaryLocked) && onNavigateBilling ? (
             <div className="mt-4">
               <button
@@ -1019,7 +1020,13 @@ export function WebsiteAnalysisModal({
             )}
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+      <AppAlertToast
+        message={summaryError}
+        onClose={() => setSummaryError(null)}
+        variant="error"
+      />
+    </>
   );
 }

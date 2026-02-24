@@ -22,6 +22,8 @@ import { STATUS_VISUALS, TIER_BADGE_STYLES } from './leadVisuals';
 import { STATUS_OPTIONS } from './mockData';
 import { TierOverviewCards } from './TierOverviewCards';
 import { LeadStatus, LeadTier, SavedLead } from './types';
+import { toFriendlyErrorFromUnknown, toFriendlyErrorMessage } from '../../lib/errorMessaging';
+import { AppAlertToast } from '../ui/AppAlertToast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -185,7 +187,7 @@ export function SavedSearchesPage({
       setProblemCounts(response.problemCounts);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('dashboard.savedLeads.loadError'));
       }
@@ -322,7 +324,7 @@ export function SavedSearchesPage({
     } catch (error) {
       setNoticeMessage(null);
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('dashboard.savedLeads.statusUpdateError'));
       }
@@ -368,7 +370,7 @@ export function SavedSearchesPage({
     } catch (error) {
       setNoticeMessage(null);
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('dashboard.savedLeads.deleteError'));
       }
@@ -409,7 +411,7 @@ export function SavedSearchesPage({
           );
           setIsWebsiteBlockedDialogOpen(true);
         }
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('dashboard.websiteAnalysis.failed'));
       }
@@ -442,7 +444,7 @@ export function SavedSearchesPage({
     } catch (error) {
       setNoticeMessage(null);
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('dashboard.websiteAnalysis.removeFailed'));
       }
@@ -477,13 +479,16 @@ export function SavedSearchesPage({
       setNoticeMessage(null);
       if (error instanceof BackendApiError && error.code === 'FEATURE_NOT_IN_PLAN') {
         const message = t('dashboard.savedLeads.aiUpgradeRequired');
-        setErrorMessage(message);
+        setErrorMessage(toFriendlyErrorMessage(message));
         throw new Error(message);
       }
-      const message =
-        error instanceof Error ? error.message : t('dashboard.savedLeads.aiSummary.failed');
-      setErrorMessage(message);
-      throw new Error(message);
+      const message = toFriendlyErrorFromUnknown(
+        error,
+        t('dashboard.savedLeads.aiSummary.failed'),
+      );
+      const friendlyMessage = toFriendlyErrorMessage(message);
+      setErrorMessage(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setAiSummaryLoadingIds((current) => {
         const next = { ...current };
@@ -525,13 +530,16 @@ export function SavedSearchesPage({
       setNoticeMessage(null);
       if (error instanceof BackendApiError && error.code === 'FEATURE_NOT_IN_PLAN') {
         const message = t('dashboard.savedLeads.aiUpgradeRequired');
-        setErrorMessage(message);
+        setErrorMessage(toFriendlyErrorMessage(message));
         throw new Error(message);
       }
-      const message =
-        error instanceof Error ? error.message : t('dashboard.savedLeads.aiContact.failed');
-      setErrorMessage(message);
-      throw new Error(message);
+      const message = toFriendlyErrorFromUnknown(
+        error,
+        t('dashboard.savedLeads.aiContact.failed'),
+      );
+      const friendlyMessage = toFriendlyErrorMessage(message);
+      setErrorMessage(friendlyMessage);
+      throw new Error(friendlyMessage);
     } finally {
       setAiContactLoadingByLead((current) => {
         const existing = current[savedLeadId];
@@ -580,7 +588,7 @@ export function SavedSearchesPage({
     } catch (error) {
       setNoticeMessage(null);
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('dashboard.savedLeads.bulkDeleteError'));
       }
@@ -847,22 +855,6 @@ export function SavedSearchesPage({
               )}
             </div>
           </section>
-
-          {errorMessage ? (
-            <section style={{ marginTop: '10px', marginBottom: '10px' }}>
-              <div className="rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {errorMessage}
-              </div>
-            </section>
-          ) : null}
-
-          {noticeMessage ? (
-            <section>
-              <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                {noticeMessage}
-              </div>
-            </section>
-          ) : null}
 
           <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
             {isLoading ? (
@@ -1187,6 +1179,16 @@ export function SavedSearchesPage({
           </div>
         </DialogContent>
       </Dialog>
+      <AppAlertToast
+        message={errorMessage}
+        onClose={() => setErrorMessage(null)}
+        variant="error"
+      />
+      <AppAlertToast
+        message={noticeMessage}
+        onClose={() => setNoticeMessage(null)}
+        variant="info"
+      />
     </>
   );
 }

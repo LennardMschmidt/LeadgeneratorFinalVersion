@@ -15,7 +15,9 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
+import { toFriendlyErrorFromUnknown, toFriendlyErrorMessage } from '../../lib/errorMessaging';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { AppAlertToast } from '../ui/AppAlertToast';
 import { DashboardSelect } from './DashboardSelect';
 import { STATUS_VISUALS, TIER_BADGE_STYLES } from './leadVisuals';
 import { STATUS_OPTIONS } from './mockData';
@@ -511,10 +513,10 @@ export function SavedLeadDetailModal({
       await onGenerateAiContactSuggestion(lead, channel);
       setCopySuccessMessage(null);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : t('dashboard.savedLeads.detailModal.aiContact.errors.default');
+      const message = toFriendlyErrorFromUnknown(
+        error,
+        t('dashboard.savedLeads.detailModal.aiContact.errors.default'),
+      );
       setAiSuggestionError(message);
       if (/insufficient|remaining|token|limit|feature|plan/i.test(message)) {
         setShowUpgradePrompt(true);
@@ -529,7 +531,9 @@ export function SavedLeadDetailModal({
       setCopySuccessMessage(t('dashboard.savedLeads.detailModal.aiContact.copySuccess'));
       return;
     }
-    setAiSuggestionError(t('dashboard.savedLeads.detailModal.aiContact.errors.copyFailed'));
+    setAiSuggestionError(
+      toFriendlyErrorMessage(t('dashboard.savedLeads.detailModal.aiContact.errors.copyFailed')),
+    );
   };
 
   const directLinks = [
@@ -551,8 +555,9 @@ export function SavedLeadDetailModal({
   ].filter((item): item is DirectLink => item !== null);
 
   return (
-    <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent overlayStyle={MODAL_OVERLAY_STYLE} className="text-white" style={MODAL_CONTENT_STYLE}>
+    <>
+      <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+        <DialogContent overlayStyle={MODAL_OVERLAY_STYLE} className="text-white" style={MODAL_CONTENT_STYLE}>
         <div className="saved-lead-detail-scroll" style={MODAL_SCROLL_AREA_STYLE}>
           <div style={MODAL_STACK_STYLE}>
             <section style={SECTION_CARD_STYLE}>
@@ -1077,20 +1082,6 @@ export function SavedLeadDetailModal({
                   </div>
                 ) : null}
 
-                {aiSuggestionError ? (
-                  <div
-                    style={{
-                      marginTop: '0.75rem',
-                      border: '1px solid rgba(251, 113, 133, 0.35)',
-                      borderRadius: '0.75rem',
-                      background: 'rgba(225, 29, 72, 0.14)',
-                      padding: '0.55rem 0.7rem',
-                    }}
-                  >
-                    <p className="text-xs text-rose-100">{aiSuggestionError}</p>
-                  </div>
-                ) : null}
-
                 {(showUpgradePrompt || isAiPlanLocked) && onNavigateBilling ? (
                   <div
                     style={{
@@ -1262,25 +1253,31 @@ export function SavedLeadDetailModal({
             background: rgba(148, 163, 184, 0.5);
           }
         `}</style>
-      </DialogContent>
+        </DialogContent>
 
-      <WebsiteAnalysisModal
-        open={isWebsiteAnalysisOpen}
-        onClose={() => setIsWebsiteAnalysisOpen(false)}
-        analysis={lead.websiteAnalysis ?? null}
-        businessName={lead.businessName}
-        aiSummary={lead.websiteAiSummary}
-        aiSummaryLoading={aiSummaryLoading}
-        aiSummaryLocked={!canUseAiEvaluations}
-        onGenerateAiSummary={
-          onGenerateAiSummary
-            ? async () => {
-                await onGenerateAiSummary(lead);
-              }
-            : undefined
-        }
-        onNavigateBilling={onNavigateBilling}
+        <WebsiteAnalysisModal
+          open={isWebsiteAnalysisOpen}
+          onClose={() => setIsWebsiteAnalysisOpen(false)}
+          analysis={lead.websiteAnalysis ?? null}
+          businessName={lead.businessName}
+          aiSummary={lead.websiteAiSummary}
+          aiSummaryLoading={aiSummaryLoading}
+          aiSummaryLocked={!canUseAiEvaluations}
+          onGenerateAiSummary={
+            onGenerateAiSummary
+              ? async () => {
+                  await onGenerateAiSummary(lead);
+                }
+              : undefined
+          }
+          onNavigateBilling={onNavigateBilling}
+        />
+      </Dialog>
+      <AppAlertToast
+        message={aiSuggestionError}
+        onClose={() => setAiSuggestionError(null)}
+        variant="error"
       />
-    </Dialog>
+    </>
   );
 }

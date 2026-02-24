@@ -7,13 +7,14 @@ interface HeaderProps {
 
 export function Header({ onLoginClick }: HeaderProps) {
   const { t } = useI18n();
+  const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-lg bg-[#0a0a0f]/80 border-b border-white/5">
       <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <img
-            src="/logo.png"
+            src={logoSrc}
             alt="Lead Generator logo"
             className="shrink-0 rounded-lg object-cover"
             style={{ width: '2.5rem', height: '2.5rem' }}

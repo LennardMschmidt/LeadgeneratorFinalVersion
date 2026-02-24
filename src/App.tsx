@@ -12,6 +12,7 @@ import { DatenschutzPage } from './components/DatenschutzPage';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { LoginModal } from './components/LoginModal';
 import { ResetPasswordPage } from './components/ResetPasswordPage';
+import { StripeReturnPage } from './components/StripeReturnPage';
 import { DashboardPage } from './components/dashboard/DashboardPage';
 import { BusinessProfilePage } from './components/dashboard/BusinessProfilePage';
 import { SavedSearchesPage } from './components/dashboard/SavedSearchesPage';
@@ -25,6 +26,9 @@ type AppRoute =
   | '/business-profile'
   | '/saved-searches'
   | '/billing'
+  | '/billing/success'
+  | '/billing/cancel'
+  | '/billing/portal-return'
   | '/account-settings'
   | '/reset-password'
   | '/impressum'
@@ -50,6 +54,18 @@ const getRouteFromPathname = (pathname: string): AppRoute => {
 
   if (pathname === '/billing') {
     return '/billing';
+  }
+
+  if (pathname === '/billing/success') {
+    return '/billing/success';
+  }
+
+  if (pathname === '/billing/cancel') {
+    return '/billing/cancel';
+  }
+
+  if (pathname === '/billing/portal-return') {
+    return '/billing/portal-return';
   }
 
   if (pathname === '/account-settings') {
@@ -154,6 +170,9 @@ export default function App() {
     const isPublicRoute =
       route === '/' ||
       route === '/reset-password' ||
+      route === '/billing/success' ||
+      route === '/billing/cancel' ||
+      route === '/billing/portal-return' ||
       route === '/impressum' ||
       route === '/datenschutz';
     const isProtectedRoute = !isPublicRoute;
@@ -194,6 +213,9 @@ export default function App() {
   const showBusinessProfile = route === '/business-profile' && isAuthenticated;
   const showSavedSearches = route === '/saved-searches' && isAuthenticated;
   const showBilling = route === '/billing' && isAuthenticated;
+  const showBillingSuccess = route === '/billing/success';
+  const showBillingCancel = route === '/billing/cancel';
+  const showBillingPortalReturn = route === '/billing/portal-return';
   const showAccountSettings = route === '/account-settings' && isAuthenticated;
   const showResetPassword = route === '/reset-password';
   const showImpressum = route === '/impressum';
@@ -257,6 +279,54 @@ export default function App() {
             void handleLogout();
           }}
         />
+      ) : showBillingSuccess ? (
+        <>
+          <Header onLoginClick={openLoginModal} />
+          <StripeReturnPage
+            variant="success"
+            isAuthenticated={isAuthenticated}
+            onNavigateHome={() => navigate('/')}
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateBilling={() => navigate('/billing')}
+            onOpenLogin={openLoginModal}
+          />
+          <Footer
+            onNavigateDatenschutz={() => navigate('/datenschutz')}
+            onNavigateImpressum={() => navigate('/impressum')}
+          />
+        </>
+      ) : showBillingCancel ? (
+        <>
+          <Header onLoginClick={openLoginModal} />
+          <StripeReturnPage
+            variant="cancel"
+            isAuthenticated={isAuthenticated}
+            onNavigateHome={() => navigate('/')}
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateBilling={() => navigate('/billing')}
+            onOpenLogin={openLoginModal}
+          />
+          <Footer
+            onNavigateDatenschutz={() => navigate('/datenschutz')}
+            onNavigateImpressum={() => navigate('/impressum')}
+          />
+        </>
+      ) : showBillingPortalReturn ? (
+        <>
+          <Header onLoginClick={openLoginModal} />
+          <StripeReturnPage
+            variant="portal"
+            isAuthenticated={isAuthenticated}
+            onNavigateHome={() => navigate('/')}
+            onNavigateDashboard={() => navigate('/dashboard')}
+            onNavigateBilling={() => navigate('/billing')}
+            onOpenLogin={openLoginModal}
+          />
+          <Footer
+            onNavigateDatenschutz={() => navigate('/datenschutz')}
+            onNavigateImpressum={() => navigate('/impressum')}
+          />
+        </>
       ) : showAccountSettings ? (
         <AccountSettingsPage
           onNavigateHome={() => navigate('/')}

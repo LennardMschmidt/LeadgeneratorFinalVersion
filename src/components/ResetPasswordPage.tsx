@@ -2,6 +2,8 @@ import { FormEvent, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowLeft, CheckCircle2, Lock } from 'lucide-react';
 import { signOutFromSupabase, updateSupabasePassword } from '../lib/supabaseAuth';
+import { toFriendlyErrorFromUnknown, toFriendlyErrorMessage } from '../lib/errorMessaging';
+import { AppAlertToast } from './ui/AppAlertToast';
 
 interface ResetPasswordPageProps {
   onBackHome: () => void;
@@ -58,7 +60,7 @@ export function ResetPasswordPage({ onBackHome, onBackToLogin }: ResetPasswordPa
     try {
       const result = await updateSupabasePassword(password);
       if (!result.ok) {
-        setStatusMessage(getAuthFailureMessage(result));
+        setStatusMessage(toFriendlyErrorMessage(getAuthFailureMessage(result)));
         return;
       }
 
@@ -66,6 +68,8 @@ export function ResetPasswordPage({ onBackHome, onBackToLogin }: ResetPasswordPa
       setPassword('');
       setConfirmPassword('');
       setIsDone(true);
+    } catch (error) {
+      setStatusMessage(toFriendlyErrorFromUnknown(error));
     } finally {
       setIsLoading(false);
     }
@@ -154,12 +158,6 @@ export function ResetPasswordPage({ onBackHome, onBackToLogin }: ResetPasswordPa
                 />
               </div>
 
-              {statusMessage ? (
-                <p className="rounded-xl border border-blue-400/25 bg-blue-500/10 px-3 py-2 text-xs leading-relaxed text-blue-200">
-                  {statusMessage}
-                </p>
-              ) : null}
-
               <button
                 type="submit"
                 aria-disabled={!canUpdatePassword}
@@ -226,6 +224,11 @@ export function ResetPasswordPage({ onBackHome, onBackToLogin }: ResetPasswordPa
           </motion.div>
         )}
       </motion.div>
+      <AppAlertToast
+        message={statusMessage}
+        onClose={() => setStatusMessage(null)}
+        variant="error"
+      />
     </div>
   );
 }

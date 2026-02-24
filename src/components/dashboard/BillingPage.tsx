@@ -2,15 +2,30 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, CreditCard, Loader2 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import {
+  BackendApiError,
   BillingPlan,
   BillingUsage,
+  cancelSubscriptionAtPeriodEndInBackend,
   changeBillingPlanInBackend,
+  createBillingPortalSessionInBackend,
+  createCheckoutSessionInBackend,
+  fetchAccountDetailsFromBackend,
   fetchBillingPlansFromBackend,
   fetchBillingUsageFromBackend,
-  mockBillingPaymentInBackend,
 } from './api';
 import { DashboardHeader } from './DashboardHeader';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
+import { toFriendlyErrorFromUnknown } from '../../lib/errorMessaging';
+import { AppAlertToast } from '../ui/AppAlertToast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
 
 interface BillingPageProps {
   onNavigateHome: () => void;
@@ -22,22 +37,27 @@ interface BillingPageProps {
   onLogout: () => void;
 }
 
-const planOrder: Array<'STANDARD' | 'PRO' | 'EXPERT'> = ['STANDARD', 'PRO', 'EXPERT'];
+type PlanCode = 'STANDARD' | 'PRO' | 'EXPERT';
+type PlanChangeDirection = 'upgrade' | 'downgrade' | 'same' | 'unknown';
 
-const billingPlanVisuals: Record<
-  'STANDARD' | 'PRO' | 'EXPERT',
-  {
-    price: string;
-    period: string;
-    description: string;
-    cta: string;
-    badge?: string;
-    features: string[];
-  }
+const planOrder: PlanCode[] = ['STANDARD', 'PRO', 'EXPERT'];
+
+type SubscriptionPlanVisual = {
+  price: string;
+  period: string;
+  description: string;
+  cta: string;
+  badge?: string;
+  features: string[];
+};
+
+const FALLBACK_SUBSCRIPTION_PLAN_VISUALS: Record<
+  PlanCode,
+  SubscriptionPlanVisual
 > = {
   STANDARD: {
-    price: '$29',
-    period: '/per month',
+    price: '€29',
+    period: 'per month',
     description: 'Perfect to start local outreach with Google Maps and website checks.',
     cta: 'Choose Standard',
     features: [
@@ -49,8 +69,8 @@ const billingPlanVisuals: Record<
     ],
   },
   PRO: {
-    price: '$49',
-    period: '/per month',
+    price: '€49',
+    period: 'per month',
     description:
       'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
     cta: 'Switch to Pro',
@@ -67,8 +87,8 @@ const billingPlanVisuals: Record<
     ],
   },
   EXPERT: {
-    price: '$79',
-    period: '/per month',
+    price: '€79',
+    period: 'per month',
     description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     cta: 'Upgrade to Expert',
     badge: 'BEST VALUE',
@@ -83,6 +103,17 @@ const billingPlanVisuals: Record<
       'Save qualified leads and export them',
     ],
   },
+};
+
+const formatDateTime = (value: string | null): string | null => {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value);
+  if (!Number.isFinite(parsed.getTime())) {
+    return null;
+  }
+  return parsed.toLocaleString();
 };
 
 interface AnimatedProgressBarProps {
@@ -277,6 +308,39 @@ interface CurrentPlanModuleProps {
   labels: CurrentPlanModuleLabels;
 }
 
+interface PendingPlanChange {
+  planCode: PlanCode;
+  planName: string;
+  price: string;
+  period: string;
+}
+
+const getPlanChangeDirection = (
+  currentPlan: string | null | undefined,
+  nextPlan: PlanCode | null
+): PlanChangeDirection => {
+  if (!currentPlan || !nextPlan) {
+    return 'unknown';
+  }
+
+  if (!planOrder.includes(currentPlan as PlanCode)) {
+    return 'unknown';
+  }
+
+  const currentIndex = planOrder.indexOf(currentPlan as PlanCode);
+  const nextIndex = planOrder.indexOf(nextPlan);
+
+  if (nextIndex > currentIndex) {
+    return 'upgrade';
+  }
+
+  if (nextIndex < currentIndex) {
+    return 'downgrade';
+  }
+
+  return 'same';
+};
+
 function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanModuleProps) {
   const dailyTokenLimit = usage?.dailyTokenLimit ?? 0;
   const tokensUsedToday = usage?.tokensUsedToday ?? 0;
@@ -410,28 +474,36 @@ export function BillingPage({
   onNavigateAccountSettings,
   onLogout,
 }: BillingPageProps) {
-  const { t } = useI18n();
+  const { t, raw } = useI18n();
   const [plans, setPlans] = useState<BillingPlan[]>([]);
   const [usage, setUsage] = useState<BillingUsage | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isChangingPlan, setIsChangingPlan] = useState<string | null>(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isSavingPayment, setIsSavingPayment] = useState(false);
+  const [isPlanChangeDialogOpen, setIsPlanChangeDialogOpen] = useState(false);
+  const [pendingPlanChange, setPendingPlanChange] = useState<PendingPlanChange | null>(null);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+  const [isCancellingSubscription, setIsCancellingSubscription] = useState(false);
+  const [scheduledCancellationAt, setScheduledCancellationAt] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
-  const [mockCardNumber, setMockCardNumber] = useState('4242 4242 4242 4242');
-  const [mockExpiry, setMockExpiry] = useState('12/29');
-  const [mockCvc, setMockCvc] = useState('123');
-  const [mockCardholderName, setMockCardholderName] = useState('Lead Generator User');
+  const subscriptionPlanVisuals =
+    raw<Record<PlanCode, SubscriptionPlanVisual> | undefined>(
+      'subscriptionPlans.plans',
+    ) ?? FALLBACK_SUBSCRIPTION_PLAN_VISUALS;
 
   const orderedPlans = useMemo(
     () =>
       [...plans].sort(
         (a, b) =>
-          planOrder.indexOf(a.code as (typeof planOrder)[number]) -
-          planOrder.indexOf(b.code as (typeof planOrder)[number]),
+          planOrder.indexOf(a.code as PlanCode) -
+          planOrder.indexOf(b.code as PlanCode),
       ),
     [plans],
+  );
+  const planChangeDirection = getPlanChangeDirection(
+    usage?.plan,
+    pendingPlanChange?.planCode ?? null
   );
 
   const loadBillingData = async () => {
@@ -439,15 +511,17 @@ export function BillingPage({
     setErrorMessage(null);
 
     try {
-      const [loadedPlans, loadedUsage] = await Promise.all([
+      const [loadedPlans, loadedUsage, accountDetails] = await Promise.all([
         fetchBillingPlansFromBackend(),
         fetchBillingUsageFromBackend(),
+        fetchAccountDetailsFromBackend(),
       ]);
       setPlans(loadedPlans);
       setUsage(loadedUsage);
+      setScheduledCancellationAt(accountDetails.currentPeriodEnd);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('billingPage.errors.loadFailed'));
       }
@@ -460,7 +534,13 @@ export function BillingPage({
     void loadBillingData();
   }, []);
 
-  const handleChangePlan = async (planCode: 'STANDARD' | 'PRO' | 'EXPERT') => {
+  const redirectToCheckout = async (planCode: PlanCode) => {
+    const checkout = await createCheckoutSessionInBackend(planCode);
+    setNoticeMessage(t('billingPage.notices.redirectingToCheckout'));
+    window.location.assign(checkout.url);
+  };
+
+  const handleChangePlan = async (planCode: PlanCode) => {
     setIsChangingPlan(planCode);
     setErrorMessage(null);
     setNoticeMessage(null);
@@ -470,8 +550,21 @@ export function BillingPage({
       setUsage(updatedUsage);
       setNoticeMessage(t('billingPage.notices.planUpdated'));
     } catch (error) {
+      if (error instanceof BackendApiError && error.code === 'CHECKOUT_REQUIRED') {
+        try {
+          await redirectToCheckout(planCode);
+          return;
+        } catch (checkoutError) {
+          if (checkoutError instanceof Error) {
+            setErrorMessage(toFriendlyErrorFromUnknown(checkoutError));
+          } else {
+            setErrorMessage(t('billingPage.errors.checkoutFailed'));
+          }
+          return;
+        }
+      }
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('billingPage.errors.planUpdateFailed'));
       }
@@ -480,34 +573,120 @@ export function BillingPage({
     }
   };
 
-  const handleMockPaymentSave = async () => {
-    setIsSavingPayment(true);
+  const openPlanChangeDialog = (input: PendingPlanChange) => {
+    setPendingPlanChange(input);
+    setIsPlanChangeDialogOpen(true);
+  };
+
+  const handleConfirmPlanChange = async () => {
+    if (!pendingPlanChange || isChangingPlan) {
+      return;
+    }
+
+    const planToApply = pendingPlanChange.planCode;
+    setIsPlanChangeDialogOpen(false);
+    setPendingPlanChange(null);
+    await handleChangePlan(planToApply);
+  };
+
+  const handleOpenBillingPortal = async () => {
+    setIsOpeningPortal(true);
     setErrorMessage(null);
     setNoticeMessage(null);
 
     try {
-      await mockBillingPaymentInBackend({
-        cardNumber: mockCardNumber,
-        expiry: mockExpiry,
-        cvc: mockCvc,
-        cardholderName: mockCardholderName,
-      });
-      const updatedUsage = await fetchBillingUsageFromBackend();
-      setUsage(updatedUsage);
-      setNoticeMessage(t('billingPage.notices.paymentUpdated'));
-      setIsPaymentModalOpen(false);
+      const portal = await createBillingPortalSessionInBackend();
+      setNoticeMessage(t('billingPage.notices.redirectingToPortal'));
+      window.location.assign(portal.url);
     } catch (error) {
       if (error instanceof Error) {
-        setErrorMessage(error.message);
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
-        setErrorMessage(t('billingPage.errors.paymentFailed'));
+        setErrorMessage(t('billingPage.errors.portalFailed'));
       }
     } finally {
-      setIsSavingPayment(false);
+      setIsOpeningPortal(false);
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    setIsCancellingSubscription(true);
+    setErrorMessage(null);
+    setNoticeMessage(null);
+
+    try {
+      const cancellation = await cancelSubscriptionAtPeriodEndInBackend();
+      setUsage((current) =>
+        current
+          ? {
+              ...current,
+              plan: cancellation.plan,
+              subscriptionStatus: cancellation.subscriptionStatus,
+            }
+          : current,
+      );
+      setScheduledCancellationAt(cancellation.currentPeriodEnd);
+
+      const endDateLabel = formatDateTime(cancellation.currentPeriodEnd);
+      setNoticeMessage(
+        endDateLabel
+          ? t('billingPage.notices.cancellationScheduledWithDate', { date: endDateLabel })
+          : t('billingPage.notices.cancellationScheduled'),
+      );
+      setIsCancelDialogOpen(false);
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
+      } else {
+        setErrorMessage(t('billingPage.errors.cancelFailed'));
+      }
+    } finally {
+      setIsCancellingSubscription(false);
     }
   };
 
   const currentPlan = usage ? plans.find((plan) => plan.code === usage.plan) ?? null : null;
+  const currentPlanNameForDialog = currentPlan?.name ?? usage?.plan ?? '-';
+  const planChangeDirectionLabel =
+    planChangeDirection === 'upgrade'
+      ? t('billingPage.changePlan.dialogDirectionUpgrade')
+      : planChangeDirection === 'downgrade'
+        ? t('billingPage.changePlan.dialogDirectionDowngrade')
+        : t('billingPage.changePlan.dialogDirectionChange');
+  const planChangeVisual =
+    planChangeDirection === 'downgrade'
+      ? {
+          badgeBorder: '1px solid rgba(52, 211, 153, 0.45)',
+          badgeBackground:
+            'linear-gradient(135deg, rgba(6, 95, 70, 0.5), rgba(37, 99, 235, 0.2))',
+          badgeText: 'rgb(167, 243, 208)',
+          actionBorder: '1px solid rgba(52, 211, 153, 0.68)',
+          actionBackground:
+            'linear-gradient(135deg, rgba(5, 150, 105, 0.9), rgba(37, 99, 235, 0.88))',
+          actionShadow:
+            '0 0 0 1px rgba(52, 211, 153, 0.2), 0 10px 26px rgba(6, 78, 59, 0.45)',
+        }
+      : planChangeDirection === 'upgrade'
+        ? {
+            badgeBorder: '1px solid rgba(96, 165, 250, 0.45)',
+            badgeBackground:
+              'linear-gradient(135deg, rgba(29, 78, 216, 0.45), rgba(124, 58, 237, 0.22))',
+            badgeText: 'rgb(191, 219, 254)',
+            actionBorder: '1px solid rgba(96, 165, 250, 0.72)',
+            actionBackground:
+              'linear-gradient(135deg, rgba(37, 99, 235, 0.88), rgba(124, 58, 237, 0.88))',
+            actionShadow:
+              '0 0 0 1px rgba(96, 165, 250, 0.24), 0 10px 30px rgba(49, 46, 129, 0.35)',
+          }
+        : {
+            badgeBorder: '1px solid rgba(148, 163, 184, 0.45)',
+            badgeBackground: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(71, 85, 105, 0.3))',
+            badgeText: 'rgb(226, 232, 240)',
+            actionBorder: '1px solid rgba(148, 163, 184, 0.62)',
+            actionBackground:
+              'linear-gradient(135deg, rgba(71, 85, 105, 0.88), rgba(100, 116, 139, 0.88))',
+            actionShadow: '0 0 0 1px rgba(148, 163, 184, 0.2), 0 8px 24px rgba(15, 23, 42, 0.35)',
+          };
   const currentPlanLabels: CurrentPlanModuleLabels = {
     currentPlanTitle: t('billingPage.currentPlan.title'),
     currentPlanDescription: t('billingPage.currentPlan.description'),
@@ -548,18 +727,6 @@ export function BillingPage({
           </p>
         </section>
 
-        {errorMessage ? (
-          <div className="mt-6 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        {noticeMessage ? (
-          <div className="mt-6 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-            {noticeMessage}
-          </div>
-        ) : null}
-
         <div className="mt-8 grid gap-8">
           <CurrentPlanModule
             usage={usage}
@@ -580,7 +747,7 @@ export function BillingPage({
               {orderedPlans.map((plan) => {
                 const isCurrent = usage?.plan === plan.code;
                 const isPending = isChangingPlan === plan.code;
-                const visual = billingPlanVisuals[plan.code as 'STANDARD' | 'PRO' | 'EXPERT'];
+                const visual = subscriptionPlanVisuals[plan.code as PlanCode];
                 const isPro = plan.code === 'PRO';
                 const isExpert = plan.code === 'EXPERT';
                 const showPlanBadge = Boolean(visual.badge) && !isExpert;
@@ -617,7 +784,12 @@ export function BillingPage({
                         if (isCurrent) {
                           return;
                         }
-                        void handleChangePlan(plan.code);
+                        openPlanChangeDialog({
+                          planCode: plan.code as PlanCode,
+                          planName: plan.name,
+                          price: visual.price,
+                          period: visual.period,
+                        });
                       }}
                       className={`w-full px-6 py-3 rounded-xl font-medium transition-all mb-8 ${
                         isPro
@@ -664,17 +836,38 @@ export function BillingPage({
             <div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-xl border border-white/10 bg-black/20 p-4 md:flex-row md:items-center">
               <div className="inline-flex items-center gap-3 text-gray-200">
                 <CreditCard className="h-5 w-5" />
-                <span>{t('billingPage.paymentMethod.mockCard')}</span>
+                <span>{t('billingPage.paymentMethod.stripeManaged')}</span>
               </div>
 
               <button
                 type="button"
-                onClick={() => setIsPaymentModalOpen(true)}
+                onClick={() => void handleOpenBillingPortal()}
+                disabled={isOpeningPortal}
                 className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
               >
-                {t('billingPage.paymentMethod.updateButton')}
+                {isOpeningPortal ? t('billingPage.changePlan.updating') : t('billingPage.paymentMethod.updateButton')}
               </button>
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="mb-[10px] text-xl font-semibold text-white">{t('billingPage.cancellation.title')}</h2>
+            <p className="mb-[10px] text-sm text-gray-400">{t('billingPage.cancellation.description')}</p>
+            {scheduledCancellationAt ? (
+              <p className="mb-[10px] text-xs text-gray-300">
+                {t('billingPage.cancellation.currentPeriodEnd')}: {formatDateTime(scheduledCancellationAt) ?? '-'}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setIsCancelDialogOpen(true)}
+              disabled={isCancellingSubscription}
+              className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isCancellingSubscription
+                ? t('billingPage.cancellation.cancelling')
+                : t('billingPage.cancellation.action')}
+            </button>
           </section>
 
         </div>
@@ -692,77 +885,369 @@ export function BillingPage({
           margin-bottom: 20px;
         }
       `}</style>
+      <AppAlertToast
+        message={errorMessage}
+        onClose={() => setErrorMessage(null)}
+        variant="error"
+      />
+      <AppAlertToast
+        message={noticeMessage}
+        onClose={() => setNoticeMessage(null)}
+        variant="info"
+      />
 
-      <Dialog open={isPaymentModalOpen} onOpenChange={setIsPaymentModalOpen}>
-        <DialogContent className="max-w-md border border-white/15 bg-[#121521] p-6 text-white" hideCloseButton>
-          <DialogHeader>
-            <DialogTitle>{t('billingPage.paymentMethod.modalTitle')}</DialogTitle>
-          </DialogHeader>
+      <AlertDialog
+        open={isPlanChangeDialogOpen}
+        onOpenChange={(open) => {
+          setIsPlanChangeDialogOpen(open);
+          if (!open) {
+            setPendingPlanChange(null);
+          }
+        }}
+      >
+        <AlertDialogContent
+          className="text-white"
+          style={{
+            border: '1px solid rgba(148, 163, 184, 0.3)',
+            background:
+              'linear-gradient(155deg, rgba(21, 18, 25, 0.98), rgba(9, 12, 25, 0.98))',
+            boxShadow:
+              '0 24px 70px rgba(2, 6, 23, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+          }}
+        >
+          <AlertDialogHeader style={{ display: 'grid', gap: 14 }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 'fit-content',
+                borderRadius: 9999,
+                border: planChangeVisual.badgeBorder,
+                background: planChangeVisual.badgeBackground,
+                color: planChangeVisual.badgeText,
+                padding: '7px 12px',
+                fontSize: 12,
+                letterSpacing: 0.25,
+                fontWeight: 700,
+              }}
+            >
+              {planChangeDirectionLabel}
+            </div>
+            <AlertDialogTitle style={{ fontSize: '1.32rem', lineHeight: 1.2, color: 'rgb(248, 250, 252)' }}>
+              {t('billingPage.changePlan.dialogTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription style={{ color: 'rgb(203, 213, 225)', lineHeight: 1.55 }}>
+              {t('billingPage.changePlan.dialogDescription', {
+                plan: pendingPlanChange?.planName ?? '-',
+                price: pendingPlanChange?.price ?? '-',
+                period: pendingPlanChange?.period ?? '',
+              })}
+            </AlertDialogDescription>
 
-          <div className="mt-4 space-y-3">
-            <label className="block text-sm text-gray-300">
-              {t('billingPage.paymentMethod.cardNumberLabel')}
-              <input
-                type="text"
-                value={mockCardNumber}
-                onChange={(event) => setMockCardNumber(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-blue-400/60"
-              />
-            </label>
-
-            <div className="grid grid-cols-2 gap-3">
-              <label className="block text-sm text-gray-300">
-                {t('billingPage.paymentMethod.expiryLabel')}
-                <input
-                  type="text"
-                  value={mockExpiry}
-                  onChange={(event) => setMockExpiry(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-blue-400/60"
-                />
-              </label>
-
-              <label className="block text-sm text-gray-300">
-                {t('billingPage.paymentMethod.cvcLabel')}
-                <input
-                  type="text"
-                  value={mockCvc}
-                  onChange={(event) => setMockCvc(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-blue-400/60"
-                />
-              </label>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  borderRadius: 12,
+                  border: '1px solid rgba(148, 163, 184, 0.22)',
+                  background: 'rgba(15, 23, 42, 0.52)',
+                  padding: '10px 12px',
+                }}
+              >
+                <div
+                  style={{
+                    color: 'rgb(148, 163, 184)',
+                    fontSize: 11,
+                    letterSpacing: 0.35,
+                    textTransform: 'uppercase',
+                    marginBottom: 6,
+                  }}
+                >
+                  {t('billingPage.changePlan.dialogCurrentPlanLabel')}
+                </div>
+                <div style={{ color: 'rgb(241, 245, 249)', fontSize: 15, fontWeight: 600 }}>
+                  {currentPlanNameForDialog}
+                </div>
+              </div>
+              <div
+                style={{
+                  borderRadius: 12,
+                  border: '1px solid rgba(148, 163, 184, 0.22)',
+                  background: 'rgba(15, 23, 42, 0.52)',
+                  padding: '10px 12px',
+                }}
+              >
+                <div
+                  style={{
+                    color: 'rgb(148, 163, 184)',
+                    fontSize: 11,
+                    letterSpacing: 0.35,
+                    textTransform: 'uppercase',
+                    marginBottom: 6,
+                  }}
+                >
+                  {t('billingPage.changePlan.dialogNewPlanLabel')}
+                </div>
+                <div style={{ color: 'rgb(241, 245, 249)', fontSize: 15, fontWeight: 600 }}>
+                  {pendingPlanChange?.planName ?? '-'}
+                </div>
+              </div>
             </div>
 
-            <label className="block text-sm text-gray-300">
-              {t('billingPage.paymentMethod.cardholderLabel')}
-              <input
-                type="text"
-                value={mockCardholderName}
-                onChange={(event) => setMockCardholderName(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-blue-400/60"
-              />
-            </label>
-          </div>
+            <div
+              style={{
+                borderRadius: 12,
+                border: '1px solid rgba(148, 163, 184, 0.2)',
+                background: 'rgba(2, 6, 23, 0.45)',
+                padding: '11px 12px',
+                display: 'grid',
+                gap: 7,
+              }}
+            >
+              <span style={{ display: 'block', color: 'rgb(203, 213, 225)', fontSize: 13 }}>
+                {t('billingPage.changePlan.dialogProrationNote')}
+              </span>
+              {planChangeDirection === 'downgrade' ? (
+                <span style={{ display: 'block', color: 'rgb(167, 243, 208)', fontSize: 13 }}>
+                  {t('billingPage.changePlan.dialogDowngradeCreditNote')}
+                </span>
+              ) : null}
+              {planChangeDirection === 'upgrade' ? (
+                <span style={{ display: 'block', color: 'rgb(191, 219, 254)', fontSize: 13 }}>
+                  {t('billingPage.changePlan.dialogUpgradeChargeNote')}
+                </span>
+              ) : null}
+              {scheduledCancellationAt ? (
+                <span style={{ display: 'block', color: 'rgb(148, 163, 184)', fontSize: 12 }}>
+                  {t('billingPage.changePlan.dialogCurrentCycleEnd', {
+                    date: formatDateTime(scheduledCancellationAt) ?? '-',
+                  })}
+                </span>
+              ) : null}
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter
+            className="!flex !flex-row !items-center !justify-center gap-3"
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              width: '100%',
+              marginTop: '0.25rem',
+            }}
+          >
+            <AlertDialogCancel
+              className="min-w-[180px]"
+              style={{
+                minWidth: '180px',
+                borderRadius: '0.65rem',
+                border: '1px solid rgba(148, 163, 184, 0.42)',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                color: 'rgb(226, 232, 240)',
+                padding: '0.55rem 1rem',
+                textAlign: 'center',
+                fontWeight: 600,
+              }}
+            >
+              {t('billingPage.changePlan.dialogCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void handleConfirmPlanChange();
+              }}
+              disabled={!pendingPlanChange || Boolean(isChangingPlan)}
+              className="min-w-[180px]"
+              style={{
+                minWidth: '180px',
+                borderRadius: '0.65rem',
+                border: planChangeVisual.actionBorder,
+                background: planChangeVisual.actionBackground,
+                color: 'rgb(255, 255, 255)',
+                padding: '0.55rem 1rem',
+                textAlign: 'center',
+                fontWeight: 700,
+                boxShadow: planChangeVisual.actionShadow,
+                opacity: !pendingPlanChange || isChangingPlan ? 0.7 : 1,
+              }}
+            >
+              {t('billingPage.changePlan.dialogConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          <div className="mt-6 flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setIsPaymentModalOpen(false)}
-              disabled={isSavingPayment}
-              className="rounded-lg border border-white/20 bg-transparent px-4 py-2 text-sm text-gray-200 transition hover:bg-white/10 disabled:opacity-50"
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <AlertDialogContent
+          className="text-white"
+          style={{
+            border: '1px solid rgba(248, 113, 113, 0.34)',
+            background:
+              'linear-gradient(160deg, rgba(24, 14, 19, 0.98), rgba(16, 18, 30, 0.98))',
+            boxShadow:
+              '0 24px 70px rgba(2, 6, 23, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+          }}
+        >
+          <AlertDialogHeader style={{ display: 'grid', gap: 14 }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 'fit-content',
+                borderRadius: 9999,
+                border: '1px solid rgba(248, 113, 113, 0.5)',
+                background:
+                  'linear-gradient(135deg, rgba(127, 29, 29, 0.58), rgba(220, 38, 38, 0.26))',
+                color: 'rgb(254, 202, 202)',
+                padding: '7px 12px',
+                fontSize: 12,
+                letterSpacing: 0.25,
+                fontWeight: 700,
+              }}
             >
-              {t('billingPage.actions.cancel')}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleMockPaymentSave()}
-              disabled={isSavingPayment}
-              className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition hover:from-blue-600 hover:to-purple-700 disabled:opacity-60"
+              {t('billingPage.cancellation.title')}
+            </div>
+            <AlertDialogTitle style={{ fontSize: '1.32rem', lineHeight: 1.2, color: 'rgb(248, 250, 252)' }}>
+              {t('billingPage.cancellation.dialogTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription style={{ color: 'rgb(203, 213, 225)', lineHeight: 1.55 }}>
+              {t('billingPage.cancellation.dialogDescription')}
+            </AlertDialogDescription>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: 10,
+              }}
             >
-              {isSavingPayment ? t('billingPage.actions.saving') : t('billingPage.actions.save')}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
+              <div
+                style={{
+                  borderRadius: 12,
+                  border: '1px solid rgba(148, 163, 184, 0.22)',
+                  background: 'rgba(15, 23, 42, 0.52)',
+                  padding: '10px 12px',
+                }}
+              >
+                <div
+                  style={{
+                    color: 'rgb(148, 163, 184)',
+                    fontSize: 11,
+                    letterSpacing: 0.35,
+                    textTransform: 'uppercase',
+                    marginBottom: 6,
+                  }}
+                >
+                  {t('billingPage.changePlan.dialogCurrentPlanLabel')}
+                </div>
+                <div style={{ color: 'rgb(241, 245, 249)', fontSize: 15, fontWeight: 600 }}>
+                  {currentPlanNameForDialog}
+                </div>
+              </div>
+              <div
+                style={{
+                  borderRadius: 12,
+                  border: '1px solid rgba(148, 163, 184, 0.22)',
+                  background: 'rgba(15, 23, 42, 0.52)',
+                  padding: '10px 12px',
+                }}
+              >
+                <div
+                  style={{
+                    color: 'rgb(148, 163, 184)',
+                    fontSize: 11,
+                    letterSpacing: 0.35,
+                    textTransform: 'uppercase',
+                    marginBottom: 6,
+                  }}
+                >
+                  {t('billingPage.cancellation.currentPeriodEnd')}
+                </div>
+                <div style={{ color: 'rgb(241, 245, 249)', fontSize: 15, fontWeight: 600 }}>
+                  {formatDateTime(scheduledCancellationAt) ?? '-'}
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 12,
+                border: '1px solid rgba(248, 113, 113, 0.3)',
+                background: 'rgba(127, 29, 29, 0.25)',
+                color: 'rgb(254, 226, 226)',
+                padding: '10px 12px',
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              {t('billingPage.cancellation.description')}
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter
+            className="!flex !flex-row !items-center !justify-center gap-3"
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              width: '100%',
+              marginTop: '0.25rem',
+            }}
+          >
+            <AlertDialogCancel
+              className="min-w-[160px]"
+              style={{
+                minWidth: '160px',
+                borderRadius: '0.65rem',
+                border: '1px solid rgba(148, 163, 184, 0.42)',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                color: 'rgb(226, 232, 240)',
+                padding: '0.55rem 1rem',
+                textAlign: 'center',
+                fontWeight: 600,
+              }}
+            >
+              {t('billingPage.cancellation.dialogCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                if (!isCancellingSubscription) {
+                  void handleCancelSubscription();
+                }
+              }}
+              disabled={isCancellingSubscription}
+              className="min-w-[160px]"
+              style={{
+                minWidth: '160px',
+                borderRadius: '0.65rem',
+                border: '1px solid rgba(248, 113, 113, 0.72)',
+                background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.88), rgba(153, 27, 27, 0.9))',
+                color: 'rgb(255, 255, 255)',
+                padding: '0.55rem 1rem',
+                textAlign: 'center',
+                fontWeight: 700,
+                boxShadow: '0 0 0 1px rgba(248, 113, 113, 0.24), 0 10px 30px rgba(127, 29, 29, 0.38)',
+                opacity: isCancellingSubscription ? 0.7 : 1,
+              }}
+            >
+              {isCancellingSubscription
+                ? t('billingPage.cancellation.cancelling')
+                : t('billingPage.cancellation.dialogConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

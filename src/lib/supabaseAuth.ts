@@ -575,7 +575,10 @@ export const sendPasswordResetEmail = async (
   return { ok: true };
 };
 
-export const updateSupabasePassword = async (newPassword: string): Promise<AuthActionResult> => {
+export const updateSupabasePassword = async (
+  newPassword: string,
+  options?: { context?: 'reset' | 'account' }
+): Promise<AuthActionResult> => {
   if (!hasSupabaseConfig()) {
     return {
       ok: false,
@@ -587,7 +590,10 @@ export const updateSupabasePassword = async (newPassword: string): Promise<AuthA
   if (!token) {
     return {
       ok: false,
-      message: 'Your reset link is invalid or expired. Request a new password reset email.',
+      message:
+        options?.context === 'account'
+          ? 'Your session expired. Please log in again and retry.'
+          : 'Your reset link is invalid or expired. Request a new password reset email.',
     };
   }
 

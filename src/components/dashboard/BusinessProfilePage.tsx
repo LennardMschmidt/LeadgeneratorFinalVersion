@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../../i18n';
 import { DashboardHeader } from './DashboardHeader';
 import { DashboardSelect } from './DashboardSelect';
+import { AppAlertToast } from '../ui/AppAlertToast';
 import {
   clearBusinessProfileInBackend,
   fetchBusinessProfileFromBackend,
@@ -18,6 +19,7 @@ import {
   PrimaryProblem,
   TargetCustomerType,
 } from './types';
+import { toFriendlyErrorFromUnknown } from '../../lib/errorMessaging';
 
 interface BusinessProfilePageProps {
   onNavigateHome: () => void;
@@ -222,11 +224,7 @@ export function BusinessProfilePage({
         setSuccessMessage(null);
       }, 2500);
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage(t('dashboard.businessProfile.requiredFieldsError'));
-      }
+      setErrorMessage(toFriendlyErrorFromUnknown(error, t('dashboard.businessProfile.requiredFieldsError')));
       setSuccessMessage(null);
     } finally {
       setIsSavingProfile(false);
@@ -253,11 +251,7 @@ export function BusinessProfilePage({
         setSuccessMessage(null);
       }, 2500);
     } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage(t('dashboard.businessProfile.requiredFieldsError'));
-      }
+      setErrorMessage(toFriendlyErrorFromUnknown(error, t('dashboard.businessProfile.requiredFieldsError')));
       setSuccessMessage(null);
     } finally {
       setIsResettingProfile(false);
@@ -435,18 +429,6 @@ export function BusinessProfilePage({
               </div>
             </div>
 
-            {errorMessage ? (
-              <div className="mt-8 rounded-xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {errorMessage}
-              </div>
-            ) : null}
-
-            {successMessage ? (
-              <div className="mt-8 rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-                {successMessage}
-              </div>
-            ) : null}
-
             <div className="flex flex-wrap gap-4" style={{ marginTop: '26px' }}>
               <button
                 type="button"
@@ -472,6 +454,16 @@ export function BusinessProfilePage({
           </div>
         </section>
       </main>
+      <AppAlertToast
+        message={errorMessage}
+        onClose={() => setErrorMessage(null)}
+        variant="error"
+      />
+      <AppAlertToast
+        message={successMessage}
+        onClose={() => setSuccessMessage(null)}
+        variant="success"
+      />
     </>
   );
 }

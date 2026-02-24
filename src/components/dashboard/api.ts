@@ -14,6 +14,14 @@ import {
 } from './types';
 import { canonicalizeSearchSource } from './searchSources';
 import { getSupabaseAccessToken } from '../../lib/supabaseAuth';
+import {
+  USER_CHECKOUT_REQUIRED_MESSAGE,
+  USER_CONNECTION_ERROR_MESSAGE,
+  USER_FEATURE_LOCKED_MESSAGE,
+  USER_GENERIC_ERROR_MESSAGE,
+  USER_SESSION_ERROR_MESSAGE,
+  toFriendlyErrorMessage,
+} from '../../lib/errorMessaging';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
 
@@ -720,20 +728,45 @@ const parseBackendErrorPayload = async (
 ): Promise<BackendErrorPayload> => {
   if (response.status === 401) {
     return {
-      message: 'Your session expired or is invalid. Please log in again.',
+      message: USER_SESSION_ERROR_MESSAGE,
       code: null,
     };
   }
 
+  const resolveFriendlyMessage = (input: {
+    status: number;
+    backendMessage: string | null;
+    code: string | null;
+  }): string => {
+    if (input.code === 'FEATURE_NOT_IN_PLAN') {
+      return USER_FEATURE_LOCKED_MESSAGE;
+    }
+
+    if (input.code === 'CHECKOUT_REQUIRED') {
+      return USER_CHECKOUT_REQUIRED_MESSAGE;
+    }
+
+    if (input.status >= 500) {
+      return USER_CONNECTION_ERROR_MESSAGE;
+    }
+
+    return toFriendlyErrorMessage(input.backendMessage, USER_GENERIC_ERROR_MESSAGE);
+  };
+
   try {
     const payload = (await response.json()) as { error?: unknown; code?: unknown };
     if (typeof payload.error === 'string' && payload.error.trim().length > 0) {
+      const code =
+        typeof payload.code === 'string' && payload.code.trim().length > 0
+          ? payload.code
+          : null;
       return {
-        message: payload.error,
-        code:
-          typeof payload.code === 'string' && payload.code.trim().length > 0
-            ? payload.code
-            : null,
+        message: resolveFriendlyMessage({
+          status: response.status,
+          backendMessage: payload.error,
+          code,
+        }),
+        code,
       };
     }
   } catch {
@@ -741,7 +774,7 @@ const parseBackendErrorPayload = async (
   }
 
   return {
-    message: `Request failed (${response.status})`,
+    message: response.status >= 500 ? USER_CONNECTION_ERROR_MESSAGE : USER_GENERIC_ERROR_MESSAGE,
     code: null,
   };
 };
@@ -1497,6 +1530,15 @@ type BillingChangePlanResponse = {
   } | null;
 };
 
+type BillingCheckoutSessionResponse = {
+  url?: unknown;
+  sessionId?: unknown;
+};
+
+type BillingPortalSessionResponse = {
+  url?: unknown;
+};
+
 type BillingMockPaymentResponse = {
   success?: unknown;
   subscription?: {
@@ -1724,7 +1766,7 @@ export const changeBillingPlanInBackend = async (
   });
 
   if (!response.ok) {
-    throw new Error(await parseBackendError(response));
+    await throwBackendApiError(response);
   }
 
   const payload = (await response.json()) as BillingChangePlanResponse;
@@ -1735,6 +1777,57 @@ export const changeBillingPlanInBackend = async (
 
   const usage = await fetchBillingUsageFromBackend();
   return usage;
+};
+
+export const createCheckoutSessionInBackend = async (
+  plan: BackendBillingPlanCode,
+): Promise<{ url: string; sessionId: string }> => {
+  const requestUrl = buildApiUrl('/api/billing/create-checkout-session');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: authorization,
+    },
+    body: JSON.stringify({ plan }),
+  });
+
+  if (!response.ok) {
+    await throwBackendApiError(response);
+  }
+
+  const payload = (await response.json()) as BillingCheckoutSessionResponse;
+  if (typeof payload.url !== 'string' || payload.url.trim().length === 0) {
+    throw new Error('Checkout session response is invalid.');
+  }
+
+  return {
+    url: payload.url,
+    sessionId: typeof payload.sessionId === 'string' ? payload.sessionId : '',
+  };
+};
+
+export const createBillingPortalSessionInBackend = async (): Promise<{ url: string }> => {
+  const requestUrl = buildApiUrl('/api/billing/create-portal-session');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    await throwBackendApiError(response);
+  }
+
+  const payload = (await response.json()) as BillingPortalSessionResponse;
+  if (typeof payload.url !== 'string' || payload.url.trim().length === 0) {
+    throw new Error('Billing portal response is invalid.');
+  }
+
+  return { url: payload.url };
 };
 
 export const mockBillingPaymentInBackend = async (input?: {

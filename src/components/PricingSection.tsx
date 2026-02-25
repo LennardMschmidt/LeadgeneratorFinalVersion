@@ -117,6 +117,18 @@ export function PricingSection() {
               <span className="text-gray-400">/{plan.period}</span>
             </div>
             <p className="text-gray-400 mb-8">{plan.description}</p>
+            <div
+              className="mb-6 rounded-xl border px-4 py-3 text-sm"
+              style={{
+                borderColor: plan.highlighted ? 'rgba(96, 165, 250, 0.45)' : 'rgba(148, 163, 184, 0.35)',
+                background: plan.highlighted
+                  ? 'linear-gradient(135deg, rgba(30, 64, 175, 0.25), rgba(76, 29, 149, 0.18))'
+                  : 'linear-gradient(135deg, rgba(30, 41, 59, 0.55), rgba(51, 65, 85, 0.4))',
+                color: '#dbeafe',
+              }}
+            >
+              {t('pricing.trialNote')}
+            </div>
 
             <button
               className={`w-full px-6 py-3 rounded-xl font-medium transition-all mb-8 ${

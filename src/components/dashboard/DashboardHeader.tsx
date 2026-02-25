@@ -11,6 +11,8 @@ interface DashboardHeaderProps {
   onNavigateBilling: () => void;
   onNavigateAccountSettings: () => void;
   onLogout: () => void;
+  hideAccountMenu?: boolean;
+  hideDashboardButton?: boolean;
 }
 
 export function DashboardHeader({
@@ -21,6 +23,8 @@ export function DashboardHeader({
   onNavigateBilling,
   onNavigateAccountSettings,
   onLogout,
+  hideAccountMenu = false,
+  hideDashboardButton = false,
 }: DashboardHeaderProps) {
   const { t } = useI18n();
   const logoSrc = `${import.meta.env.BASE_URL}logo.png`;
@@ -68,21 +72,162 @@ export function DashboardHeader({
         </button>
 
         <div className="flex items-center gap-3 sm:gap-4">
-          <button
-            type="button"
-            onClick={onNavigateDashboard}
-            className="hidden sm:flex px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-gray-200 transition-colors"
-          >
-            {t('dashboardHeader.dashboard')}
-          </button>
+          {!hideDashboardButton ? (
+            <button
+              type="button"
+              onClick={onNavigateDashboard}
+              className="hidden sm:flex px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-gray-200 transition-colors"
+            >
+              {t('dashboardHeader.dashboard')}
+            </button>
+          ) : null}
 
           <LanguageSwitcher compact />
 
-          <div ref={dropdownRef} className="relative">
+          {!hideAccountMenu ? (
+            <div ref={dropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setIsAccountOpen((current) => !current)}
+                aria-expanded={isAccountOpen}
+                className="flex items-center gap-3 rounded-xl border px-5 py-3 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                style={{
+                  borderColor: 'rgba(255, 255, 255, 0.1)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  color: '#e5e7eb',
+                }}
+              >
+                {t('dashboardHeader.account')}
+                <ChevronDown
+                  className="h-4 w-4 transition-transform duration-200"
+                  style={{
+                    color: '#9ca3af',
+                    transform: isAccountOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                  }}
+                />
+              </button>
+
+              {isAccountOpen ? (
+                <div
+                  className="absolute right-0 z-50 mt-3 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
+                  style={{
+                    marginTop: '0.9rem',
+                    width: '19rem',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    backgroundColor: 'rgba(25, 25, 28, 1)',
+                    WebkitBackdropFilter: 'blur(26px)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigateDashboard();
+                      setIsAccountOpen(false);
+                    }}
+                    className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base`}
+                    onMouseEnter={handleDropdownItemMouseEnter}
+                    onMouseLeave={handleDropdownItemMouseLeave}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                    }}
+                  >
+                    {t('dashboardHeader.dashboard')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigateBusinessProfile();
+                      setIsAccountOpen(false);
+                    }}
+                    className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
+                    onMouseEnter={handleDropdownItemMouseEnter}
+                    onMouseLeave={handleDropdownItemMouseLeave}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                    }}
+                  >
+                    {t('dashboardHeader.businessProfile')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigateSavedSearches();
+                      setIsAccountOpen(false);
+                    }}
+                    className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
+                    onMouseEnter={handleDropdownItemMouseEnter}
+                    onMouseLeave={handleDropdownItemMouseLeave}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                    }}
+                  >
+                    {t('dashboardHeader.savedSearches')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigateBilling();
+                      setIsAccountOpen(false);
+                    }}
+                    className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
+                    onMouseEnter={handleDropdownItemMouseEnter}
+                    onMouseLeave={handleDropdownItemMouseLeave}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                    }}
+                  >
+                    {t('dashboardHeader.billing')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onNavigateAccountSettings();
+                      setIsAccountOpen(false);
+                    }}
+                    className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
+                    onMouseEnter={handleDropdownItemMouseEnter}
+                    onMouseLeave={handleDropdownItemMouseLeave}
+                    style={{
+                      cursor: 'pointer',
+                      backgroundColor: 'rgba(255, 255, 255, 0.025)',
+                      borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
+                    }}
+                  >
+                    {t('dashboardHeader.accountSettings')}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onLogout();
+                      setIsAccountOpen(false);
+                    }}
+                    className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
+                    onMouseEnter={handleDropdownItemMouseEnter}
+                    onMouseLeave={handleDropdownItemMouseLeave}
+                    style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.025)' }}
+                  >
+                    {t('dashboardHeader.logout')}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
             <button
               type="button"
-              onClick={() => setIsAccountOpen((current) => !current)}
-              aria-expanded={isAccountOpen}
+              onClick={onLogout}
               className="flex items-center gap-3 rounded-xl border px-5 py-3 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               style={{
                 borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -90,130 +235,9 @@ export function DashboardHeader({
                 color: '#e5e7eb',
               }}
             >
-              {t('dashboardHeader.account')}
-              <ChevronDown
-                className="h-4 w-4 transition-transform duration-200"
-                style={{ color: '#9ca3af', transform: isAccountOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-              />
+              {t('dashboardHeader.logout')}
             </button>
-
-            {isAccountOpen ? (
-              <div
-                className="absolute right-0 z-50 mt-3 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
-                style={{
-                  marginTop: '0.9rem',
-                  width: '19rem',
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                  backgroundColor: 'rgba(25, 25, 28, 1)',
-                  WebkitBackdropFilter: 'blur(26px)',
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    onNavigateDashboard();
-                    setIsAccountOpen(false);
-                  }}
-                  className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base`}
-                  onMouseEnter={handleDropdownItemMouseEnter}
-                  onMouseLeave={handleDropdownItemMouseLeave}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(255, 255, 255, 0.025)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
-                  }}
-                >
-                  {t('dashboardHeader.dashboard')}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onNavigateBusinessProfile();
-                    setIsAccountOpen(false);
-                  }}
-                  className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
-                  onMouseEnter={handleDropdownItemMouseEnter}
-                  onMouseLeave={handleDropdownItemMouseLeave}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(255, 255, 255, 0.025)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
-                  }}
-                >
-                  {t('dashboardHeader.businessProfile')}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onNavigateSavedSearches();
-                    setIsAccountOpen(false);
-                  }}
-                  className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
-                  onMouseEnter={handleDropdownItemMouseEnter}
-                  onMouseLeave={handleDropdownItemMouseLeave}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(255, 255, 255, 0.025)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
-                  }}
-                >
-                  {t('dashboardHeader.savedSearches')}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onNavigateBilling();
-                    setIsAccountOpen(false);
-                  }}
-                  className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
-                  onMouseEnter={handleDropdownItemMouseEnter}
-                  onMouseLeave={handleDropdownItemMouseLeave}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(255, 255, 255, 0.025)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
-                  }}
-                >
-                  {t('dashboardHeader.billing')}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onNavigateAccountSettings();
-                    setIsAccountOpen(false);
-                  }}
-                  className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
-                  onMouseEnter={handleDropdownItemMouseEnter}
-                  onMouseLeave={handleDropdownItemMouseLeave}
-                  style={{
-                    cursor: 'pointer',
-                    backgroundColor: 'rgba(255, 255, 255, 0.025)',
-                    borderBottom: '1px solid rgba(255, 255, 255, 0.14)',
-                  }}
-                >
-                  {t('dashboardHeader.accountSettings')}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    onLogout();
-                    setIsAccountOpen(false);
-                  }}
-                  className={`${dropdownItemClass} whitespace-nowrap px-5 py-3 text-base text-gray-300`}
-                  onMouseEnter={handleDropdownItemMouseEnter}
-                  onMouseLeave={handleDropdownItemMouseLeave}
-                  style={{ cursor: 'pointer', backgroundColor: 'rgba(255, 255, 255, 0.025)' }}
-                >
-                  {t('dashboardHeader.logout')}
-                </button>
-              </div>
-            ) : null}
-          </div>
+          )}
         </div>
       </nav>
     </header>

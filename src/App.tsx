@@ -488,6 +488,7 @@ export default function App() {
           onLogout={() => {
             void handleLogout();
           }}
+          billingAccessStatus={hasBillingAccess}
         />
       ) : showBillingSuccess ? (
         <>

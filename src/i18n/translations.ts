@@ -174,6 +174,7 @@ export const translations = {
       title: 'Simple, transparent pricing',
       subtitle: "Start free, upgrade when you're ready",
       popularBadge: 'MOST POPULAR',
+      trialNote: 'Includes a 3-day free trial. Cancel anytime.',
       plans: [
         {
           name: 'Free',
@@ -314,6 +315,11 @@ export const translations = {
     billingPage: {
       title: 'Billing',
       subtitle: 'Manage your subscription and daily token usage.',
+      accessRequired: {
+        title: 'Payment required to unlock dashboard access',
+        description:
+          'Your account is registered, but your subscription is not active yet. Complete checkout below to unlock dashboard, saved searches, and business profile tools.',
+      },
       currentPlan: {
         title: 'Current Plan',
         description: 'Your daily token allowance resets automatically each day.',
@@ -1107,6 +1113,7 @@ export const translations = {
       title: 'Einfache, transparente Preise',
       subtitle: 'Starte kostenlos und upgrade, wenn du bereit bist',
       popularBadge: 'AM BELIEBTESTEN',
+      trialNote: 'Enthält eine 3-tägige kostenlose Testphase. Jederzeit kündbar.',
       plans: [
         {
           name: 'Free',
@@ -1249,6 +1256,11 @@ export const translations = {
     billingPage: {
       title: 'Abrechnung',
       subtitle: 'Verwalte dein Abonnement und deinen täglichen Token-Verbrauch.',
+      accessRequired: {
+        title: 'Zahlung erforderlich, um das Dashboard freizuschalten',
+        description:
+          'Dein Konto ist registriert, aber dein Abonnement ist noch nicht aktiv. Schließe den Checkout unten ab, um Dashboard, gespeicherte Suchen und Business-Profile freizuschalten.',
+      },
       currentPlan: {
         title: 'Aktueller Tarif',
         description: 'Dein tägliches Token-Limit wird automatisch jeden Tag zurückgesetzt.',

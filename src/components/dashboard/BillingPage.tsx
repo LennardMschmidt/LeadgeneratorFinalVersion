@@ -35,6 +35,7 @@ interface BillingPageProps {
   onNavigateBilling: () => void;
   onNavigateAccountSettings: () => void;
   onLogout: () => void;
+  billingAccessStatus: boolean | null;
 }
 
 type PlanCode = 'STANDARD' | 'PRO' | 'EXPERT';
@@ -473,6 +474,7 @@ export function BillingPage({
   onNavigateBilling,
   onNavigateAccountSettings,
   onLogout,
+  billingAccessStatus,
 }: BillingPageProps) {
   const { t, raw } = useI18n();
   const [plans, setPlans] = useState<BillingPlan[]>([]);
@@ -704,6 +706,26 @@ export function BillingPage({
     aiRefillRule: t('billingPage.currentPlan.aiRefillRule'),
     aiRefillAt: t('billingPage.currentPlan.aiRefillAt'),
   };
+  const hasFeatureAccessFromUsage = useMemo(() => {
+    if (!usage) {
+      return null;
+    }
+
+    const status = usage.subscriptionStatus.toLowerCase();
+    const periodEnd = scheduledCancellationAt
+      ? Date.parse(scheduledCancellationAt)
+      : Number.NaN;
+    const hasFuturePeriodEnd = Number.isFinite(periodEnd) && periodEnd > Date.now();
+
+    return (
+      status === 'active' ||
+      status === 'trialing' ||
+      status === 'past_due' ||
+      (status === 'cancelled' && hasFuturePeriodEnd)
+    );
+  }, [scheduledCancellationAt, usage]);
+  const isBillingRestricted =
+    billingAccessStatus === false || hasFeatureAccessFromUsage === false;
 
   return (
     <>
@@ -715,6 +737,8 @@ export function BillingPage({
         onNavigateBilling={onNavigateBilling}
         onNavigateAccountSettings={onNavigateAccountSettings}
         onLogout={onLogout}
+        hideAccountMenu={isBillingRestricted}
+        hideDashboardButton={isBillingRestricted}
       />
 
       <main className="billing-page relative mx-auto max-w-7xl px-6 py-24">
@@ -726,6 +750,25 @@ export function BillingPage({
             {t('billingPage.subtitle')}
           </p>
         </section>
+
+        {isBillingRestricted ? (
+          <section
+            className="mt-8 rounded-2xl border p-6"
+            style={{
+              borderColor: 'rgba(250, 204, 21, 0.4)',
+              background:
+                'linear-gradient(135deg, rgba(120, 53, 15, 0.38), rgba(31, 41, 55, 0.25))',
+              marginBottom: 20,
+            }}
+          >
+            <h2 className="text-xl font-semibold text-amber-100" style={{ marginBottom: 8 }}>
+              {t('billingPage.accessRequired.title')}
+            </h2>
+            <p className="text-sm text-amber-50/90" style={{ marginBottom: 0 }}>
+              {t('billingPage.accessRequired.description')}
+            </p>
+          </section>
+        ) : null}
 
         <div className="mt-8 grid gap-8">
           <CurrentPlanModule

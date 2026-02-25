@@ -40,19 +40,21 @@ export function WorkflowCard({
           }}
         />
 
-        <div className="relative flex flex-col items-start gap-4">
-          <StepBadge number={step} />
+        <div className="relative flex flex-col gap-5">
+          <div className="flex w-full items-start justify-between" style={{ marginBottom: '20px' }}>
+            <StepBadge number={step} />
 
-          <div
-            className="flex items-center justify-center rounded-xl border border-white/5"
-            style={{
-              width: 56,
-              height: 56,
-              background:
-                'linear-gradient(160deg, rgba(59,130,246,0.10), rgba(168,85,247,0.10))',
-            }}
-          >
-            <Icon className="w-7 h-7 text-blue-400" />
+            <div
+              className="flex items-center justify-center rounded-xl border border-white/5"
+              style={{
+                width: 56,
+                height: 56,
+                background:
+                  'linear-gradient(160deg, rgba(59,130,246,0.10), rgba(168,85,247,0.10))',
+              }}
+            >
+              <Icon className="w-7 h-7 text-blue-400" />
+            </div>
           </div>
 
           <div className="space-y-2">

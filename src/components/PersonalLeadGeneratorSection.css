@@ -1,0 +1,41 @@
+.personal-workflow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.personal-workflow-card {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 20rem;
+}
+
+.personal-workflow-arrow-row {
+  display: flex;
+}
+
+.personal-workflow-arrow-column {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .personal-workflow {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .personal-workflow-card {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .personal-workflow-arrow-row {
+    display: none;
+  }
+
+  .personal-workflow-arrow-column {
+    display: flex;
+    justify-content: center;
+  }
+}

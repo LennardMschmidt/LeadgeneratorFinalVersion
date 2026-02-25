@@ -48,7 +48,7 @@ export function DemoSection() {
           </div>
         </div>
 
-        <div className="mx-auto space-y-6 lg:hidden" style={{ maxWidth: 672 }}>
+        <div className="mx-auto w-full space-y-6 lg:hidden">
           <PracticeStepCard
             step={1}
             title={t('demo.step1Title')}

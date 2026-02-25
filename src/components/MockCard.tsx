@@ -218,25 +218,25 @@ function Step3Card() {
       </div>
 
       <div
-        className="space-y-2 rounded-xl border p-5 backdrop-blur-sm"
+        className="rounded-xl border backdrop-blur-sm"
         style={{
           borderColor: 'rgba(34, 197, 94, 0.30)',
           background: 'linear-gradient(160deg, rgba(34,197,94,0.10), rgba(16,185,129,0.05))',
         }}
       >
-        <div style={{ margin: '20px' }}>
+        <div className="space-y-3" style={{ margin: '20px' }}>
           <div className="flex items-center gap-2">
-            <div
-              className="rounded border px-2.5 py-1"
+            <span
+              className="text-xs font-bold"
               style={{
-                backgroundColor: 'rgba(34, 197, 94, 0.20)',
-                borderColor: 'rgba(34, 197, 94, 0.40)',
+                color: 'rgb(134, 239, 172)',
+                padding: '10px',
+                borderRadius: '10px',
+                display: 'inline-block',
               }}
             >
-              <span className="text-xs font-bold" style={{ color: 'rgb(134, 239, 172)' }}>
-                Tier 1
-              </span>
-            </div>
+              Tier 1
+            </span>
           </div>
           <p className="text-sm text-gray-300">{t('demo.step3TierOne')}</p>
         </div>
@@ -285,9 +285,12 @@ function Step3Card() {
           background: 'linear-gradient(160deg, rgba(168,85,247,0.10), rgba(59,130,246,0.05))',
         }}
       >
-        <div style={{ margin: '20px' }}>
-          <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-purple-300">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-purple-400" />
+        <div style={{ margin: '20px', textAlign: 'left' }}>
+          <label className="relative mb-2 block text-xs font-medium uppercase tracking-wide text-purple-300">
+            <span
+              className="absolute animate-pulse rounded-full bg-purple-400"
+              style={{ width: 8, height: 8, left: -14, top: '50%', transform: 'translateY(-50%)' }}
+            />
             {t('demo.step3NextActionLabel')}
           </label>
           <p className="text-sm text-gray-300">{t('demo.step3NextActionValue')}</p>

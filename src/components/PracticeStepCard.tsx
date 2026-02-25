@@ -23,7 +23,7 @@ export function PracticeStepCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5, delay }}
-      className="relative"
+      className="relative w-full max-w-6xl"
     >
       <div className="space-y-6">
         <div className="flex items-start gap-4">

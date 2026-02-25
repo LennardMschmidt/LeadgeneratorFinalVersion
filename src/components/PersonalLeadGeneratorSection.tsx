@@ -4,6 +4,7 @@ import { useI18n } from '../i18n';
 import { ConnectorArrow } from './ConnectorArrow';
 import { SectionHeading } from './SectionHeading';
 import { WorkflowCard } from './WorkflowCard';
+import './PersonalLeadGeneratorSection.css';
 
 interface PersonalLeadWorkflowStep {
   title: string;
@@ -25,13 +26,13 @@ export function PersonalLeadGeneratorSection() {
           description={t('personalLead.subtitle')}
         />
 
-        <div className="flex flex-col items-center md:flex-row md:justify-center">
+        <div className="personal-workflow">
           {workflowSteps.slice(0, 3).map((step, index) => {
             const Icon = STEP_ICONS[index] ?? Target;
 
             return (
               <Fragment key={`desktop-step-${index}`}>
-                <div className="w-full md:flex-1 md:max-w-sm">
+                <div className="personal-workflow-card">
                   <WorkflowCard
                     step={index + 1}
                     icon={Icon}
@@ -43,10 +44,10 @@ export function PersonalLeadGeneratorSection() {
 
                 {index < 2 ? (
                   <>
-                    <div className="hidden md:flex">
+                    <div className="personal-workflow-arrow-row">
                       <ConnectorArrow orientation="horizontal" delay={0.3 + index * 0.1} />
                     </div>
-                    <div className="flex md:hidden justify-center">
+                    <div className="personal-workflow-arrow-column">
                       <ConnectorArrow orientation="vertical" delay={0.25 + index * 0.1} />
                     </div>
                   </>

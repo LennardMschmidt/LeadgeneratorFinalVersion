@@ -50,19 +50,6 @@ export function ValuePropSection() {
         })}
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6, delay: 0.3 }}
-        className="mt-16 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-3xl p-12 border border-blue-500/20 relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 blur-3xl" />
-        <div className="relative text-center max-w-3xl mx-auto">
-          <p className="text-2xl font-medium mb-4">{t('valueProp.quote')}</p>
-          <p className="text-gray-400">{t('valueProp.quoteAuthor')}</p>
-        </div>
-      </motion.div>
     </section>
   );
 }

@@ -3,8 +3,8 @@ import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { DemoSection } from './components/DemoSection';
 import { ResultsSection } from './components/ResultsSection';
-import { HowItWorksSection } from './components/HowItWorksSection';
 import { ValuePropSection } from './components/ValuePropSection';
+import { PersonalLeadGeneratorSection } from './components/PersonalLeadGeneratorSection';
 import { PricingSection } from './components/PricingSection';
 import { Footer } from './components/Footer';
 import { ImpressumPage } from './components/ImpressumPage';
@@ -579,9 +579,9 @@ export default function App() {
 
           <main className="relative">
             <HeroSection />
+            <PersonalLeadGeneratorSection />
             <DemoSection />
             <ResultsSection />
-            <HowItWorksSection />
             <ValuePropSection />
             <PricingSection />
           </main>

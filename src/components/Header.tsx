@@ -36,9 +36,6 @@ export function Header({ onLoginClick }: HeaderProps) {
           >
             {t('header.logIn')}
           </button>
-          <button className="px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-sm font-medium transition-all shadow-lg shadow-blue-500/20">
-            {t('header.tryFree')}
-          </button>
         </div>
 
         <div className="flex items-center gap-2 md:hidden">

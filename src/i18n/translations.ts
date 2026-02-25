@@ -39,7 +39,7 @@ export const translations = {
       titlePrefix: 'Find businesses that need what you sell',
       titleHighlight: 'and know exactly why.',
       description:
-        'We analyze public online signals to surface businesses with real problems and show the best way to reach the decision maker.',
+        'Your personal Lead Generator: you choose what you want, and we find tailored leads with context, priority tiers, and clear next actions.',
       primaryCta: 'Generate free leads',
       secondaryCta: 'See example leads',
       exampleLeads: [
@@ -70,8 +70,28 @@ export const translations = {
       ],
     },
     demo: {
-      title: 'Try it now',
-      subtitle: 'See how Lead Generator finds quality leads in seconds',
+      title: 'How it works',
+      subtitle: 'A simple two-step flow from search setup to evaluated leads.',
+      step1Label: 'Step 1',
+      step1Title: 'Define your search',
+      step1Description:
+        'What businesses do you wish to find, and what problems do you solve?',
+      step2Label: 'Step 2',
+      step2Title: 'Get evaluated leads',
+      step2Description:
+        'Get evaluated leads matched to your business search and problem specification with multiple sources like Google Maps and LinkedIn.',
+      step3Label: 'Step 3',
+      step3Title: 'Manage, organize, and analyze',
+      step3Description:
+        'Manage leads in one place. We use AI for tailored website analysis and AI contact suggestions using your business context and each lead context.',
+      step3BadgeTiers: 'Tiered lead categories',
+      step3BadgeWebsiteAi: 'AI website analysis',
+      step3BadgeContactAi: 'AI contact suggestions',
+      step3TierOne: 'Highest success probability for your offer.',
+      step3StatusLabel: 'Lead status',
+      step3StatusValue: 'New -> Contacted -> Won',
+      step3NextActionLabel: 'Next best action',
+      step3NextActionValue: 'AI-generated outreach angle with your business context',
       businessCategoryLabel: 'Business Category',
       businessCategories: [
         'Restaurants & Cafes',
@@ -127,22 +147,44 @@ export const translations = {
     },
     howItWorks: {
       title: 'How it works',
-      subtitle: 'From search to outreach in three simple steps',
+      subtitle: 'From search setup to AI-assisted outreach in three clear steps',
       steps: [
         {
-          title: 'Search',
+          title: 'Define',
           description:
-            'Select your target business category and location. Choose the problems you solve.',
+            'Define the businesses you want to target, where they are, and the exact problems your service solves.',
         },
         {
           title: 'Evaluate',
           description:
-            'Our AI analyzes public signals — websites, ratings, social presence — and scores lead quality.',
+            'We evaluate leads across sources like Google Maps and LinkedIn, then rank them by quality and fit.',
         },
         {
-          title: 'Explain & Export',
+          title: 'Manage with AI',
           description:
-            'Get clear reasoning for each lead plus contact info. Export to CSV or CRM in one click.',
+            'Organize leads by status and tiers, run tailored AI website analysis, and get AI contact suggestions based on your business profile and lead context.',
+        },
+      ],
+    },
+    personalLead: {
+      title: 'Your Personal Lead Generator',
+      subtitle:
+        'A simple 3-step workflow from targeting to AI-assisted execution.',
+      workflowSteps: [
+        {
+          title: 'Define exactly what you want',
+          description:
+            'Choose category, location, sources, and problem signals. The system tailors lead discovery to your exact target profile.',
+        },
+        {
+          title: 'Receive prioritized leads',
+          description:
+            'Leads are evaluated and grouped into tiers so you know where success probability is highest for your business.',
+        },
+        {
+          title: 'Execute with AI context',
+          description:
+            'Use AI website analysis and AI contact suggestions that combine your business context with each lead context.',
         },
       ],
     },
@@ -978,7 +1020,7 @@ export const translations = {
       titlePrefix: 'Finde Unternehmen, die genau das brauchen, was du anbietest',
       titleHighlight: 'und verstehe sofort warum.',
       description:
-        'Wir analysieren öffentliche Online-Signale, finden Unternehmen mit echten Problemen und zeigen dir den besten Weg zur richtigen Ansprechperson.',
+        'Dein persönlicher Lead Generator: Du bestimmst, was du suchst, und wir liefern passende Leads mit Kontext, Prioritäts-Tiers und klaren nächsten Schritten.',
       primaryCta: 'Kostenlose Leads generieren',
       secondaryCta: 'Beispiel-Leads ansehen',
       exampleLeads: [
@@ -1009,8 +1051,28 @@ export const translations = {
       ],
     },
     demo: {
-      title: 'Teste es jetzt',
-      subtitle: 'Sieh, wie Lead Generator in Sekunden hochwertige Leads findet',
+      title: 'So funktioniert es',
+      subtitle: 'Ein einfacher Zwei-Schritte-Ablauf von der Suchdefinition bis zu bewerteten Leads.',
+      step1Label: 'Schritt 1',
+      step1Title: 'Definiere deine Suche',
+      step1Description:
+        'Welche Unternehmen möchtest du finden und welche Probleme löst du?',
+      step2Label: 'Schritt 2',
+      step2Title: 'Erhalte bewertete Leads',
+      step2Description:
+        'Du erhältst bewertete Leads passend zu deiner Suche und Problemdefinition aus mehreren Quellen wie Google Maps und LinkedIn.',
+      step3Label: 'Schritt 3',
+      step3Title: 'Verwalten, organisieren und analysieren',
+      step3Description:
+        'Verwalte Leads zentral an einem Ort. Wir nutzen AI für maßgeschneiderte Website-Analyse und AI-Kontaktvorschläge mit deinem Business-Kontext und dem Kontext jedes Leads.',
+      step3BadgeTiers: 'Lead-Kategorien in Tiers',
+      step3BadgeWebsiteAi: 'AI-Website-Analyse',
+      step3BadgeContactAi: 'AI-Kontaktvorschläge',
+      step3TierOne: 'Höchste Erfolgswahrscheinlichkeit für dein Angebot.',
+      step3StatusLabel: 'Lead-Status',
+      step3StatusValue: 'Neu -> Kontaktiert -> Gewonnen',
+      step3NextActionLabel: 'Nächste beste Aktion',
+      step3NextActionValue: 'AI-generierter Outreach-Winkel mit deinem Business-Kontext',
       businessCategoryLabel: 'Branche',
       businessCategories: [
         'Restaurants & Cafés',
@@ -1066,22 +1128,44 @@ export const translations = {
     },
     howItWorks: {
       title: 'So funktioniert es',
-      subtitle: 'Von der Suche bis zur Ansprache in drei einfachen Schritten',
+      subtitle: 'Von der Suchdefinition bis zur AI-gestützten Ansprache in drei klaren Schritten',
       steps: [
         {
-          title: 'Suchen',
+          title: 'Definieren',
           description:
-            'Wähle deine Zielbranche und den Standort. Dann markierst du die Probleme, die du löst.',
+            'Definiere Zielbranche, Standort und die konkreten Probleme, die dein Angebot löst.',
         },
         {
           title: 'Bewerten',
           description:
-            'Unsere KI analysiert öffentliche Signale wie Website, Bewertungen und Social Media und bewertet die Lead-Qualität.',
+            'Wir bewerten Leads aus Quellen wie Google Maps und LinkedIn und priorisieren sie nach Relevanz und Potenzial.',
         },
         {
-          title: 'Verstehen & Exportieren',
+          title: 'Mit AI umsetzen',
           description:
-            'Du bekommst klare Begründungen und Kontaktdaten pro Lead. Export als CSV oder CRM mit einem Klick.',
+            'Organisiere Leads nach Status und Tiers, nutze AI-Website-Analyse und erhalte AI-Kontaktvorschläge mit deinem Business-Kontext und dem Lead-Kontext.',
+        },
+      ],
+    },
+    personalLead: {
+      title: 'Dein persönlicher Lead Generator',
+      subtitle:
+        'Ein klarer 3-Schritte-Workflow von der Zieldefinition bis zur AI-gestützten Umsetzung.',
+      workflowSteps: [
+        {
+          title: 'Definiere genau, was du suchst',
+          description:
+            'Wähle Kategorie, Standort, Quellen und Problemfelder. Das System liefert passgenaue Lead-Ergebnisse für dein Zielprofil.',
+        },
+        {
+          title: 'Erhalte priorisierte Leads',
+          description:
+            'Leads werden bewertet und in Tiers eingeteilt, damit du dort startest, wo die höchste Erfolgswahrscheinlichkeit liegt.',
+        },
+        {
+          title: 'Setze mit AI-Kontext um',
+          description:
+            'Nutze AI-Website-Analyse und AI-Kontaktvorschläge, die deinen Business-Kontext mit dem Kontext jedes Leads kombinieren.',
         },
       ],
     },

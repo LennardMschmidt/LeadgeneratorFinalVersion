@@ -32,12 +32,12 @@ export function HeroSection() {
           <p className="text-xl text-gray-400 mb-10 leading-relaxed">{t('hero.description')}</p>
 
           <div className="flex flex-wrap gap-4">
-            <button className="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105">
-              {t('hero.primaryCta')}
-            </button>
-            <button className="px-8 py-4 rounded-xl bg-white/5 hover:bg-white/10 text-white font-medium transition-all border border-white/10 hover:border-white/20">
+            <a
+              href="#how-it-works"
+              className="inline-flex px-8 py-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-medium transition-all shadow-xl shadow-blue-500/25 hover:shadow-blue-500/40 hover:scale-105"
+            >
               {t('hero.secondaryCta')}
-            </button>
+            </a>
           </div>
         </motion.div>
 

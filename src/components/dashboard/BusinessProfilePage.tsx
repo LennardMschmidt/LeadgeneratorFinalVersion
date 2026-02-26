@@ -294,7 +294,6 @@ export function BusinessProfilePage({
                       businessName: event.target.value,
                     }))
                   }
-                  placeholder={t('dashboard.businessProfile.businessNamePlaceholder')}
                   className={inputClassName}
                 />
               </div>
@@ -312,7 +311,6 @@ export function BusinessProfilePage({
                       businessCategory: event.target.value,
                     }))
                   }
-                  placeholder={t('dashboard.businessProfile.businessCategoryPlaceholder')}
                   className={inputClassName}
                 />
               </div>
@@ -330,7 +328,6 @@ export function BusinessProfilePage({
                       businessLocation: event.target.value,
                     }))
                   }
-                  placeholder={t('dashboard.businessProfile.businessLocationPlaceholder')}
                   className={inputClassName}
                 />
               </div>
@@ -373,7 +370,6 @@ export function BusinessProfilePage({
                     }))
                   }
                   rows={4}
-                  placeholder={t('dashboard.businessProfile.serviceDescriptionPlaceholder')}
                   className={`${inputClassName} min-h-[170px]`}
                 />
               </div>

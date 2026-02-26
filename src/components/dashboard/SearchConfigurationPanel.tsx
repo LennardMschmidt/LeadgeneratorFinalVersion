@@ -46,6 +46,7 @@ export function SearchConfigurationPanel({
   const [isOpen, setIsOpen] = useState(true);
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
   const [isProblemGuideOpen, setIsProblemGuideOpen] = useState(false);
+  const [isSearchGuideOpen, setIsSearchGuideOpen] = useState(true);
   const noSavedSearchValue = '__none__';
   const noBusinessTypeValue = '__none_business_type__';
   const noSearchSourceValue = '__none_search_source__';
@@ -232,6 +233,48 @@ export function SearchConfigurationPanel({
           <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 p-4">
             <p className="text-sm text-gray-100">{t('dashboard.searchPanel.intro')}</p>
             <p className="mt-1 text-xs text-gray-300">{t('dashboard.searchPanel.introDetail')}</p>
+          </div>
+
+          <div className="rounded-xl border border-blue-400/35 bg-blue-500/10 p-4">
+            <button
+              type="button"
+              onClick={() => setIsSearchGuideOpen((current) => !current)}
+              className="flex w-full items-center justify-between gap-3 text-left"
+            >
+              <div>
+                <p className="text-sm font-semibold text-blue-100">Guide</p>
+                <p className="mt-1 text-xs text-blue-200/90">
+                  Follow these 3 steps to get better lead quality from each search run.
+                </p>
+              </div>
+              {isSearchGuideOpen ? (
+                <ChevronUp className="h-4 w-4 text-blue-200" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-blue-200" />
+              )}
+            </button>
+
+            {isSearchGuideOpen ? (
+              <ol className="mt-4 space-y-3 text-sm text-gray-100">
+                <li className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <span className="font-semibold text-white">1. Set your target carefully.</span>{' '}
+                  Fill out all fields and choose location and category wisely. Test different location
+                  levels such as city names, districts, neighborhoods, streets, and specific areas to
+                  surface different lead pools.
+                </li>
+                <li className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <span className="font-semibold text-white">2. Filter before saving.</span>{' '}
+                  The filtered lead view is exactly what gets saved when you click save leads. You can
+                  save only the leads you want by selecting a tier (Tier 1, Tier 2, Tier 3) or specific
+                  problems. Click each tier to review that result set before saving.
+                </li>
+                <li className="rounded-lg border border-white/10 bg-white/5 p-3">
+                  <span className="font-semibold text-white">3. Continue in Saved Searches.</span>{' '}
+                  Open Saved Searches to run website analyses, generate AI contact suggestions, manage
+                  lead status, and continue lead qualification from one place.
+                </li>
+              </ol>
+            ) : null}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

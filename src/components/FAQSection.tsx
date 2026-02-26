@@ -14,7 +14,10 @@ export function FAQSection() {
   const [openItem, setOpenItem] = useState('item-1');
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-24 border-t border-white/5">
+    <section
+      className="max-w-6xl mx-auto px-6 py-24 border-t border-white/5"
+      style={{ marginBottom: '20px' }}
+    >
       <div className="text-center space-y-4 mb-16">
         <p className="text-sm uppercase tracking-wide text-blue-400 font-medium">{t('faq.eyebrow')}</p>
         <h2 className="text-4xl md:text-5xl font-bold text-white">{t('faq.title')}</h2>
@@ -69,7 +72,7 @@ export function FAQSection() {
         })}
       </div>
 
-      <div className="mt-12 text-center">
+      <div className="text-center" style={{ marginTop: '10px' }}>
         <p className="text-gray-300">
           {t('faq.supportLine')}{' '}
           <a href="mailto:support@leadgenerator.app" className="text-blue-400 underline transition-colors hover:text-blue-300">

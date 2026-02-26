@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, Star } from 'lucide-react';
+import { MapPin, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { type CSSProperties, type ReactNode } from 'react';
 import { useI18n } from '../i18n';
@@ -91,7 +91,10 @@ function Step1Card() {
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-medium uppercase tracking-wide text-gray-400">
+        <label
+          className="text-xs font-medium uppercase tracking-wide text-gray-400"
+          style={{ marginBottom: '8px' }}
+        >
           {t('demo.problemSignalsLabel')}
         </label>
 
@@ -99,10 +102,12 @@ function Step1Card() {
           {problemSignals.map((problemSignal) => (
             <div
               key={problemSignal}
-              className="flex items-center gap-2 rounded-lg border px-4 py-2.5"
+              className="flex items-center gap-2 rounded-lg border"
               style={{
                 borderColor: 'rgba(239, 68, 68, 0.20)',
                 backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                padding: '8px',
+                marginBottom: '8px',
               }}
             >
               <div
@@ -224,13 +229,13 @@ function Step3Card() {
           background: 'linear-gradient(160deg, rgba(34,197,94,0.10), rgba(16,185,129,0.05))',
         }}
       >
-        <div className="space-y-3" style={{ margin: '20px' }}>
-          <div className="flex items-center gap-2">
+        <div style={{ margin: '20px', textAlign: 'left' }}>
+          <div className="mb-2">
             <span
               className="text-xs font-bold"
               style={{
                 color: 'rgb(134, 239, 172)',
-                padding: '10px',
+                padding: '10px 0',
                 borderRadius: '10px',
                 display: 'inline-block',
               }}
@@ -295,10 +300,6 @@ function Step3Card() {
           </label>
           <p className="text-sm text-gray-300">{t('demo.step3NextActionValue')}</p>
         </div>
-      </div>
-
-      <div className="flex justify-end" style={{ margin: '20px' }}>
-        <ExternalLink className="h-4 w-4 text-gray-500" />
       </div>
     </div>
   );

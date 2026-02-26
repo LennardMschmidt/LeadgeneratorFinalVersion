@@ -751,6 +751,7 @@ export function LoginModal({
                         <span>{isSubmitting ? t('login.authenticating') : t('login.loginWithEmail') || 'Log in with Email'}</span>
                       </button>
 
+                      {/* Google login is intentionally disabled for now.
                       <div className="relative" style={fieldWrapperStyle}>
                         <div className="absolute inset-0 flex items-center">
                           <div className="w-full border-t border-white/10" />
@@ -790,6 +791,7 @@ export function LoginModal({
                           {t('login.continueWithGoogle')}
                         </span>
                       </button>
+                      */}
                     </form>
 
                     <div className="mt-6 text-center">

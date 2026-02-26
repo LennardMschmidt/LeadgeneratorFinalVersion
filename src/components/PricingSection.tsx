@@ -48,7 +48,7 @@ const HOME_PRICING_PLANS: PricingPlan[] = [
       'AI contact suggestions (email, LinkedIn, phone)',
       'Save qualified leads and export them',
     ],
-    cta: 'Switch to Pro',
+    cta: 'Choose Pro',
     badge: 'MOST POPULAR',
     highlighted: true,
   },

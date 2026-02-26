@@ -44,6 +44,7 @@ export function Footer({ onNavigateDatenschutz, onNavigateImpressum }: FooterPro
               </button>
             </div>
             <p className="text-sm text-gray-500">{t('footer.copyright')}</p>
+            <p className="text-sm text-gray-500">{t('footer.builtInGermany')}</p>
           </div>
         </div>
       </div>

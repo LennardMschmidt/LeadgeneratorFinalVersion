@@ -185,7 +185,7 @@ export const translations = {
     personalLead: {
       title: 'Your Personal Lead Generator',
       subtitle:
-        'You stay in control of who you target, while the platform helps you move from discovery to outreach with more clarity, less manual research, and stronger decision support at each stage.',
+        'This web app helps your company get evaluated leads, sorted by how likely they are to convert into customers. It is built to help you generate new customers in the most efficient way, with less manual research and clearer next steps.',
       workflowSteps: [
         {
           title: 'Define exactly what you want',
@@ -232,7 +232,7 @@ export const translations = {
     pricing: {
       title: 'Simple, transparent pricing',
       subtitle:
-        "Choose a plan based on your monthly outreach goals. Every tier is designed to give you predictable usage, clear limits, and room to scale when your pipeline grows.",
+        'One token returns up to 120 results. Even the Standard plan (180 tokens/day) gives you strong lead coverage. If this helps you win one new client per month, the subscription is already worth it.',
       popularBadge: 'MOST POPULAR',
       trialNote: 'Includes a 3-day free trial. Cancel anytime.',
       plans: [
@@ -323,6 +323,7 @@ export const translations = {
       privacyPolicy: 'Datenschutzverordnung',
       termsOfService: 'Impressum',
       contact: 'Contact',
+      builtInGermany: 'Built in Germany.',
       copyright: '© 2026 Lead Generator. All rights reserved.',
     },
     login: {
@@ -1232,7 +1233,7 @@ export const translations = {
     personalLead: {
       title: 'Dein persönlicher Lead Generator',
       subtitle:
-        'Du bestimmst weiterhin exakt deine Zielgruppe, und die Plattform führt dich mit weniger manueller Recherche und mehr Klarheit vom Finden bis zur Ansprache.',
+        'Diese Web-App hilft deinem Unternehmen, bewertete Leads zu erhalten, sortiert nach der Wahrscheinlichkeit, daraus echte Kunden zu gewinnen. Sie ist dafür gemacht, dir auf dem effizientesten Weg neue Kunden zu bringen, mit weniger manueller Recherche und klareren nächsten Schritten.',
       workflowSteps: [
         {
           title: 'Definiere genau, was du suchst',
@@ -1279,7 +1280,7 @@ export const translations = {
     pricing: {
       title: 'Einfache, transparente Preise',
       subtitle:
-        'Wähle den Tarif passend zu deinem monatlichen Akquise-Ziel. Jede Stufe bietet planbare Nutzung, klare Limits und genug Spielraum, wenn dein Vertrieb wächst.',
+        'Ein Token liefert bis zu 120 Ergebnisse. Schon der Standard-Tarif (180 Tokens/Tag) bietet dir eine starke Lead-Abdeckung. Wenn dir das Abo nur einen neuen Kunden pro Monat bringt, ist es bereits den Preis wert.',
       popularBadge: 'AM BELIEBTESTEN',
       trialNote: 'Enthält eine 3-tägige kostenlose Testphase. Jederzeit kündbar.',
       plans: [
@@ -1370,6 +1371,7 @@ export const translations = {
       privacyPolicy: 'Datenschutzverordnung',
       termsOfService: 'Impressum',
       contact: 'Kontakt',
+      builtInGermany: 'In Deutschland entwickelt.',
       copyright: '© 2026 Lead Generator. Alle Rechte vorbehalten.',
     },
     login: {

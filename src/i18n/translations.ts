@@ -40,8 +40,23 @@ export const translations = {
       titleHighlight: 'and know exactly why.',
       description:
         'Your personal Lead Generator: you choose what you want, and we find tailored leads with context, priority tiers, and clear next actions.',
-      primaryCta: 'Generate free leads',
-      secondaryCta: 'See example leads',
+      primaryCta: 'Start 3-day free trial',
+      secondaryCta: 'See how it works',
+      trustHeadline: 'Built for serious outbound teams',
+      trustItems: [
+        {
+          title: 'Google Maps + LinkedIn sources',
+          description: 'Find businesses from trusted public sources instead of random scraped lists.',
+        },
+        {
+          title: '3-day free trial',
+          description: 'Start immediately, validate lead quality, and cancel anytime during trial.',
+        },
+        {
+          title: 'AI-assisted prioritization',
+          description: 'See which leads to contact first based on fit signals and business context.',
+        },
+      ],
       exampleLeads: [
         {
           businessName: 'Summit Coffee Roasters',
@@ -114,7 +129,8 @@ export const translations = {
     },
     results: {
       title: 'Results you can act on',
-      subtitle: 'Every lead comes with clear reasoning and contact options',
+      subtitle:
+        'You do not just get a list of names. Each lead includes practical context, clear reasoning, and contact paths so your next action is obvious and easier to execute.',
       exampleLeads: [
         {
           businessName: 'Verde Bistro',
@@ -169,7 +185,7 @@ export const translations = {
     personalLead: {
       title: 'Your Personal Lead Generator',
       subtitle:
-        'A simple 3-step workflow from targeting to AI-assisted execution.',
+        'You stay in control of who you target, while the platform helps you move from discovery to outreach with more clarity, less manual research, and stronger decision support at each stage.',
       workflowSteps: [
         {
           title: 'Define exactly what you want',
@@ -190,7 +206,8 @@ export const translations = {
     },
     valueProp: {
       title: 'What makes a lead good?',
-      subtitle: 'Quality over quantity, every single time',
+      subtitle:
+        'A good lead is not just a contact record. It is a business you can realistically help, with clear opportunity signals and enough context to start a relevant conversation.',
       points: [
         {
           title: 'Business + Problem + Reachability',
@@ -214,7 +231,8 @@ export const translations = {
     },
     pricing: {
       title: 'Simple, transparent pricing',
-      subtitle: "Start free, upgrade when you're ready",
+      subtitle:
+        "Choose a plan based on your monthly outreach goals. Every tier is designed to give you predictable usage, clear limits, and room to scale when your pipeline grows.",
       popularBadge: 'MOST POPULAR',
       trialNote: 'Includes a 3-day free trial. Cancel anytime.',
       plans: [
@@ -250,6 +268,54 @@ export const translations = {
           highlighted: true,
         },
       ],
+    },
+    faq: {
+      eyebrow: 'Need clarity?',
+      title: 'Frequently asked questions',
+      items: [
+        {
+          question: 'Who is this product for?',
+          answer:
+            'This is for people who want to win more local clients without spending hours on research. If you run an agency, work as a freelancer, or sell local services, this helps you find businesses that are more likely to need what you offer.',
+        },
+        {
+          question: 'Where do leads come from?',
+          answer:
+            'Leads are found from public business information, mainly sources like Google Maps and LinkedIn discovery. You are not buying random contact lists; you are getting businesses that are visible and relevant for real outreach.',
+        },
+        {
+          question: 'How do I know which lead to contact first?',
+          answer:
+            'Each lead is evaluated and prioritized so you can start with the best opportunities first. Instead of guessing, you can focus on businesses that show stronger signs that your offer is a good fit.',
+        },
+        {
+          question: 'What is included in each plan?',
+          answer:
+            'Every plan includes lead discovery and core workflow features. Higher plans give you more usage volume and more advanced AI support, so you can do deeper analysis and scale your outreach with confidence.',
+        },
+        {
+          question: 'Do I get a free trial?',
+          answer:
+            'Yes. New sign-ups include a 3-day free trial so you can test the quality of leads and experience the workflow before committing.',
+        },
+        {
+          question: 'If I upgrade later, do I get another free trial?',
+          answer:
+            'No. The free trial is only for your first sign-up, so billing stays fair and transparent for all users.',
+        },
+        {
+          question: 'Can I cancel anytime?',
+          answer:
+            'Yes, you can cancel anytime in billing settings. You stay in control and can manage your subscription directly without support tickets.',
+        },
+        {
+          question: 'Is my data secure?',
+          answer:
+            'Yes. Your account access is protected with secure authentication, and billing is handled through Stripe infrastructure. We focus on keeping your account and payment data safe and professionally managed.',
+        },
+      ],
+      supportLine: 'Still have questions?',
+      supportLink: 'Contact support',
     },
     footer: {
       disclaimer:
@@ -1021,8 +1087,23 @@ export const translations = {
       titleHighlight: 'und verstehe sofort warum.',
       description:
         'Dein persönlicher Lead Generator: Du bestimmst, was du suchst, und wir liefern passende Leads mit Kontext, Prioritäts-Tiers und klaren nächsten Schritten.',
-      primaryCta: 'Kostenlose Leads generieren',
-      secondaryCta: 'Beispiel-Leads ansehen',
+      primaryCta: '3-Tage-Test starten',
+      secondaryCta: 'So funktioniert es',
+      trustHeadline: 'Für echte Outbound-Teams gebaut',
+      trustItems: [
+        {
+          title: 'Google Maps + LinkedIn als Quellen',
+          description: 'Finde Unternehmen aus verlässlichen öffentlichen Quellen statt zufälligen Listen.',
+        },
+        {
+          title: '3 Tage kostenlos testen',
+          description: 'Sofort starten, Lead-Qualität prüfen und während der Testphase jederzeit kündigen.',
+        },
+        {
+          title: 'AI-gestützte Priorisierung',
+          description: 'Erkenne zuerst die Leads mit höchster Passung auf Basis von Signalen und Kontext.',
+        },
+      ],
       exampleLeads: [
         {
           businessName: 'Summit Coffee Roasters',
@@ -1095,7 +1176,8 @@ export const translations = {
     },
     results: {
       title: 'Ergebnisse, mit denen du direkt arbeiten kannst',
-      subtitle: 'Jeder Lead enthält klare Gründe und Kontaktmöglichkeiten',
+      subtitle:
+        'Du bekommst nicht nur eine Namensliste. Jeder Lead enthält umsetzbaren Kontext, klare Begründungen und konkrete Kontaktwege, damit der nächste Schritt sofort klar ist.',
       exampleLeads: [
         {
           businessName: 'Verde Bistro',
@@ -1150,7 +1232,7 @@ export const translations = {
     personalLead: {
       title: 'Dein persönlicher Lead Generator',
       subtitle:
-        'Ein klarer 3-Schritte-Workflow von der Zieldefinition bis zur AI-gestützten Umsetzung.',
+        'Du bestimmst weiterhin exakt deine Zielgruppe, und die Plattform führt dich mit weniger manueller Recherche und mehr Klarheit vom Finden bis zur Ansprache.',
       workflowSteps: [
         {
           title: 'Definiere genau, was du suchst',
@@ -1171,7 +1253,8 @@ export const translations = {
     },
     valueProp: {
       title: 'Was macht einen guten Lead aus?',
-      subtitle: 'Qualität vor Quantität, jedes Mal',
+      subtitle:
+        'Ein guter Lead ist mehr als ein Kontakt. Es ist ein Unternehmen, dem du real helfen kannst, mit klaren Opportunity-Signalen und genug Kontext für eine relevante erste Nachricht.',
       points: [
         {
           title: 'Unternehmen + Problem + Erreichbarkeit',
@@ -1195,7 +1278,8 @@ export const translations = {
     },
     pricing: {
       title: 'Einfache, transparente Preise',
-      subtitle: 'Starte kostenlos und upgrade, wenn du bereit bist',
+      subtitle:
+        'Wähle den Tarif passend zu deinem monatlichen Akquise-Ziel. Jede Stufe bietet planbare Nutzung, klare Limits und genug Spielraum, wenn dein Vertrieb wächst.',
       popularBadge: 'AM BELIEBTESTEN',
       trialNote: 'Enthält eine 3-tägige kostenlose Testphase. Jederzeit kündbar.',
       plans: [
@@ -1231,6 +1315,54 @@ export const translations = {
           highlighted: true,
         },
       ],
+    },
+    faq: {
+      eyebrow: 'Noch Fragen?',
+      title: 'Häufig gestellte Fragen',
+      items: [
+        {
+          question: 'Für wen ist dieses Produkt geeignet?',
+          answer:
+            'Dieses Produkt ist für alle, die lokal neue Kunden gewinnen möchten, ohne stundenlang manuell zu recherchieren. Besonders gut passt es für Agenturen, Freelancer und Dienstleistungsunternehmen im lokalen Outbound.',
+        },
+        {
+          question: 'Woher kommen die Leads?',
+          answer:
+            'Die Leads basieren auf öffentlich verfügbaren Unternehmensdaten, vor allem aus Quellen wie Google Maps und LinkedIn-Recherche. Du bekommst keine zufälligen Listen, sondern relevante Unternehmen für echte Akquise.',
+        },
+        {
+          question: 'Woher weiß ich, welchen Lead ich zuerst kontaktieren soll?',
+          answer:
+            'Jeder Lead wird bewertet und priorisiert, damit du mit den besten Chancen startest. So musst du nicht raten, sondern kannst dich zuerst auf Unternehmen konzentrieren, bei denen dein Angebot am wahrscheinlichsten passt.',
+        },
+        {
+          question: 'Was ist in den einzelnen Tarifen enthalten?',
+          answer:
+            'Jeder Tarif enthält die wichtigsten Funktionen für Lead-Suche und Bearbeitung. Höhere Tarife geben dir mehr Volumen und erweiterte AI-Unterstützung, damit du deine Akquise sicher skalieren kannst.',
+        },
+        {
+          question: 'Gibt es eine kostenlose Testphase?',
+          answer:
+            'Ja. Neue Registrierungen erhalten eine 3-Tage-Testphase, damit du die Lead-Qualität und den Ablauf in Ruhe prüfen kannst.',
+        },
+        {
+          question: 'Bekomme ich beim späteren Upgrade erneut eine Testphase?',
+          answer:
+            'Nein. Die kostenlose Testphase gilt nur einmal bei der Erstregistrierung, damit das Billing für alle fair und transparent bleibt.',
+        },
+        {
+          question: 'Kann ich jederzeit kündigen?',
+          answer:
+            'Ja, du kannst jederzeit in den Billing-Einstellungen kündigen. Du behältst die volle Kontrolle und brauchst kein Support-Ticket dafür.',
+        },
+        {
+          question: 'Sind meine Daten sicher?',
+          answer:
+            'Ja. Dein Konto wird über sichere Authentifizierung geschützt, und die Zahlungsabwicklung läuft über Stripe-Infrastruktur. Wir legen großen Wert darauf, dass Konto- und Zahlungsdaten professionell geschützt sind.',
+        },
+      ],
+      supportLine: 'Noch Fragen?',
+      supportLink: 'Support kontaktieren',
     },
     footer: {
       disclaimer:

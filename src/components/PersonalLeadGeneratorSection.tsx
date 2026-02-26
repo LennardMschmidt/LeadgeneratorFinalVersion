@@ -21,7 +21,6 @@ export function PersonalLeadGeneratorSection() {
     <section id="how-it-works" className="relative overflow-hidden px-6 py-24">
       <div className="relative max-w-6xl mx-auto">
         <SectionHeading
-          eyebrow={t('personalLead.title')}
           heading={t('howItWorks.title')}
           description={t('personalLead.subtitle')}
         />

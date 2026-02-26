@@ -26,6 +26,7 @@ interface LoginModalProps {
   open: boolean;
   onClose: () => void;
   onAuthenticated?: () => void;
+  initialView?: 'login' | 'register';
 }
 
 type AuthView = 'login' | 'register' | 'forgot-password';
@@ -226,7 +227,12 @@ const getAuthFailureMessage = (result: unknown): string => {
   return 'Authentication failed. Please try again.';
 };
 
-export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) {
+export function LoginModal({
+  open,
+  onClose,
+  onAuthenticated,
+  initialView = 'login',
+}: LoginModalProps) {
   const { t, language } = useI18n();
 
   const [view, setView] = useState<AuthView>('login');
@@ -261,6 +267,12 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
       return;
     }
 
+    setView(initialView);
+    setRegisterStep(1);
+    setStatusMessage(null);
+    setInlineErrors({});
+    setEmailConfirmationNotice(null);
+
     const previousOverflow = document.body.style.overflow;
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -275,7 +287,7 @@ export function LoginModal({ open, onClose, onAuthenticated }: LoginModalProps) 
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleEscape);
     };
-  }, [open, onClose]);
+  }, [open, onClose, initialView]);
 
   useEffect(() => {
     if (open) {

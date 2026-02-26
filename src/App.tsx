@@ -6,6 +6,7 @@ import { ResultsSection } from './components/ResultsSection';
 import { ValuePropSection } from './components/ValuePropSection';
 import { PersonalLeadGeneratorSection } from './components/PersonalLeadGeneratorSection';
 import { PricingSection } from './components/PricingSection';
+import { FAQSection } from './components/FAQSection';
 import { Footer } from './components/Footer';
 import { ImpressumPage } from './components/ImpressumPage';
 import { DatenschutzPage } from './components/DatenschutzPage';
@@ -131,6 +132,7 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [authModalInitialView, setAuthModalInitialView] = useState<'login' | 'register'>('login');
   const [isResumingPendingCheckout, setIsResumingPendingCheckout] = useState(false);
   const [hasBillingAccess, setHasBillingAccess] = useState<boolean | null>(null);
   const [route, setRoute] = useState<AppRoute>(() =>
@@ -355,6 +357,12 @@ export default function App() {
   }, [route, isAuthenticated, isAuthLoading, hasBillingAccess, isResumingPendingCheckout]);
 
   const openLoginModal = () => {
+    setAuthModalInitialView('login');
+    setIsLoginOpen(true);
+  };
+
+  const openRegisterModal = () => {
+    setAuthModalInitialView('register');
     setIsLoginOpen(true);
   };
 
@@ -578,12 +586,13 @@ export default function App() {
           <Header onLoginClick={openLoginModal} />
 
           <main className="relative">
-            <HeroSection />
+            <HeroSection onStartTrial={openRegisterModal} />
             <PersonalLeadGeneratorSection />
             <DemoSection />
             <ResultsSection />
             <ValuePropSection />
             <PricingSection />
+            <FAQSection />
           </main>
 
           <Footer
@@ -597,6 +606,7 @@ export default function App() {
         open={isLoginOpen && !showResetPassword}
         onClose={() => setIsLoginOpen(false)}
         onAuthenticated={handleAuthenticated}
+        initialView={authModalInitialView}
       />
       <CookieConsentBanner onOpenDatenschutz={() => navigate('/datenschutz')} />
     </div>

@@ -400,7 +400,7 @@ function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanMo
           >
             {isLoading ? (
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="spin-loader h-4 w-4" />
                 ...
               </span>
             ) : (
@@ -788,8 +788,10 @@ export function BillingPage({
 
             <div className="mt-6 grid gap-6 md:grid-cols-3">
               {orderedPlans.map((plan) => {
+                const isAnyPlanChanging = Boolean(isChangingPlan);
                 const isCurrent = usage?.plan === plan.code;
                 const isPending = isChangingPlan === plan.code;
+                const isCurrentChanging = isCurrent && isAnyPlanChanging;
                 const visual = subscriptionPlanVisuals[plan.code as PlanCode];
                 const isPro = plan.code === 'PRO';
                 const isExpert = plan.code === 'EXPERT';
@@ -822,7 +824,7 @@ export function BillingPage({
 
                     <button
                       type="button"
-                      disabled={isPending}
+                      disabled={isPending || isAnyPlanChanging}
                       onClick={() => {
                         if (isCurrent) {
                           return;
@@ -840,9 +842,9 @@ export function BillingPage({
                           : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'
                       } disabled:cursor-not-allowed disabled:opacity-60`}
                     >
-                      {isPending ? (
+                      {isPending || isCurrentChanging ? (
                         <span className="inline-flex items-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="spin-loader h-4 w-4" />
                           {t('billingPage.changePlan.updating')}
                         </span>
                       ) : isCurrent ? (

@@ -642,7 +642,10 @@ export function SavedSearchesPage({
         onLogout={onLogout}
       />
 
-      <main className="relative mx-auto max-w-7xl px-6 py-20" style={{ paddingBottom: 'calc(5rem + 20px)' }}>
+      <main
+        className="relative mx-auto w-full max-w-7xl overflow-x-clip px-3 py-16 sm:px-6 sm:py-20"
+        style={{ paddingBottom: 'calc(5rem + 20px)' }}
+      >
         <div className="space-y-8">
           <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
             <div className="flex flex-wrap items-end justify-between gap-6">
@@ -710,7 +713,7 @@ export function SavedSearchesPage({
                       className="absolute right-0 z-50 mt-3 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
                       style={{
                         marginTop: '0.9rem',
-                        width: '19rem',
+                        width: 'min(19rem, calc(100vw - 1rem))',
                         borderColor: 'rgba(255, 255, 255, 0.2)',
                         backgroundColor: 'rgba(25, 25, 28, 1)',
                         WebkitBackdropFilter: 'blur(26px)',

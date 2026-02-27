@@ -129,7 +129,7 @@ const normalizeRecoveryRouteFromHash = (): string => {
 };
 
 const FullScreenLoadingState = ({ title, description }: { title: string; description: string }) => (
-  <div className="min-h-screen bg-[#0a0a0f] text-white">
+  <div className="relative min-h-screen w-full overflow-x-clip bg-[#0a0a0f] text-white">
     <div
       className="fixed inset-0"
       style={{
@@ -502,7 +502,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div className="relative min-h-screen w-full overflow-x-clip bg-[#0a0a0f] text-white">
       {/* Background texture */}
       <div 
         className="fixed inset-0 opacity-[0.03] pointer-events-none"

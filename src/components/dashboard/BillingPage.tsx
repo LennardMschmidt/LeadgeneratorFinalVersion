@@ -765,7 +765,7 @@ export function BillingPage({
       />
 
       <main
-        className="billing-page relative mx-auto max-w-7xl px-6 py-24"
+        className="billing-page relative mx-auto w-full max-w-7xl overflow-x-clip px-3 py-16 sm:px-6 sm:py-24"
         style={{ paddingBottom: 'calc(6rem + 20px)' }}
       >
         <section>

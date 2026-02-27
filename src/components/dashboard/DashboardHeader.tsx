@@ -60,18 +60,20 @@ export function DashboardHeader({
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-lg bg-[#0a0a0f]/80 border-b border-white/5">
-      <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <button type="button" onClick={onNavigateHome} className="flex items-center gap-2">
+      <nav className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4">
+        <button type="button" onClick={onNavigateHome} className="flex min-w-0 items-center gap-2">
           <img
             src={logoSrc}
             alt="Lead Generator logo"
             className="shrink-0 rounded-lg object-cover"
             style={{ width: '2.5rem', height: '2.5rem' }}
           />
-          <span className="text-xl font-semibold">{t('common.appName')}</span>
+          <span className="max-w-[150px] truncate text-base font-semibold sm:max-w-none sm:text-xl">
+            {t('common.appName')}
+          </span>
         </button>
 
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-4">
           {!hideDashboardButton ? (
             <button
               type="button"
@@ -90,7 +92,7 @@ export function DashboardHeader({
                 type="button"
                 onClick={() => setIsAccountOpen((current) => !current)}
                 aria-expanded={isAccountOpen}
-                className="flex items-center gap-3 rounded-xl border px-5 py-3 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:gap-3 sm:px-5 sm:py-3 sm:text-base"
                 style={{
                   borderColor: 'rgba(255, 255, 255, 0.1)',
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
@@ -112,7 +114,7 @@ export function DashboardHeader({
                   className="absolute right-0 z-50 mt-3 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
                   style={{
                     marginTop: '0.9rem',
-                    width: '19rem',
+                    width: 'min(19rem, calc(100vw - 1rem))',
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     backgroundColor: 'rgba(25, 25, 28, 1)',
                     WebkitBackdropFilter: 'blur(26px)',
@@ -228,7 +230,7 @@ export function DashboardHeader({
             <button
               type="button"
               onClick={onLogout}
-              className="flex items-center gap-3 rounded-xl border px-5 py-3 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+              className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:gap-3 sm:px-5 sm:py-3 sm:text-base"
               style={{
                 borderColor: 'rgba(255, 255, 255, 0.1)',
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',

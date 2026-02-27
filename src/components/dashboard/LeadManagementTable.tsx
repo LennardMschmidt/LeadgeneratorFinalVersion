@@ -49,7 +49,7 @@ interface LeadManagementTableProps {
 }
 
 const CONTACT_BUTTON_CLASS =
-  'flex min-w-[210px] flex-1 items-start gap-2 rounded-lg bg-white/5 hover:bg-white/10 px-3 py-2 text-sm text-gray-300 hover:text-white transition-colors';
+  'flex w-full items-start gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10 hover:text-white sm:min-w-[210px] sm:flex-1';
 
 const CONTACT_VALUE_CLASS = 'mt-0.5 block text-xs text-gray-400 truncate';
 
@@ -295,14 +295,14 @@ export function LeadManagementTable({
           </div>
         </div>
 
-        <div className="flex items-center justify-between lg:justify-end gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 lg:justify-end">
           <p className="text-sm text-gray-400">
             {isLoading
               ? t('dashboard.leadTable.searchingLeads')
               : t('dashboard.leadTable.visibleLeads', { count: leads.length })}
           </p>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
             <button
               type="button"
               onClick={toggleAllLeads}
@@ -370,7 +370,7 @@ export function LeadManagementTable({
                   className="absolute right-0 z-50 mt-3 overflow-hidden rounded-xl border border-white/10 shadow-2xl"
                   style={{
                     marginTop: '0.9rem',
-                    width: '19rem',
+                    width: 'min(19rem, calc(100vw - 1rem))',
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                     backgroundColor: 'rgba(25, 25, 28, 1)',
                     WebkitBackdropFilter: 'blur(26px)',

@@ -635,7 +635,10 @@ export function DashboardPage({
         onLogout={onLogout}
       />
 
-      <main className="relative max-w-7xl mx-auto px-6 py-20" style={{ paddingBottom: 'calc(5rem + 20px)' }}>
+      <main
+        className="relative mx-auto w-full max-w-7xl overflow-x-clip px-3 py-16 sm:px-6 sm:py-20"
+        style={{ paddingBottom: 'calc(5rem + 20px)' }}
+      >
         <section className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-4xl font-bold">{t('dashboard.title')}</h1>
         </section>

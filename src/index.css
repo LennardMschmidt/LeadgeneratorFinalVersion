@@ -1986,3 +1986,16 @@ html {
 .auth-modal-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+  background-color: #0a0a0f;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}

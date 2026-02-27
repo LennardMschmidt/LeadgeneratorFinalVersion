@@ -259,7 +259,10 @@ export function AccountSettingsPage({
         onLogout={onLogout}
       />
 
-      <main className="relative mx-auto max-w-7xl px-6 py-24" style={{ paddingBottom: 'calc(6rem + 20px)' }}>
+      <main
+        className="relative mx-auto w-full max-w-7xl overflow-x-clip px-3 py-16 sm:px-6 sm:py-24"
+        style={{ paddingBottom: 'calc(6rem + 20px)' }}
+      >
         <section>
           <h1 className="mb-[20px] text-4xl font-bold">{t('accountSettingsPage.title')}</h1>
           <p className="mb-2 text-gray-400">{t('accountSettingsPage.subtitle')}</p>

@@ -474,6 +474,7 @@ export const translations = {
         title: 'Payment Method',
         description: 'Manage your payment methods securely in the Stripe Billing Portal.',
         stripeManaged: 'Managed securely via Stripe',
+        addButton: 'Set Up Payment Method',
         updateButton: 'Open Billing Portal',
       },
       cancellation: {
@@ -1524,6 +1525,7 @@ export const translations = {
         title: 'Zahlungsmethode',
         description: 'Verwalte deine Zahlungsmethoden sicher im Stripe Billing Portal.',
         stripeManaged: 'Sicher über Stripe verwaltet',
+        addButton: 'Zahlungsmethode einrichten',
         updateButton: 'Billing Portal öffnen',
       },
       cancellation: {

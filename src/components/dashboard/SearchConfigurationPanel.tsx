@@ -7,6 +7,7 @@ import {
 import { SEARCH_SOURCE_OPTIONS } from './searchSources';
 import { DashboardSelect } from './DashboardSelect';
 import { SavedSearch, SearchConfiguration } from './types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog';
 
 interface SearchConfigurationPanelProps {
   searchConfig: SearchConfiguration;
@@ -16,6 +17,10 @@ interface SearchConfigurationPanelProps {
   isRunningSearch: boolean;
   isSavingSearch: boolean;
   canUseLinkedInSearch?: boolean;
+  isGuideModalOpen?: boolean;
+  onGuideModalOpenChange?: (open: boolean) => void;
+  onOpenGuide?: () => void;
+  onOpenProblemGuide?: () => void;
   onNavigateBilling?: () => void;
   onSelectSavedSearch: (savedSearchId: string) => void;
   onDeleteSavedSearch: (savedSearchId: string) => void;
@@ -33,6 +38,10 @@ export function SearchConfigurationPanel({
   isRunningSearch,
   isSavingSearch,
   canUseLinkedInSearch = false,
+  isGuideModalOpen = false,
+  onGuideModalOpenChange,
+  onOpenGuide,
+  onOpenProblemGuide,
   onNavigateBilling,
   onSelectSavedSearch,
   onDeleteSavedSearch,
@@ -45,8 +54,7 @@ export function SearchConfigurationPanel({
   const AVAILABLE_BUSINESS_TYPE = 'Web Agencies';
   const [isOpen, setIsOpen] = useState(true);
   const [loadingStepIndex, setLoadingStepIndex] = useState(0);
-  const [isProblemGuideOpen, setIsProblemGuideOpen] = useState(false);
-  const [isSearchGuideOpen, setIsSearchGuideOpen] = useState(true);
+  const [isProblemGuideModalOpen, setIsProblemGuideModalOpen] = useState(false);
   const noSavedSearchValue = '__none__';
   const noBusinessTypeValue = '__none_business_type__';
   const noSearchSourceValue = '__none_search_source__';
@@ -155,6 +163,13 @@ export function SearchConfigurationPanel({
       accentBackground: 'linear-gradient(155deg, rgba(34, 211, 238, 0.18), rgba(15, 23, 42, 0.55))',
     },
   ];
+  const isGoogleMapsSource = searchConfig.searchSource === 'google_maps';
+  const shouldShowReliabilityTips = searchConfig.searchSource === 'linkedin' || isGoogleMapsSource;
+
+  const openProblemGuideModal = () => {
+    setIsProblemGuideModalOpen(true);
+    onOpenProblemGuide?.();
+  };
 
   const setProblemCategoriesSelected = (nextProblemCategories: string[]) => {
     onUpdateSearchConfig({
@@ -246,16 +261,28 @@ export function SearchConfigurationPanel({
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5">
       <style>{loadingAnimationStyles}</style>
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+      <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
         <h2 className="text-lg font-semibold text-white">{t('dashboard.searchPanel.title')}</h2>
-        <button
-          type="button"
-          onClick={() => setIsOpen((current) => !current)}
-          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-sm leading-none text-gray-300 transition-colors hover:text-white"
-        >
-          {isOpen ? t('dashboard.searchPanel.collapse') : t('dashboard.searchPanel.expand')}
-          {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              onOpenGuide?.();
+              onGuideModalOpenChange?.(true);
+            }}
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-blue-300/25 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-100 transition-colors hover:bg-blue-500/20"
+          >
+            {t('dashboard.searchPanel.guideOpenButton')}
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOpen((current) => !current)}
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-sm leading-none text-gray-300 transition-colors hover:text-white"
+          >
+            {isOpen ? t('dashboard.searchPanel.collapse') : t('dashboard.searchPanel.expand')}
+            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
       {isOpen ? (
@@ -263,90 +290,6 @@ export function SearchConfigurationPanel({
           <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 p-4">
             <p className="text-sm text-gray-100">{t('dashboard.searchPanel.intro')}</p>
             <p className="mt-1 text-xs text-gray-300">{t('dashboard.searchPanel.introDetail')}</p>
-          </div>
-
-          <div
-            className="rounded-2xl border"
-            style={{
-              margin: '20px',
-              padding: isSearchGuideOpen ? '0 20px' : '0 10px',
-              borderColor: 'rgba(96, 165, 250, 0.4)',
-              background:
-                'linear-gradient(145deg, rgba(29, 78, 216, 0.16), rgba(15, 23, 42, 0.88) 48%, rgba(76, 29, 149, 0.14))',
-              boxShadow:
-                '0 0 0 1px rgba(56, 189, 248, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 40px rgba(2, 6, 23, 0.35)',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setIsSearchGuideOpen((current) => !current)}
-              className="flex w-full items-center justify-between gap-3 text-left"
-              style={{ padding: '0px', marginBottom: isSearchGuideOpen ? '8px' : '0px' }}
-            >
-              <div
-                className="rounded-xl border border-blue-300/25 bg-black/20"
-                style={{
-                  margin: isSearchGuideOpen ? '8px' : '0px',
-                  padding: isSearchGuideOpen ? '14px 16px' : '10px 12px',
-                  width: '100%',
-                }}
-              >
-                <p className="text-base font-semibold text-blue-100" style={{ margin: '8px' }}>
-                  Guide
-                </p>
-                <p className="text-sm text-blue-200/90" style={{ margin: '8px', marginTop: '4px' }}>
-                  Follow these 3 steps to get better lead quality from each search run.
-                </p>
-              </div>
-              {isSearchGuideOpen ? (
-                <ChevronUp className="h-4 w-4 text-blue-200" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-blue-200" />
-              )}
-            </button>
-
-            {isSearchGuideOpen ? (
-              <div style={{ margin: '20px' }}>
-                <div className="grid gap-4 lg:grid-cols-3">
-                  {searchGuideSteps.map((guideStep) => (
-                    <div
-                      key={guideStep.step}
-                      className="rounded-xl border"
-                      style={{
-                        margin: '20px',
-                        borderColor: guideStep.borderColor,
-                        background: guideStep.accentBackground,
-                        boxShadow:
-                          'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 28px rgba(2, 6, 23, 0.28)',
-                      }}
-                    >
-                      <div style={{ margin: '20px' }}>
-                        <div
-                          className="inline-flex h-8 min-w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
-                          style={{
-                            margin: '8px',
-                            padding: '0 10px',
-                            background: guideStep.badgeBackground,
-                            boxShadow: '0 0 20px rgba(59, 130, 246, 0.22)',
-                          }}
-                        >
-                          {guideStep.step}
-                        </div>
-                        <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
-                          {guideStep.title}
-                        </p>
-                        <p
-                          className="text-sm leading-relaxed text-gray-200"
-                          style={{ margin: '8px', marginBottom: '20px' }}
-                        >
-                          {guideStep.description}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -497,16 +440,10 @@ export function SearchConfigurationPanel({
                 <p className="text-sm text-gray-300">{t('dashboard.searchPanel.problemCategoriesLabel')}</p>
                 <button
                   type="button"
-                  onClick={() => setIsProblemGuideOpen((current) => !current)}
+                  onClick={openProblemGuideModal}
                   className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 transition-colors hover:bg-white/10"
-                  aria-expanded={isProblemGuideOpen}
                 >
-                  {t('dashboard.searchPanel.howThisWorks')}
-                  {isProblemGuideOpen ? (
-                    <ChevronUp className="h-3.5 w-3.5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
-                  )}
+                  {t('dashboard.searchPanel.problemCategoriesMoreInfo')}
                 </button>
               </div>
               {!isLinkedInSource ? (
@@ -530,16 +467,7 @@ export function SearchConfigurationPanel({
                 </div>
               ) : null}
             </div>
-
-            {isProblemGuideOpen ? (
-              <div className="rounded-xl border border-blue-400/25 bg-blue-500/10 p-4 text-sm text-blue-100">
-                <p className="font-medium">{t('dashboard.searchPanel.guideTitle')}</p>
-                <p className="mt-2 text-blue-100/90">{t('dashboard.searchPanel.guideStep1')}</p>
-                <p className="mt-1 text-blue-100/90">{t('dashboard.searchPanel.guideStep2')}</p>
-                <p className="mt-1 text-blue-100/90">{t('dashboard.searchPanel.guideStep3')}</p>
-                <p className="mt-1 text-blue-100/90">{t('dashboard.searchPanel.guideConclusion')}</p>
-              </div>
-            ) : null}
+            <p className="text-xs text-gray-400">{t('dashboard.searchPanel.problemCategoriesOneLine')}</p>
 
             {isLinkedInSource ? (
               <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-gray-400">
@@ -696,25 +624,102 @@ export function SearchConfigurationPanel({
             ) : null}
           </div>
 
-          {isLinkedInSource ? (
+          {shouldShowReliabilityTips ? (
             <div className="rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
-              <p className="text-sm font-semibold text-amber-100">Search reliability tips</p>
+              <p className="text-sm font-semibold text-amber-100">{t('dashboard.searchPanel.reliabilityTipsTitle')}</p>
               <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
-                Some websites temporarily block requests, so search wording can affect results.
-                For best reliability, use a broad category plus city first, then narrow down.
+                {isGoogleMapsSource
+                  ? t('dashboard.searchPanel.reliabilityTipsGoogleMapsLine1')
+                  : t('dashboard.searchPanel.reliabilityTipsLinkedInLine1')}
               </p>
               <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
-                Best pattern: use terms like <span className="font-semibold">"Berlin Consulting"</span> or
-                <span className="font-semibold"> "New York Agency"</span>. Very niche or unusual names can be blocked
-                more often and may return no results.
+                {isGoogleMapsSource
+                  ? t('dashboard.searchPanel.reliabilityTipsGoogleMapsLine2')
+                  : t('dashboard.searchPanel.reliabilityTipsLinkedInLine2')}
               </p>
               <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
-                If blocked, run the search again with a broader term first, then refine the results in your next search.
+                {isGoogleMapsSource
+                  ? t('dashboard.searchPanel.reliabilityTipsGoogleMapsLine3')
+                  : t('dashboard.searchPanel.reliabilityTipsLinkedInLine3')}
               </p>
             </div>
           ) : null}
+
         </div>
       ) : null}
+
+      <Dialog open={isGuideModalOpen} onOpenChange={onGuideModalOpenChange}>
+        <DialogContent
+          className="border border-blue-300/25 bg-slate-950 p-0 text-white"
+          style={{
+            maxWidth: '820px',
+            background:
+              'linear-gradient(145deg, rgba(29, 78, 216, 0.20), rgba(15, 23, 42, 0.96) 42%, rgba(76, 29, 149, 0.20))',
+            boxShadow:
+              '0 0 0 1px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 56px rgba(2, 6, 23, 0.45)',
+          }}
+        >
+          <DialogHeader className="border-b border-white/10 px-6 py-5">
+            <DialogTitle className="text-xl text-white">
+              {t('dashboard.searchPanel.guideModalTitle')}
+            </DialogTitle>
+            <p className="text-sm text-gray-300">{t('dashboard.searchPanel.guideModalSubtitle')}</p>
+          </DialogHeader>
+          <div className="overflow-y-auto p-6" style={{ maxHeight: '62vh' }}>
+            <div className="space-y-4">
+              {searchGuideSteps.map((guideStep) => (
+                <div
+                  key={guideStep.step}
+                  className="rounded-xl border"
+                  style={{
+                    borderColor: guideStep.borderColor,
+                    background: guideStep.accentBackground,
+                    boxShadow:
+                      'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 28px rgba(2, 6, 23, 0.28)',
+                  }}
+                >
+                  <div className="p-4">
+                    <div
+                      className="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-3 text-xs font-semibold text-white"
+                      style={{
+                        background: guideStep.badgeBackground,
+                        boxShadow: '0 0 20px rgba(59, 130, 246, 0.22)',
+                      }}
+                    >
+                      {guideStep.step}
+                    </div>
+                    <p className="mt-3 text-sm font-semibold text-white">{guideStep.title}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-200">{guideStep.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isProblemGuideModalOpen} onOpenChange={setIsProblemGuideModalOpen}>
+        <DialogContent
+          className="border border-blue-300/25 bg-slate-950 text-white"
+          style={{
+            maxWidth: '640px',
+            background:
+              'linear-gradient(145deg, rgba(29, 78, 216, 0.12), rgba(15, 23, 42, 0.96) 42%, rgba(76, 29, 149, 0.16))',
+            boxShadow:
+              '0 0 0 1px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 56px rgba(2, 6, 23, 0.45)',
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl text-white">{t('dashboard.searchPanel.problemGuideModalTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm text-blue-100">
+            <p>{t('dashboard.searchPanel.guideStep1')}</p>
+            <p>{t('dashboard.searchPanel.guideStep2')}</p>
+            <p>{t('dashboard.searchPanel.guideStep3')}</p>
+            <p>{t('dashboard.searchPanel.guideConclusion')}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

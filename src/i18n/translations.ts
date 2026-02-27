@@ -783,6 +783,12 @@ export const translations = {
         contactPreferenceLabel: 'Contact preference',
         problemCategoriesLabel: 'Problem categories',
         howThisWorks: 'How this works',
+        guideOpenButton: 'Guide',
+        guideModalTitle: 'Guide',
+        guideModalSubtitle: 'Follow these 3 steps to get better lead quality from each search run.',
+        problemCategoriesOneLine: 'Problem categories are matching signals used to evaluate lead fit.',
+        problemCategoriesMoreInfo: 'More info',
+        problemGuideModalTitle: 'How problem categories are used',
         selectAll: 'Select All',
         unselectAll: 'Unselect All',
         guideTitle: 'How problem categories are used',
@@ -800,6 +806,26 @@ export const translations = {
           'Problem categories are not available for LinkedIn searches.',
         expectedResultsLabel: 'Expected results',
         expectedResultsRange: 'Allowed range: 20-120 leads per search.',
+        recentRunsTitle: 'Recent Search Runs',
+        recentRunsEmpty: 'No recent snapshots yet. Run a search to create one automatically.',
+        recentRunApply: 'Apply config',
+        recentRunRunAgain: 'Run again',
+        reliabilityTipsTitle: 'Search reliability tips',
+        reliabilityTipsGoogleMapsLine1:
+          'Use broad location terms first (city/area), then narrow to districts or streets to uncover different lead pools.',
+        reliabilityTipsGoogleMapsLine2:
+          'If results look limited, vary search wording and nearby locations. Small geographic changes can surface very different businesses.',
+        reliabilityTipsGoogleMapsLine3:
+          'Run multiple focused searches and compare tiers before saving leads to improve quality.',
+        reliabilityTipsLinkedInLine1:
+          'Some websites temporarily block requests, so search wording can affect results. Start broad, then narrow.',
+        reliabilityTipsLinkedInLine2:
+          'Use patterns like "Berlin Consulting" or "New York Agency". Very niche wording can return fewer results.',
+        reliabilityTipsLinkedInLine3:
+          'If blocked, retry with a broader term first and refine in the next run.',
+        autoSaveSnapshotFailed:
+          'Search started, but snapshot auto-save failed. You can still save manually.',
+        autoSavingSnapshot: 'Saving search snapshot...',
         saveSearch: 'Save Search',
         runSearch: 'Run Search',
         runningSearch: 'Running Search',
@@ -1839,6 +1865,14 @@ export const translations = {
         contactPreferenceLabel: 'Kontaktpräferenz',
         problemCategoriesLabel: 'Problemkategorien',
         howThisWorks: 'So funktioniert es',
+        guideOpenButton: 'Guide',
+        guideModalTitle: 'Guide',
+        guideModalSubtitle:
+          'Folge diesen 3 Schritten, um mit jeder Suche bessere Lead-Qualität zu erhalten.',
+        problemCategoriesOneLine:
+          'Problemkategorien sind Matching-Signale, mit denen die Lead-Passung bewertet wird.',
+        problemCategoriesMoreInfo: 'Mehr Infos',
+        problemGuideModalTitle: 'So werden Problemkategorien genutzt',
         selectAll: 'Alle auswählen',
         unselectAll: 'Alle abwählen',
         guideTitle: 'So werden Problemkategorien genutzt',
@@ -1856,6 +1890,27 @@ export const translations = {
           'Problemkategorien sind für LinkedIn-Suchen nicht verfügbar.',
         expectedResultsLabel: 'Erwartete Ergebnisse',
         expectedResultsRange: 'Erlaubter Bereich: 20-120 Leads pro Suche.',
+        recentRunsTitle: 'Letzte Suchläufe',
+        recentRunsEmpty:
+          'Noch keine Snapshots vorhanden. Starte eine Suche, um automatisch einen Snapshot zu erstellen.',
+        recentRunApply: 'Konfiguration anwenden',
+        recentRunRunAgain: 'Erneut starten',
+        reliabilityTipsTitle: 'Tipps für zuverlässige Suche',
+        reliabilityTipsGoogleMapsLine1:
+          'Starte mit breiten Standortbegriffen (Stadt/Gebiet) und verfeinere danach auf Bezirke oder Straßen.',
+        reliabilityTipsGoogleMapsLine2:
+          'Wenn Ergebnisse begrenzt wirken, variiere Suchbegriffe und nahe Orte. Kleine Standortänderungen liefern oft andere Unternehmen.',
+        reliabilityTipsGoogleMapsLine3:
+          'Führe mehrere fokussierte Suchen aus und vergleiche die Tiers, bevor du Leads speicherst.',
+        reliabilityTipsLinkedInLine1:
+          'Websites blocken Anfragen teils vorübergehend. Starte breit und verfeinere anschließend.',
+        reliabilityTipsLinkedInLine2:
+          'Nutze Muster wie "Berlin Consulting" oder "New York Agency". Sehr spezielle Begriffe liefern oft weniger Ergebnisse.',
+        reliabilityTipsLinkedInLine3:
+          'Bei Blockierung erneut mit breiterem Begriff starten und im nächsten Lauf präzisieren.',
+        autoSaveSnapshotFailed:
+          'Suche wurde gestartet, aber der Snapshot konnte nicht automatisch gespeichert werden. Manuelles Speichern ist weiter möglich.',
+        autoSavingSnapshot: 'Speichere Such-Snapshot...',
         saveSearch: 'Suche speichern',
         runSearch: 'Suche starten',
         runningSearch: 'Suche läuft',

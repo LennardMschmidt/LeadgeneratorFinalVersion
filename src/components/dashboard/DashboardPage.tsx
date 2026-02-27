@@ -40,6 +40,8 @@ interface DashboardPageProps {
   onLogout: () => void;
 }
 
+const DASHBOARD_GUIDE_SEEN_STORAGE_KEY = 'dashboard_guide_seen_v1';
+
 const toDisplayScore = (score: number, maxScore: number): number => {
   if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore <= 0) {
     return 0;
@@ -92,6 +94,7 @@ export function DashboardPage({
   const [saveSuccessHint, setSaveSuccessHint] = useState<string | null>(null);
   const [canUseLinkedInSearch, setCanUseLinkedInSearch] = useState(false);
   const [canUseAiEvaluations, setCanUseAiEvaluations] = useState(false);
+  const [isFirstRunGuideOpen, setIsFirstRunGuideOpen] = useState(false);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -121,6 +124,22 @@ export function DashboardPage({
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const hasSeenGuide =
+        window.localStorage.getItem(DASHBOARD_GUIDE_SEEN_STORAGE_KEY) === 'true';
+      if (!hasSeenGuide) {
+        setIsFirstRunGuideOpen(true);
+      }
+    } catch {
+      setIsFirstRunGuideOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -259,6 +278,19 @@ export function DashboardPage({
     });
   }, [searchMeta, t]);
 
+  const setGuideModalOpen = (open: boolean) => {
+    setIsFirstRunGuideOpen(open);
+    if (open || typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(DASHBOARD_GUIDE_SEEN_STORAGE_KEY, 'true');
+    } catch {
+      // Ignore localStorage errors in restricted environments.
+    }
+  };
+
   const updateTierFilter = (tier: LeadFilters['tier']) => {
     setActiveTier(tier);
     setFilters((currentFilters) => ({
@@ -288,11 +320,12 @@ export function DashboardPage({
     );
   };
 
-  const runSearch = async () => {
-    const location = searchConfig.location.trim();
-    const category = searchConfig.category.trim();
-    const businessType = searchConfig.businessType.trim();
-    const isGoogleMapsSource = searchConfig.searchSource === 'google_maps';
+  const runSearch = async (configOverride?: SearchConfiguration) => {
+    const currentConfig = configOverride ?? searchConfig;
+    const location = currentConfig.location.trim();
+    const category = currentConfig.category.trim();
+    const businessType = currentConfig.businessType.trim();
+    const isGoogleMapsSource = currentConfig.searchSource === 'google_maps';
 
     if (!location || !category) {
       setSearchError(t('dashboard.errors.locationAndCategoryRequired'));
@@ -304,12 +337,12 @@ export function DashboardPage({
       return;
     }
 
-    if (!searchConfig.searchSource) {
+    if (!currentConfig.searchSource) {
       setSearchError(t('dashboard.errors.searchSourceRequired'));
       return;
     }
 
-    if (searchConfig.searchSource === 'linkedin' && !canUseLinkedInSearch) {
+    if (currentConfig.searchSource === 'linkedin' && !canUseLinkedInSearch) {
       setSearchError(t('dashboard.errors.linkedinRequiresPro'));
       setActionNotice(t('dashboard.errors.upgradeForLinkedIn'));
       return;
@@ -320,16 +353,17 @@ export function DashboardPage({
     setActionNotice(null);
     const selectedProblemCount = isGoogleMapsSource
       ? new Set(
-          searchConfig.problemFilters.map((item) => item.trim().toLowerCase()).filter(Boolean),
+          currentConfig.problemFilters.map((item) => item.trim().toLowerCase()).filter(Boolean),
         ).size
       : 0;
     setLastSearchSelectedProblemCount(selectedProblemCount);
+
     setIsRunningSearch(true);
     const controller = new AbortController();
     activeSearchAbortControllerRef.current = controller;
 
     try {
-      const result = await generateLeadsFromBackend(searchConfig, {
+      const result = await generateLeadsFromBackend(currentConfig, {
         signal: controller.signal,
         onJobStatusChange: (status) => {
           if (status === 'queued') {
@@ -416,16 +450,16 @@ export function DashboardPage({
     }
   };
 
-  const selectSavedSearch = (savedSearchId: string) => {
+  const applySavedSearchById = (savedSearchId: string): SearchConfiguration | null => {
     setSelectedSavedSearchId(savedSearchId);
 
     if (!savedSearchId) {
-      return;
+      return null;
     }
 
     const savedSearch = savedSearches.find((item) => item.id === savedSearchId);
     if (!savedSearch) {
-      return;
+      return null;
     }
 
     const requestedSearchSource = savedSearch.config.searchSource ?? '';
@@ -438,7 +472,7 @@ export function DashboardPage({
       setActionNotice(t('dashboard.errors.upgradeForLinkedIn'));
     }
 
-    setSearchConfig({
+    const normalizedConfig: SearchConfiguration = {
       ...savedSearch.config,
       searchSource: normalizedSearchSource,
       businessType: savedSearch.config.businessType ?? '',
@@ -447,7 +481,14 @@ export function DashboardPage({
       problemFilters:
         savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],
       maxResults: savedSearch.config.maxResults ?? 20,
-    });
+    };
+
+    setSearchConfig(normalizedConfig);
+    return normalizedConfig;
+  };
+
+  const selectSavedSearch = (savedSearchId: string) => {
+    void applySavedSearchById(savedSearchId);
   };
 
   const deleteSavedSearch = async (savedSearchId: string) => {
@@ -662,6 +703,10 @@ export function DashboardPage({
             isRunningSearch={isRunningSearch}
             isSavingSearch={isSavingSearch}
             canUseLinkedInSearch={canUseLinkedInSearch}
+            isGuideModalOpen={isFirstRunGuideOpen}
+            onGuideModalOpenChange={setGuideModalOpen}
+            onOpenGuide={() => setActionNotice(null)}
+            onOpenProblemGuide={() => setActionNotice(null)}
             onNavigateBilling={onNavigateBilling}
             onSelectSavedSearch={selectSavedSearch}
             onDeleteSavedSearch={deleteSavedSearch}

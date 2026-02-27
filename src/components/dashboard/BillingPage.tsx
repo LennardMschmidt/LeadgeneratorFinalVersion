@@ -57,7 +57,7 @@ const FALLBACK_SUBSCRIPTION_PLAN_VISUALS: Record<
   SubscriptionPlanVisual
 > = {
   STANDARD: {
-    price: '€29',
+    price: '€39',
     period: 'per month',
     description: 'Perfect to start local outreach with Google Maps and website checks.',
     cta: 'Choose Standard',
@@ -70,7 +70,7 @@ const FALLBACK_SUBSCRIPTION_PLAN_VISUALS: Record<
     ],
   },
   PRO: {
-    price: '€49',
+    price: '€59',
     period: 'per month',
     description:
       'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
@@ -88,7 +88,7 @@ const FALLBACK_SUBSCRIPTION_PLAN_VISUALS: Record<
     ],
   },
   EXPERT: {
-    price: '€79',
+    price: '€89',
     period: 'per month',
     description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     cta: 'Upgrade to Expert',

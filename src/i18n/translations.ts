@@ -252,7 +252,7 @@ export const translations = {
         },
         {
           name: 'Pro',
-          price: '$49',
+          price: '$59',
           period: 'per month',
           description: 'Full access for growing teams',
           features: [
@@ -1302,7 +1302,7 @@ export const translations = {
         },
         {
           name: 'Pro',
-          price: '$49',
+          price: '$59',
           period: 'pro Monat',
           description: 'Voller Zugriff für wachsende Teams',
           features: [

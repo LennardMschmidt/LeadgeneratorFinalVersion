@@ -18,7 +18,7 @@ const HOME_PRICING_PLANS: PricingPlan[] = [
   {
     code: 'STANDARD',
     name: 'Standard',
-    price: '$29',
+    price: '$39',
     period: 'per month',
     description: 'Perfect to start local outreach with Google Maps and website checks.',
     features: [
@@ -34,7 +34,7 @@ const HOME_PRICING_PLANS: PricingPlan[] = [
   {
     code: 'PRO',
     name: 'Pro',
-    price: '$49',
+    price: '$59',
     period: 'per month',
     description:
       'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
@@ -55,7 +55,7 @@ const HOME_PRICING_PLANS: PricingPlan[] = [
   {
     code: 'EXPERT',
     name: 'Expert',
-    price: '$79',
+    price: '$89',
     period: 'per month',
     description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     features: [

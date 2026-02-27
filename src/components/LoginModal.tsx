@@ -71,7 +71,7 @@ const PLAN_VISUALS_EN: Record<
   PlanVisual
 > = {
   STANDARD: {
-    price: '€29',
+    price: '€39',
     period: '/per month',
     description: 'Perfect to start local outreach with Google Maps and website checks.',
     cta: 'Choose Standard',
@@ -84,7 +84,7 @@ const PLAN_VISUALS_EN: Record<
     ],
   },
   PRO: {
-    price: '€49',
+    price: '€59',
     period: '/per month',
     description:
       'Includes AI Website Analysis and direct AI suggestions, plus LinkedIn profile discovery for smarter outreach.',
@@ -102,7 +102,7 @@ const PLAN_VISUALS_EN: Record<
     ],
   },
   EXPERT: {
-    price: '€79',
+    price: '€89',
     period: '/per month',
     description: 'Maximum volume with AI Website Analysis and direct AI suggestions at scale.',
     cta: 'Upgrade to Expert',
@@ -125,7 +125,7 @@ const PLAN_VISUALS_DE: Record<
   PlanVisual
 > = {
   STANDARD: {
-    price: '€29',
+    price: '€39',
     period: '/pro Monat',
     description: 'Perfekt für den Start mit lokaler Akquise über Google Maps und Website-Checks.',
     cta: 'Standard wählen',
@@ -138,7 +138,7 @@ const PLAN_VISUALS_DE: Record<
     ],
   },
   PRO: {
-    price: '€49',
+    price: '€59',
     period: '/pro Monat',
     description:
       'Enthält KI-Website-Analyse und direkte KI-Vorschläge sowie LinkedIn-Profilsuche für smartere Akquise.',
@@ -156,7 +156,7 @@ const PLAN_VISUALS_DE: Record<
     ],
   },
   EXPERT: {
-    price: '€79',
+    price: '€89',
     period: '/pro Monat',
     description: 'Maximales Volumen mit KI-Website-Analyse und direkten KI-Vorschlägen im großen Maßstab.',
     cta: 'Auf Expert upgraden',

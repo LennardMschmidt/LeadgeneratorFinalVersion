@@ -121,10 +121,7 @@ export function SearchConfigurationPanel({
   }, [isRunningSearch, loadingSteps.length]);
 
   const activeProblemCategories = getProblemCategoriesForBusinessType(searchConfig.businessType);
-  const canRunSearch =
-    !!searchConfig.searchSource &&
-    (isLinkedInSource || !!searchConfig.businessType) &&
-    !isRunningSearch;
+  const canRunSearch = !isRunningSearch;
   const isDeletingSelectedSavedSearch =
     !!selectedSavedSearchId && deletingSavedSearchId === selectedSavedSearchId;
   const missingSelectionWarning =
@@ -552,7 +549,7 @@ export function SearchConfigurationPanel({
             </button>
             <button
               type="button"
-              onClick={onRunSearch}
+              onClick={() => onRunSearch()}
               disabled={!canRunSearch}
               className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 enabled:hover:from-blue-600 enabled:hover:to-purple-700 text-sm font-medium transition-all shadow-lg shadow-blue-500/20 disabled:cursor-not-allowed disabled:opacity-70"
             >

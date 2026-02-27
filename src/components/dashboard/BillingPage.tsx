@@ -484,6 +484,7 @@ export function BillingPage({
   const [isPlanChangeDialogOpen, setIsPlanChangeDialogOpen] = useState(false);
   const [pendingPlanChange, setPendingPlanChange] = useState<PendingPlanChange | null>(null);
   const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [isSettingUpPaymentMethod, setIsSettingUpPaymentMethod] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isCancellingSubscription, setIsCancellingSubscription] = useState(false);
   const [scheduledCancellationAt, setScheduledCancellationAt] = useState<string | null>(null);
@@ -608,6 +609,28 @@ export function BillingPage({
       }
     } finally {
       setIsOpeningPortal(false);
+    }
+  };
+
+  const handleSetupPaymentMethod = async () => {
+    setIsSettingUpPaymentMethod(true);
+    setErrorMessage(null);
+    setNoticeMessage(null);
+
+    try {
+      const checkoutPlan =
+        usage?.plan === 'STANDARD' || usage?.plan === 'PRO' || usage?.plan === 'EXPERT'
+          ? usage.plan
+          : 'STANDARD';
+      await redirectToCheckout(checkoutPlan);
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
+      } else {
+        setErrorMessage(t('billingPage.errors.checkoutFailed'));
+      }
+    } finally {
+      setIsSettingUpPaymentMethod(false);
     }
   };
 
@@ -888,11 +911,18 @@ export function BillingPage({
                 {isBillingRestricted ? (
                   <button
                     type="button"
-                    onClick={() => void handleOpenBillingPortal()}
-                    disabled={isOpeningPortal}
-                    className="inline-flex items-center justify-center rounded-lg border border-blue-300/50 bg-gradient-to-r from-blue-500/90 to-purple-600/90 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_10px_25px_rgba(59,130,246,0.35)] transition hover:from-blue-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={() => void handleSetupPaymentMethod()}
+                    disabled={isOpeningPortal || isSettingUpPaymentMethod}
+                    className="inline-flex items-center justify-center rounded-lg border px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      height: '40px',
+                      minWidth: '260px',
+                      borderColor: 'rgba(147, 197, 253, 0.45)',
+                      background: 'linear-gradient(90deg, rgba(37, 99, 235, 1) 0%, rgba(147, 51, 234, 1) 100%)',
+                      boxShadow: '0 10px 25px rgba(59, 130, 246, 0.35)',
+                    }}
                   >
-                    {isOpeningPortal
+                    {isSettingUpPaymentMethod
                       ? t('billingPage.changePlan.updating')
                       : t('billingPage.paymentMethod.addButton')}
                   </button>
@@ -901,8 +931,9 @@ export function BillingPage({
                 <button
                   type="button"
                   onClick={() => void handleOpenBillingPortal()}
-                  disabled={isOpeningPortal}
-                  className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  disabled={isOpeningPortal || isSettingUpPaymentMethod}
+                  className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{ height: '40px' }}
                 >
                   {isOpeningPortal
                     ? t('billingPage.changePlan.updating')

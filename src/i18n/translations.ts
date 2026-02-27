@@ -729,6 +729,7 @@ export const translations = {
         },
       },
       websiteAnalysis: {
+        title: 'Website',
         run: 'Run Website Analysis',
         rerun: 'Analyze Again',
         removeAnalysis: 'Remove Analysis',
@@ -1784,6 +1785,7 @@ export const translations = {
         },
       },
       websiteAnalysis: {
+        title: 'Website',
         run: 'Website-Analyse starten',
         rerun: 'Erneut analysieren',
         removeAnalysis: 'Analyse entfernen',

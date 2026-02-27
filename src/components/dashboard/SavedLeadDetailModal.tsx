@@ -661,9 +661,14 @@ export function SavedLeadDetailModal({
               {lead.websiteUrl ? (
                 <div style={ANALYSIS_PANEL_STYLE}>
                   <div className="flex flex-wrap items-center justify-between" style={{ gap: '0.7rem' }}>
-                    <div className="inline-flex items-center text-sm text-slate-300" style={{ gap: '0.5rem' }}>
+                    <div
+                      className="inline-flex items-center text-sm text-slate-300"
+                      style={{ gap: '0.5rem', maxWidth: '100%' }}
+                    >
                       <Globe className="h-4 w-4" />
-                      <span>{t('dashboard.websiteAnalysis.title')}</span>
+                      <span style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}>
+                        {lead.websiteDisplay || lead.websiteUrl}
+                      </span>
                     </div>
 
                     <div className="flex flex-wrap items-center" style={{ gap: '0' }}>

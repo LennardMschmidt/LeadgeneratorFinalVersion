@@ -185,7 +185,7 @@ export const translations = {
     personalLead: {
       title: 'Your Personal Lead Generator',
       subtitle:
-        'This web app helps your company get evaluated leads, sorted by how likely they are to convert into customers. It is built to help you generate new customers in the most efficient way, with less manual research and clearer next steps.',
+        'This web app does not just return potential leads. It gives you tailored, evaluated leads based on your offer, your business context, and your preferences, then sorts them by how likely they are to convert into customers. It is built to help you generate new customers in the most efficient way, with less manual research and clearer next steps.',
       workflowSteps: [
         {
           title: 'Define exactly what you want',
@@ -784,15 +784,15 @@ export const translations = {
         howThisWorks: 'How this works',
         selectAll: 'Select All',
         unselectAll: 'Unselect All',
-        guideTitle: 'How to configure this section',
+        guideTitle: 'How problem categories are used',
         guideStep1:
-          '1. First choose your Location and Business category to define the base search pool.',
+          '1. Problem categories are matching signals. They represent the issues your service solves (for example: no website or low rating).',
         guideStep2:
-          '2. Then choose a Business Type. This loads the matching problem categories.',
+          '2. The categories you select influence lead evaluation and tiering. Leads with more matching signals are typically prioritized.',
         guideStep3:
-          '3. Tick the problem categories (pain points) you want to target.',
+          '3. Use fewer categories for a tighter, high-fit list. Use more categories for broader discovery.',
         guideConclusion:
-          'These selected pain points are crucial for deciding if a lead is a strong fit or not.',
+          'Tip: adjust categories between runs to compare lead quality and find your best-performing lead mix.',
         selectBusinessTypeFirst:
           'Select a business type first to view and choose problem categories.',
         linkedinProblemCategoriesUnavailable:
@@ -1234,7 +1234,7 @@ export const translations = {
     personalLead: {
       title: 'Dein persönlicher Lead Generator',
       subtitle:
-        'Diese Web-App hilft deinem Unternehmen, bewertete Leads zu erhalten, sortiert nach der Wahrscheinlichkeit, daraus echte Kunden zu gewinnen. Sie ist dafür gemacht, dir auf dem effizientesten Weg neue Kunden zu bringen, mit weniger manueller Recherche und klareren nächsten Schritten.',
+        'Diese Web-App liefert dir nicht nur potenzielle Leads. Sie gibt dir maßgeschneiderte, bewertete Leads basierend auf deinem Angebot, deinem Geschäftskontext und deinen Präferenzen und sortiert sie nach der Wahrscheinlichkeit, daraus echte Kunden zu gewinnen. Sie ist dafür gemacht, dir auf dem effizientesten Weg neue Kunden zu bringen, mit weniger manueller Recherche und klareren nächsten Schritten.',
       workflowSteps: [
         {
           title: 'Definiere genau, was du suchst',
@@ -1839,15 +1839,15 @@ export const translations = {
         howThisWorks: 'So funktioniert es',
         selectAll: 'Alle auswählen',
         unselectAll: 'Alle abwählen',
-        guideTitle: 'So stellst du diesen Bereich ein',
+        guideTitle: 'So werden Problemkategorien genutzt',
         guideStep1:
-          '1. Wähle zuerst Standort und Unternehmenskategorie, um den Grund-Suchpool festzulegen.',
+          '1. Problemkategorien sind Matching-Signale. Sie stehen für die Probleme, die dein Angebot löst (zum Beispiel: keine Website oder niedrige Bewertung).',
         guideStep2:
-          '2. Wähle dann einen Business Type. Dadurch werden passende Problemkategorien geladen.',
+          '2. Deine Auswahl beeinflusst Bewertung und Tier-Zuordnung. Leads mit mehr passenden Signalen werden meist höher priorisiert.',
         guideStep3:
-          '3. Markiere die Problemkategorien (Pain Points), auf die du dich fokussieren willst.',
+          '3. Weniger Kategorien = engere, passgenauere Liste. Mehr Kategorien = breitere Lead-Discovery.',
         guideConclusion:
-          'Diese ausgewählten Pain Points sind entscheidend dafür, ob ein Lead wirklich gut zu dir passt.',
+          'Tipp: Passe die Kategorien zwischen Suchläufen an, um Lead-Qualität zu vergleichen und den besten Mix zu finden.',
         selectBusinessTypeFirst:
           'Wähle zuerst einen Business Type aus, um Problemkategorien zu sehen.',
         linkedinProblemCategoriesUnavailable:

@@ -626,14 +626,16 @@ export default function App() {
           onBackToLogin={handleReturnToLoginFromReset}
         />
       ) : showImpressum ? (
-        <>
+        <div className="flex min-h-screen flex-col">
           <Header onLoginClick={openLoginModal} />
-          <ImpressumPage />
+          <div className="flex-1">
+            <ImpressumPage />
+          </div>
           <Footer
             onNavigateDatenschutz={() => navigate('/datenschutz')}
             onNavigateImpressum={() => navigate('/impressum')}
           />
-        </>
+        </div>
       ) : showDatenschutz ? (
         <>
           <Header onLoginClick={openLoginModal} />

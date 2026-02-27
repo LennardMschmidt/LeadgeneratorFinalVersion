@@ -125,6 +125,36 @@ export function SearchConfigurationPanel({
       : !isLinkedInSource && !searchConfig.businessType
       ? t('dashboard.searchPanel.selectBusinessTypeWarning')
       : null;
+  const searchGuideSteps = [
+    {
+      step: '1',
+      title: 'Set your target carefully',
+      description:
+        'Fill out all fields and choose location and category wisely. Test different location levels such as city names, districts, neighborhoods, streets, and specific areas to surface different lead pools.',
+      borderColor: 'rgba(59, 130, 246, 0.35)',
+      badgeBackground: 'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(96, 165, 250, 0.95))',
+      accentBackground: 'linear-gradient(155deg, rgba(59, 130, 246, 0.18), rgba(15, 23, 42, 0.55))',
+    },
+    {
+      step: '2',
+      title: 'Filter before saving',
+      description:
+        'The filtered lead view is exactly what gets saved when you click save leads. Save only the leads you want by selecting Tier 1, Tier 2, Tier 3, or specific problems. Click each tier to review that result set before saving.',
+      borderColor: 'rgba(168, 85, 247, 0.35)',
+      badgeBackground:
+        'linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(139, 92, 246, 0.95))',
+      accentBackground: 'linear-gradient(155deg, rgba(168, 85, 247, 0.18), rgba(15, 23, 42, 0.55))',
+    },
+    {
+      step: '3',
+      title: 'Continue in Saved Searches',
+      description:
+        'Open Saved Searches to run website analyses, generate AI contact suggestions, manage lead status, and continue lead qualification from one place.',
+      borderColor: 'rgba(34, 211, 238, 0.35)',
+      badgeBackground: 'linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0.95))',
+      accentBackground: 'linear-gradient(155deg, rgba(34, 211, 238, 0.18), rgba(15, 23, 42, 0.55))',
+    },
+  ];
 
   const setProblemCategoriesSelected = (nextProblemCategories: string[]) => {
     onUpdateSearchConfig({
@@ -236,20 +266,35 @@ export function SearchConfigurationPanel({
           </div>
 
           <div
-            className="rounded-xl border border-blue-400/35 bg-blue-500/10 p-4"
-            style={{ margin: '20px' }}
+            className="rounded-2xl border"
+            style={{
+              margin: '20px',
+              padding: isSearchGuideOpen ? '0 20px' : '0 10px',
+              borderColor: 'rgba(96, 165, 250, 0.4)',
+              background:
+                'linear-gradient(145deg, rgba(29, 78, 216, 0.16), rgba(15, 23, 42, 0.88) 48%, rgba(76, 29, 149, 0.14))',
+              boxShadow:
+                '0 0 0 1px rgba(56, 189, 248, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 40px rgba(2, 6, 23, 0.35)',
+            }}
           >
             <button
               type="button"
               onClick={() => setIsSearchGuideOpen((current) => !current)}
               className="flex w-full items-center justify-between gap-3 text-left"
-              style={{ padding: '8px' }}
+              style={{ padding: '0px', marginBottom: isSearchGuideOpen ? '8px' : '0px' }}
             >
-              <div style={{ margin: '8px' }}>
-                <p className="text-sm font-semibold text-blue-100" style={{ margin: '8px' }}>
+              <div
+                className="rounded-xl border border-blue-300/25 bg-black/20"
+                style={{
+                  margin: isSearchGuideOpen ? '8px' : '0px',
+                  padding: isSearchGuideOpen ? '14px 16px' : '10px 12px',
+                  width: '100%',
+                }}
+              >
+                <p className="text-base font-semibold text-blue-100" style={{ margin: '8px' }}>
                   Guide
                 </p>
-                <p className="text-xs text-blue-200/90" style={{ margin: '8px' }}>
+                <p className="text-sm text-blue-200/90" style={{ margin: '8px', marginTop: '4px' }}>
                   Follow these 3 steps to get better lead quality from each search run.
                 </p>
               </div>
@@ -262,75 +307,43 @@ export function SearchConfigurationPanel({
 
             {isSearchGuideOpen ? (
               <div style={{ margin: '20px' }}>
-                <div
-                  className="rounded-lg border border-blue-400/25 bg-white/[0.04] p-3"
-                  style={{ margin: '20px' }}
-                >
-                  <div className="flex items-start gap-3" style={{ margin: '8px' }}>
-                    <span
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/30 text-xs font-semibold text-blue-100"
-                      style={{ margin: '8px' }}
+                <div className="grid gap-4 lg:grid-cols-3">
+                  {searchGuideSteps.map((guideStep) => (
+                    <div
+                      key={guideStep.step}
+                      className="rounded-xl border"
+                      style={{
+                        margin: '20px',
+                        borderColor: guideStep.borderColor,
+                        background: guideStep.accentBackground,
+                        boxShadow:
+                          'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 28px rgba(2, 6, 23, 0.28)',
+                      }}
                     >
-                      1
-                    </span>
-                    <div style={{ margin: '8px' }}>
-                      <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
-                        Set your target carefully
-                      </p>
-                      <p className="text-sm text-gray-200" style={{ margin: '8px' }}>
-                        Fill out all fields and choose location and category wisely. Test different
-                        location levels such as city names, districts, neighborhoods, streets, and
-                        specific areas to surface different lead pools.
-                      </p>
+                      <div style={{ margin: '20px' }}>
+                        <div
+                          className="inline-flex h-8 min-w-8 items-center justify-center rounded-full text-xs font-semibold text-white"
+                          style={{
+                            margin: '8px',
+                            padding: '0 10px',
+                            background: guideStep.badgeBackground,
+                            boxShadow: '0 0 20px rgba(59, 130, 246, 0.22)',
+                          }}
+                        >
+                          {guideStep.step}
+                        </div>
+                        <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
+                          {guideStep.title}
+                        </p>
+                        <p
+                          className="text-sm leading-relaxed text-gray-200"
+                          style={{ margin: '8px', marginBottom: '20px' }}
+                        >
+                          {guideStep.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
-                  style={{ margin: '20px' }}
-                >
-                  <div className="flex items-start gap-3" style={{ margin: '8px' }}>
-                    <span
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/30 text-xs font-semibold text-purple-100"
-                      style={{ margin: '8px' }}
-                    >
-                      2
-                    </span>
-                    <div style={{ margin: '8px' }}>
-                      <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
-                        Filter before saving
-                      </p>
-                      <p className="text-sm text-gray-200" style={{ margin: '8px' }}>
-                        The filtered lead view is exactly what gets saved when you click save leads.
-                        Save only the leads you want by selecting Tier 1, Tier 2, Tier 3, or specific
-                        problems. Click each tier to review that result set before saving.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
-                  style={{ margin: '20px' }}
-                >
-                  <div className="flex items-start gap-3" style={{ margin: '8px' }}>
-                    <span
-                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/30 text-xs font-semibold text-cyan-100"
-                      style={{ margin: '8px' }}
-                    >
-                      3
-                    </span>
-                    <div style={{ margin: '8px' }}>
-                      <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
-                        Continue in Saved Searches
-                      </p>
-                      <p className="text-sm text-gray-200" style={{ margin: '8px' }}>
-                        Open Saved Searches to run website analyses, generate AI contact suggestions,
-                        manage lead status, and continue lead qualification from one place.
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             ) : null}

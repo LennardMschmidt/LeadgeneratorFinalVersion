@@ -27,6 +27,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\
 
 const API_LEAD_STATUSES: LeadStatus[] = ['New', 'Pending', 'Contacted', 'Won', 'Lost', 'Archived'];
 const API_LEAD_TIERS: LeadTier[] = ['Tier 1', 'Tier 2', 'Tier 3'];
+let activeLeadSearchJobId: string | null = null;
 
 const buildApiUrl = (path: string): string => {
   if (API_BASE_URL.length > 0) {
@@ -930,14 +931,121 @@ const logLeadPayloads = (backendLeads: BackendLead[], mappedLeads: Lead[]): void
 
 export const generateLeadsFromBackend = async (
   searchConfig: SearchConfiguration,
-  options?: { signal?: AbortSignal },
+  options?: {
+    signal?: AbortSignal;
+    onJobStatusChange?: (status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled') => void;
+  },
 ): Promise<{ leads: Lead[]; meta?: LeadSearchMeta }> => {
-  const requestUrl = buildApiUrl('/api/leads/generate');
-  const authorization = await getAuthorizationHeader();
-  let response: Response;
+  const legacyGenerate = async (): Promise<{ leads: Lead[]; meta?: LeadSearchMeta }> => {
+    const requestUrl = buildApiUrl('/api/leads/generate');
+    const authorization = await getAuthorizationHeader();
+    let response: Response;
+
+    try {
+      response = await fetch(requestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authorization,
+        },
+        body: JSON.stringify(toPayload(searchConfig)),
+        signal: options?.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Search cancelled.');
+      }
+
+      if (error instanceof TypeError) {
+        const targetDescription =
+          API_BASE_URL.length > 0
+            ? API_BASE_URL
+            : '/api via Vite dev proxy (default target http://localhost:4000)';
+
+        throw new Error(
+          `Could not reach backend at ${targetDescription}. Verify the backend is running and URL settings are correct.`,
+        );
+      }
+
+      throw error;
+    }
+
+    if (!response.ok) {
+      await throwBackendApiError(response);
+    }
+
+    const payload = (await response.json()) as BackendLead[] | BackendLeadResponse;
+    const backendLeads = Array.isArray(payload) ? payload : payload.leads;
+    const mappedLeads = backendLeads.map(toLeadFromBackend);
+    logLeadPayloads(backendLeads, mappedLeads);
+    return {
+      leads: mappedLeads,
+      ...(Array.isArray(payload) ? {} : { meta: payload.meta }),
+    };
+  };
+
+  const throwIfAborted = (): void => {
+    if (options?.signal?.aborted) {
+      throw new Error('Search cancelled.');
+    }
+  };
+
+  const waitForPollInterval = async (ms: number): Promise<void> => {
+    if (!options?.signal) {
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, ms);
+      });
+      return;
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        options.signal?.removeEventListener('abort', onAbort);
+        resolve();
+      }, ms);
+
+      const onAbort = () => {
+        window.clearTimeout(timeoutId);
+        options.signal?.removeEventListener('abort', onAbort);
+        reject(new Error('Search cancelled.'));
+      };
+
+      options.signal.addEventListener('abort', onAbort, { once: true });
+    });
+  };
+
+  type SearchJobCreateResponse = { jobId?: unknown; status?: unknown };
+  type SearchJobStatusResponse = {
+    jobId?: unknown;
+    status?: unknown;
+    createdAt?: unknown;
+    startedAt?: unknown;
+    finishedAt?: unknown;
+    error?: unknown;
+  };
+  const isJobStatus = (
+    value: unknown,
+  ): value is 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' =>
+    value === 'queued' ||
+    value === 'running' ||
+    value === 'completed' ||
+    value === 'failed' ||
+    value === 'cancelled';
+
+  const shouldFallbackToLegacyGenerate = (error: unknown): boolean => {
+    return (
+      error instanceof BackendApiError &&
+      (error.status === 404 ||
+        error.code === 'QUEUE_DISABLED' ||
+        error.code === 'QUEUE_UNAVAILABLE')
+    );
+  };
 
   try {
-    response = await fetch(requestUrl, {
+    throwIfAborted();
+    const requestUrl = buildApiUrl('/api/leads/search-jobs');
+    const authorization = await getAuthorizationHeader();
+    const createResponse = await fetch(requestUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -946,9 +1054,94 @@ export const generateLeadsFromBackend = async (
       body: JSON.stringify(toPayload(searchConfig)),
       signal: options?.signal,
     });
+
+    if (!createResponse.ok) {
+      await throwBackendApiError(createResponse);
+    }
+
+    const createPayload = (await createResponse.json()) as SearchJobCreateResponse;
+    const jobId = typeof createPayload.jobId === 'string' ? createPayload.jobId.trim() : '';
+    if (!jobId) {
+      throw new Error('Backend returned an invalid search job id.');
+    }
+
+    activeLeadSearchJobId = jobId;
+    options?.onJobStatusChange?.('queued');
+
+    while (true) {
+      throwIfAborted();
+      const statusResponse = await fetch(buildApiUrl(`/api/leads/search-jobs/${encodeURIComponent(jobId)}`), {
+        method: 'GET',
+        headers: {
+          Authorization: authorization,
+        },
+        signal: options?.signal,
+      });
+
+      if (!statusResponse.ok) {
+        await throwBackendApiError(statusResponse);
+      }
+
+      const statusPayload = (await statusResponse.json()) as SearchJobStatusResponse;
+      if (!isJobStatus(statusPayload.status)) {
+        throw new Error('Backend returned an invalid job status.');
+      }
+
+      options?.onJobStatusChange?.(statusPayload.status);
+
+      if (statusPayload.status === 'failed') {
+        const backendError =
+          typeof statusPayload.error === 'string' && statusPayload.error.trim().length > 0
+            ? statusPayload.error
+            : USER_GENERIC_ERROR_MESSAGE;
+        throw new Error(backendError);
+      }
+
+      if (statusPayload.status === 'cancelled') {
+        activeLeadSearchJobId = null;
+        throw new Error('Search cancelled.');
+      }
+
+      if (statusPayload.status === 'completed') {
+        const resultResponse = await fetch(
+          buildApiUrl(`/api/leads/search-jobs/${encodeURIComponent(jobId)}/result`),
+          {
+            method: 'GET',
+            headers: {
+              Authorization: authorization,
+            },
+            signal: options?.signal,
+          },
+        );
+
+        if (!resultResponse.ok) {
+          await throwBackendApiError(resultResponse);
+        }
+
+        const payload = (await resultResponse.json()) as BackendLead[] | BackendLeadResponse;
+        const backendLeads = Array.isArray(payload) ? payload : payload.leads;
+        const mappedLeads = backendLeads.map(toLeadFromBackend);
+        logLeadPayloads(backendLeads, mappedLeads);
+        activeLeadSearchJobId = null;
+        return {
+          leads: mappedLeads,
+          ...(Array.isArray(payload) ? {} : { meta: payload.meta }),
+        };
+      }
+
+      await waitForPollInterval(1500);
+    }
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Search cancelled.');
+    }
+
+    if (!(error instanceof Error && error.message === 'Search cancelled.')) {
+      activeLeadSearchJobId = null;
+    }
+
+    if (shouldFallbackToLegacyGenerate(error)) {
+      return legacyGenerate();
     }
 
     if (error instanceof TypeError) {
@@ -964,26 +1157,16 @@ export const generateLeadsFromBackend = async (
 
     throw error;
   }
-
-  if (!response.ok) {
-    await throwBackendApiError(response);
-  }
-
-  const payload = (await response.json()) as BackendLead[] | BackendLeadResponse;
-  const backendLeads = Array.isArray(payload) ? payload : payload.leads;
-  const mappedLeads = backendLeads.map(toLeadFromBackend);
-  logLeadPayloads(backendLeads, mappedLeads);
-  return {
-    leads: mappedLeads,
-    ...(Array.isArray(payload) ? {} : { meta: payload.meta }),
-  };
 };
 
 export const cancelBackendSearch = async (): Promise<void> => {
-  const requestUrl = buildApiUrl('/api/leads/cancel');
+  const maybeJobId = activeLeadSearchJobId;
+  const requestUrl = maybeJobId
+    ? buildApiUrl(`/api/leads/search-jobs/${encodeURIComponent(maybeJobId)}/cancel`)
+    : buildApiUrl('/api/leads/cancel');
   try {
     const authorization = await getAuthorizationHeader();
-    await fetch(requestUrl, {
+    const response = await fetch(requestUrl, {
       method: 'POST',
       headers: {
         Authorization: authorization,
@@ -991,6 +1174,8 @@ export const cancelBackendSearch = async (): Promise<void> => {
     });
   } catch {
     // Best-effort cancellation endpoint call.
+  } finally {
+    activeLeadSearchJobId = null;
   }
 };
 

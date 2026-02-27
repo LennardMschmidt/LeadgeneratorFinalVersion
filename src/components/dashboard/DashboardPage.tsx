@@ -317,6 +317,7 @@ export function DashboardPage({
 
     setSearchError(null);
     setSearchMeta(null);
+    setActionNotice(null);
     const selectedProblemCount = isGoogleMapsSource
       ? new Set(
           searchConfig.problemFilters.map((item) => item.trim().toLowerCase()).filter(Boolean),
@@ -330,9 +331,20 @@ export function DashboardPage({
     try {
       const result = await generateLeadsFromBackend(searchConfig, {
         signal: controller.signal,
+        onJobStatusChange: (status) => {
+          if (status === 'queued') {
+            setActionNotice('Search queued. Waiting for an available scraper worker...');
+            return;
+          }
+
+          if (status === 'running') {
+            setActionNotice('Search is running now.');
+          }
+        },
       });
       setLeads(result.leads);
       setSearchMeta(result.meta ?? null);
+      setActionNotice(null);
     } catch (error) {
       if (error instanceof Error) {
         if (error instanceof BackendApiError && error.code === 'FEATURE_NOT_IN_PLAN') {
@@ -376,6 +388,7 @@ export function DashboardPage({
     activeSearchAbortControllerRef.current?.abort();
     await cancelBackendSearch();
     setIsRunningSearch(false);
+    setActionNotice(null);
     setSearchError(t('dashboard.errors.searchCancelled'));
   };
 

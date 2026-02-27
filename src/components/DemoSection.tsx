@@ -6,7 +6,7 @@ export function DemoSection() {
   const { t } = useI18n();
 
   return (
-    <section className="relative overflow-hidden px-6 py-20">
+    <section id="how-it-works" className="relative overflow-hidden px-6 py-20">
       <div className="relative max-w-6xl mx-auto">
         <div className="hidden items-start lg:flex">
           <div className="flex-1">

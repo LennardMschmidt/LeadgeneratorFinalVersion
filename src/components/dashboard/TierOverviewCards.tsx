@@ -33,6 +33,18 @@ const getTierSubtitleKey = (tier: LeadTier): string => {
   return 'dashboard.tierCards.tier3Subtitle';
 };
 
+const getTierDefinitionKey = (tier: LeadTier): string => {
+  if (tier === 'Tier 1') {
+    return 'dashboard.tierCards.tier1Definition';
+  }
+
+  if (tier === 'Tier 2') {
+    return 'dashboard.tierCards.tier2Definition';
+  }
+
+  return 'dashboard.tierCards.tier3Definition';
+};
+
 export function TierOverviewCards({
   counts,
   totalLeads,
@@ -97,9 +109,18 @@ export function TierOverviewCards({
                   boxShadow: `inset 0 0 0 1px rgba(${tierStyles[tier].glowRgb}, ${isActive ? 0.7 : 0.35})`,
                 }}
               />
-              <p className={`relative z-10 text-sm mb-3 ${tierStyles[tier].chip}`}>{t(getTierTitleKey(tier))}</p>
-              <p className="relative z-10 text-4xl font-bold text-white mb-2">{counts[tier]}</p>
               <p className="relative z-10 text-sm text-gray-400">{t(getTierSubtitleKey(tier))}</p>
+              <p className="relative z-10 mt-2 text-sm leading-relaxed text-gray-400">
+                {t(getTierDefinitionKey(tier))}
+              </p>
+              <p className={`relative z-10 mt-3 text-sm ${tierStyles[tier].chip}`}>{t(getTierTitleKey(tier))}</p>
+              <p className="relative z-10 text-4xl font-bold text-white">{counts[tier]}</p>
+              <p className="relative z-10 mt-2 text-sm leading-relaxed text-gray-400">
+                {t('dashboard.tierCards.infoPopulate')}
+              </p>
+              <p className="relative z-10 mt-1 text-sm leading-relaxed text-gray-400">
+                {t('dashboard.tierCards.infoFilter')}
+              </p>
             </button>
           );
         })}

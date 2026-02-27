@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { DemoSection } from './components/DemoSection';
+import { WhyNotGptSection } from './components/WhyNotGptSection';
 import { ResultsSection } from './components/ResultsSection';
 import { ValuePropSection } from './components/ValuePropSection';
 import { PersonalLeadGeneratorSection } from './components/PersonalLeadGeneratorSection';
@@ -653,6 +654,7 @@ export default function App() {
             <HeroSection onStartTrial={openRegisterModal} />
             <PersonalLeadGeneratorSection />
             <DemoSection />
+            <WhyNotGptSection />
             <ResultsSection />
             <ValuePropSection />
             <PricingSection />

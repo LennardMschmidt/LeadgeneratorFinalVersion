@@ -39,7 +39,7 @@ export const translations = {
       titlePrefix: 'Find businesses that need what you sell',
       titleHighlight: 'and know exactly why.',
       description:
-        'Your personal Lead Generator: you choose what you want, and we find tailored leads with context, priority tiers, and clear next actions.',
+        'Your personal Lead Generator: not a generic lead list, but tailored, evaluated leads for your exact offer, with clear reasoning, priority tiers, and next actions.',
       primaryCta: 'Start 3-day free trial',
       secondaryCta: 'See how it works',
       trustHeadline: 'Built for serious outbound teams',
@@ -125,6 +125,41 @@ export const translations = {
         'Finding businesses...',
         'Analyzing online presence...',
         'Evaluating lead quality...',
+      ],
+    },
+    whyNotGpt: {
+      title: 'Why not just use AI?',
+      subtitle:
+        'AI gives ideas. Lead Generator gives you qualified businesses, scored fit, and outreach-ready context.',
+      points: [
+        {
+          title: 'Live business discovery',
+          description:
+            'Find real businesses from sources like Google Maps and LinkedIn based on your niche and location.',
+        },
+        {
+          title: 'Business-fit scoring',
+          description:
+            'Each lead is scored and grouped into tiers so you know who to contact first and why.',
+        },
+        {
+          title: 'Actionable next steps',
+          description:
+            'Website analysis and contact suggestions are tied to each lead, so your outreach is specific and usable immediately.',
+        },
+      ],
+      comparisonTitle: 'Generic AI output vs Lead Generator workflow',
+      genericGptTitle: 'Generic AI',
+      leadGeneratorTitle: 'Lead Generator',
+      genericGptPoints: [
+        'Usually starts from broad prompts and manual copy/paste.',
+        'No built-in lead queue, tiering workflow, or status management.',
+        'Harder to repeat consistently across team members.',
+      ],
+      leadGeneratorPoints: [
+        'Runs targeted searches with your own business context.',
+        'Returns scored leads with tier priority and explainable reasoning.',
+        'Lets you manage, save, analyze, and execute in one flow.',
       ],
     },
     results: {
@@ -786,11 +821,29 @@ export const translations = {
         guideOpenButton: 'Guide',
         guideModalTitle: 'Guide',
         guideModalSubtitle: 'Follow these 3 steps to get better lead quality from each search run.',
+        searchGuideStep1Title: 'Set your target carefully',
+        searchGuideStep1Description:
+          'Fill out all fields and choose location and category wisely. Test different location levels such as city names, districts, neighborhoods, streets, and specific areas to surface different lead pools.',
+        searchGuideStep2Title: 'Filter before saving',
+        searchGuideStep2Description:
+          'The filtered lead view is exactly what gets saved when you click save leads. Save only the leads you want by selecting Tier 1, Tier 2, Tier 3, or specific problems. Click each tier to review that result set before saving.',
+        searchGuideStep3Title: 'Continue in Saved Searches',
+        searchGuideStep3Description:
+          'Open Saved Searches to run website analyses, generate AI contact suggestions, manage lead status, and continue lead qualification from one place.',
         problemCategoriesOneLine: 'Problem categories are matching signals used to evaluate lead fit.',
         problemCategoriesMoreInfo: 'More info',
         problemGuideModalTitle: 'How problem categories are used',
         selectAll: 'Select All',
         unselectAll: 'Unselect All',
+        problemGuideStep1Title: 'Pick the business context first',
+        problemGuideStep1Description:
+          'Choose Location and Business Category first. Then select a Business Type to load matching problem categories.',
+        problemGuideStep2Title: 'Select the pain points you solve',
+        problemGuideStep2Description:
+          'Problem categories are signals (for example low reviews, no website, missing trust elements) that your service can improve.',
+        problemGuideStep3Title: 'Your selection drives tiering',
+        problemGuideStep3Description:
+          'The selected categories directly influence lead evaluation and tier assignment. More matches usually mean higher priority.',
         guideTitle: 'How problem categories are used',
         guideStep1:
           '1. Problem categories are matching signals. They represent the issues your service solves (for example: no website or low rating).',
@@ -884,10 +937,15 @@ export const translations = {
       tierCards: {
         tier1Title: 'Most Valuable Leads (Tier 1)',
         tier1Subtitle: 'High priority opportunities',
+        tier1Definition: 'Best first outreach: high fit and strong buying signals.',
         tier2Title: 'Probable Leads (Tier 2)',
         tier2Subtitle: 'Strong opportunities to nurture',
+        tier2Definition: 'Good fit, but may need follow-up or stronger timing.',
         tier3Title: 'Raw Leads (Tier 3)',
         tier3Subtitle: 'Early-stage opportunities',
+        tier3Definition: 'Lower current fit. Keep for later testing and nurture.',
+        infoPopulate: 'These counts are populated after you run searches.',
+        infoFilter: 'Click any tier card to filter the table by that tier only.',
         totalLeads: 'Total leads',
       },
       businessProfile: {
@@ -1115,7 +1173,7 @@ export const translations = {
       titlePrefix: 'Finde Unternehmen, die genau das brauchen, was du anbietest',
       titleHighlight: 'und verstehe sofort warum.',
       description:
-        'Dein persönlicher Lead Generator: Du bestimmst, was du suchst, und wir liefern passende Leads mit Kontext, Prioritäts-Tiers und klaren nächsten Schritten.',
+        'Dein persönlicher Lead Generator: keine generische Lead-Liste, sondern maßgeschneiderte, bewertete Leads für dein konkretes Angebot – mit klarer Begründung, Prioritäts-Tiers und nächsten Schritten.',
       primaryCta: '3-Tage-Test starten',
       secondaryCta: 'So funktioniert es',
       trustHeadline: 'Für echte Outbound-Teams gebaut',
@@ -1468,6 +1526,41 @@ export const translations = {
           'Öffne die Abrechnung, um Tarif, Verlängerungsdatum und Rechnungen zu prüfen.',
         ],
       },
+    whyNotGpt: {
+      title: 'Warum nicht einfach nur KI?',
+      subtitle:
+        'KI liefert Ideen. Lead Generator liefert qualifizierte Unternehmen, klare Scores und direkt nutzbaren Kontext für Outreach.',
+      points: [
+        {
+          title: 'Live-Unternehmenssuche',
+          description:
+            'Finde echte Unternehmen aus Quellen wie Google Maps und LinkedIn basierend auf Nische und Standort.',
+        },
+        {
+          title: 'Business-Fit-Scoring',
+          description:
+            'Jeder Lead wird gescort und in Tiers eingeordnet, damit klar ist, wen du zuerst kontaktierst und warum.',
+        },
+        {
+          title: 'Umsetzbare nächste Schritte',
+          description:
+            'Website-Analyse und Kontaktvorschläge sind pro Lead hinterlegt, damit dein Outreach sofort konkret ist.',
+        },
+      ],
+      comparisonTitle: 'Generische KI-Ausgabe vs Lead-Generator-Workflow',
+      genericGptTitle: 'Generische KI',
+      leadGeneratorTitle: 'Lead Generator',
+      genericGptPoints: [
+        'Startet meist mit breiten Prompts und viel manuellem Copy/Paste.',
+        'Kein integrierter Queue-, Tiering- und Status-Workflow.',
+        'Schwerer konsistent im Team zu wiederholen.',
+      ],
+      leadGeneratorPoints: [
+        'Führt zielgerichtete Suchen mit deinem Business-Kontext aus.',
+        'Liefert gescorte Leads mit Tier-Priorität und erklärbarer Begründung.',
+        'Ermöglicht Speichern, Analysieren und Umsetzen in einem Ablauf.',
+      ],
+    },
       cancel: {
         title: 'Checkout abgebrochen',
         description:
@@ -1869,12 +1962,30 @@ export const translations = {
         guideModalTitle: 'Guide',
         guideModalSubtitle:
           'Folge diesen 3 Schritten, um mit jeder Suche bessere Lead-Qualität zu erhalten.',
+        searchGuideStep1Title: 'Zielgruppe sauber festlegen',
+        searchGuideStep1Description:
+          'Fülle alle Felder aus und wähle Standort und Kategorie bewusst. Teste unterschiedliche Ebenen wie Stadt, Bezirk, Viertel, Straße und konkrete Bereiche, um andere Lead-Pools zu finden.',
+        searchGuideStep2Title: 'Vor dem Speichern filtern',
+        searchGuideStep2Description:
+          'Genau die gefilterte Lead-Ansicht wird gespeichert. Speichere nur die Leads, die du willst: z. B. Tier 1, Tier 2, Tier 3 oder bestimmte Probleme.',
+        searchGuideStep3Title: 'In Gespeicherte Suchen weiterarbeiten',
+        searchGuideStep3Description:
+          'Nutze Gespeicherte Suchen für Website-Analysen, KI-Kontaktvorschläge, Statusmanagement und weitere Qualifizierung.',
         problemCategoriesOneLine:
           'Problemkategorien sind Matching-Signale, mit denen die Lead-Passung bewertet wird.',
         problemCategoriesMoreInfo: 'Mehr Infos',
         problemGuideModalTitle: 'So werden Problemkategorien genutzt',
         selectAll: 'Alle auswählen',
         unselectAll: 'Alle abwählen',
+        problemGuideStep1Title: 'Zuerst den Business-Kontext wählen',
+        problemGuideStep1Description:
+          'Wähle zuerst Standort und Unternehmenskategorie. Danach den Business Type, damit passende Problemkategorien geladen werden.',
+        problemGuideStep2Title: 'Die passenden Pain Points auswählen',
+        problemGuideStep2Description:
+          'Problemkategorien sind Signale (z. B. niedrige Bewertungen, keine Website, fehlende Vertrauensmerkmale), die dein Angebot verbessern kann.',
+        problemGuideStep3Title: 'Deine Auswahl steuert die Tiers',
+        problemGuideStep3Description:
+          'Die gewählten Kategorien beeinflussen direkt Bewertung und Tier-Zuordnung. Mehr Treffer bedeuten meist höhere Priorität.',
         guideTitle: 'So werden Problemkategorien genutzt',
         guideStep1:
           '1. Problemkategorien sind Matching-Signale. Sie stehen für die Probleme, die dein Angebot löst (zum Beispiel: keine Website oder niedrige Bewertung).',
@@ -1969,10 +2080,15 @@ export const translations = {
       tierCards: {
         tier1Title: 'Sehr wertvolle Leads (Tier 1)',
         tier1Subtitle: 'Hohe Priorität',
+        tier1Definition: 'Erste Kontakt-Priorität: hoher Fit und starke Kaufsignale.',
         tier2Title: 'Wahrscheinliche Leads (Tier 2)',
         tier2Subtitle: 'Starke Chancen zum Nachfassen',
+        tier2Definition: 'Guter Fit, braucht aber oft Follow-up oder besseres Timing.',
         tier3Title: 'Roh-Leads (Tier 3)',
         tier3Subtitle: 'Frühe Chancen',
+        tier3Definition: 'Aktuell niedriger Fit. Für spätere Tests und Nurturing behalten.',
+        infoPopulate: 'Diese Zahlen werden nach dem Start von Suchläufen automatisch gefüllt.',
+        infoFilter: 'Klicke auf eine Tier-Karte, um die Tabelle nur auf dieses Tier zu filtern.',
         totalLeads: 'Gesamtanzahl Leads',
       },
       businessProfile: {

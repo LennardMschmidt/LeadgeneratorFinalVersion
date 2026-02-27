@@ -133,18 +133,16 @@ export function SearchConfigurationPanel({
   const searchGuideSteps = [
     {
       step: '1',
-      title: 'Set your target carefully',
-      description:
-        'Fill out all fields and choose location and category wisely. Test different location levels such as city names, districts, neighborhoods, streets, and specific areas to surface different lead pools.',
+      title: t('dashboard.searchPanel.searchGuideStep1Title'),
+      description: t('dashboard.searchPanel.searchGuideStep1Description'),
       borderColor: 'rgba(59, 130, 246, 0.35)',
       badgeBackground: 'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(96, 165, 250, 0.95))',
       accentBackground: 'linear-gradient(155deg, rgba(59, 130, 246, 0.18), rgba(15, 23, 42, 0.55))',
     },
     {
       step: '2',
-      title: 'Filter before saving',
-      description:
-        'The filtered lead view is exactly what gets saved when you click save leads. Save only the leads you want by selecting Tier 1, Tier 2, Tier 3, or specific problems. Click each tier to review that result set before saving.',
+      title: t('dashboard.searchPanel.searchGuideStep2Title'),
+      description: t('dashboard.searchPanel.searchGuideStep2Description'),
       borderColor: 'rgba(168, 85, 247, 0.35)',
       badgeBackground:
         'linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(139, 92, 246, 0.95))',
@@ -152,9 +150,8 @@ export function SearchConfigurationPanel({
     },
     {
       step: '3',
-      title: 'Continue in Saved Searches',
-      description:
-        'Open Saved Searches to run website analyses, generate AI contact suggestions, manage lead status, and continue lead qualification from one place.',
+      title: t('dashboard.searchPanel.searchGuideStep3Title'),
+      description: t('dashboard.searchPanel.searchGuideStep3Description'),
       borderColor: 'rgba(34, 211, 238, 0.35)',
       badgeBackground: 'linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0.95))',
       accentBackground: 'linear-gradient(155deg, rgba(34, 211, 238, 0.18), rgba(15, 23, 42, 0.55))',
@@ -267,7 +264,23 @@ export function SearchConfigurationPanel({
               onOpenGuide?.();
               onGuideModalOpenChange?.(true);
             }}
-            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border border-blue-300/25 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-100 transition-colors hover:bg-blue-500/20"
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm font-medium transition-all"
+            style={{
+              borderColor: 'rgba(148, 163, 184, 0.45)',
+              backgroundColor: 'rgba(15, 23, 42, 0.45)',
+              color: 'rgb(226, 232, 240)',
+              boxShadow: '0 0 0 1px rgba(148, 163, 184, 0.14)',
+            }}
+            onMouseEnter={(event) => {
+              event.currentTarget.style.borderColor = 'rgba(191, 219, 254, 0.7)';
+              event.currentTarget.style.backgroundColor = 'rgba(30, 41, 59, 0.75)';
+              event.currentTarget.style.color = 'rgb(255, 255, 255)';
+            }}
+            onMouseLeave={(event) => {
+              event.currentTarget.style.borderColor = 'rgba(148, 163, 184, 0.45)';
+              event.currentTarget.style.backgroundColor = 'rgba(15, 23, 42, 0.45)';
+              event.currentTarget.style.color = 'rgb(226, 232, 240)';
+            }}
           >
             {t('dashboard.searchPanel.guideOpenButton')}
           </button>
@@ -656,11 +669,13 @@ export function SearchConfigurationPanel({
               '0 0 0 1px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 56px rgba(2, 6, 23, 0.45)',
           }}
         >
-          <DialogHeader className="border-b border-white/10 px-6 py-5">
-            <DialogTitle className="text-xl text-white">
+          <DialogHeader className="border-b border-white/10 px-6 pb-5 pt-5">
+            <DialogTitle className="text-2xl text-white" style={{ marginTop: '20px', fontSize: '1.95rem' }}>
               {t('dashboard.searchPanel.guideModalTitle')}
             </DialogTitle>
-            <p className="text-sm text-gray-300">{t('dashboard.searchPanel.guideModalSubtitle')}</p>
+            <p className="text-sm text-gray-300" style={{ marginTop: '8px' }}>
+              {t('dashboard.searchPanel.guideModalSubtitle')}
+            </p>
           </DialogHeader>
           <div className="overflow-y-auto p-6" style={{ maxHeight: '62vh' }}>
             <div className="space-y-4">
@@ -685,7 +700,9 @@ export function SearchConfigurationPanel({
                     >
                       {guideStep.step}
                     </div>
-                    <p className="mt-3 text-sm font-semibold text-white">{guideStep.title}</p>
+                    <p className="text-base font-semibold text-white" style={{ marginTop: '10px' }}>
+                      {guideStep.title}
+                    </p>
                     <p className="mt-2 text-sm leading-relaxed text-gray-200">{guideStep.description}</p>
                   </div>
                 </div>
@@ -697,23 +714,85 @@ export function SearchConfigurationPanel({
 
       <Dialog open={isProblemGuideModalOpen} onOpenChange={setIsProblemGuideModalOpen}>
         <DialogContent
-          className="border border-blue-300/25 bg-slate-950 text-white"
+          className="border border-blue-300/25 bg-slate-950 p-0 text-white"
           style={{
-            maxWidth: '640px',
+            maxWidth: '820px',
             background:
-              'linear-gradient(145deg, rgba(29, 78, 216, 0.12), rgba(15, 23, 42, 0.96) 42%, rgba(76, 29, 149, 0.16))',
+              'linear-gradient(145deg, rgba(29, 78, 216, 0.20), rgba(15, 23, 42, 0.96) 42%, rgba(76, 29, 149, 0.20))',
             boxShadow:
               '0 0 0 1px rgba(56, 189, 248, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 56px rgba(2, 6, 23, 0.45)',
           }}
         >
-          <DialogHeader>
-            <DialogTitle className="text-xl text-white">{t('dashboard.searchPanel.problemGuideModalTitle')}</DialogTitle>
+          <DialogHeader className="border-b border-white/10 px-6 pb-5 pt-5">
+            <DialogTitle className="text-2xl text-white" style={{ marginTop: '20px', fontSize: '1.95rem' }}>
+              {t('dashboard.searchPanel.problemGuideModalTitle')}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 text-sm text-blue-100">
-            <p>{t('dashboard.searchPanel.guideStep1')}</p>
-            <p>{t('dashboard.searchPanel.guideStep2')}</p>
-            <p>{t('dashboard.searchPanel.guideStep3')}</p>
-            <p>{t('dashboard.searchPanel.guideConclusion')}</p>
+          <div className="overflow-y-auto p-6" style={{ maxHeight: '62vh' }}>
+            <div className="space-y-4">
+              {[
+                {
+                  step: '1',
+                  title: t('dashboard.searchPanel.problemGuideStep1Title'),
+                  description: t('dashboard.searchPanel.problemGuideStep1Description'),
+                  borderColor: 'rgba(59, 130, 246, 0.35)',
+                  badgeBackground:
+                    'linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(96, 165, 250, 0.95))',
+                  accentBackground:
+                    'linear-gradient(155deg, rgba(59, 130, 246, 0.18), rgba(15, 23, 42, 0.55))',
+                },
+                {
+                  step: '2',
+                  title: t('dashboard.searchPanel.problemGuideStep2Title'),
+                  description: t('dashboard.searchPanel.problemGuideStep2Description'),
+                  borderColor: 'rgba(168, 85, 247, 0.35)',
+                  badgeBackground:
+                    'linear-gradient(135deg, rgba(168, 85, 247, 0.95), rgba(139, 92, 246, 0.95))',
+                  accentBackground:
+                    'linear-gradient(155deg, rgba(168, 85, 247, 0.18), rgba(15, 23, 42, 0.55))',
+                },
+                {
+                  step: '3',
+                  title: t('dashboard.searchPanel.problemGuideStep3Title'),
+                  description: t('dashboard.searchPanel.problemGuideStep3Description'),
+                  borderColor: 'rgba(34, 211, 238, 0.35)',
+                  badgeBackground:
+                    'linear-gradient(135deg, rgba(34, 211, 238, 0.95), rgba(59, 130, 246, 0.95))',
+                  accentBackground:
+                    'linear-gradient(155deg, rgba(34, 211, 238, 0.18), rgba(15, 23, 42, 0.55))',
+                },
+              ].map((guideStep) => (
+                <div
+                  key={guideStep.step}
+                  className="rounded-xl border"
+                  style={{
+                    borderColor: guideStep.borderColor,
+                    background: guideStep.accentBackground,
+                    boxShadow:
+                      'inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 12px 28px rgba(2, 6, 23, 0.28)',
+                  }}
+                >
+                  <div className="p-4">
+                    <div
+                      className="inline-flex h-8 min-w-8 items-center justify-center rounded-full px-3 text-xs font-semibold text-white"
+                      style={{
+                        background: guideStep.badgeBackground,
+                        boxShadow: '0 0 20px rgba(59, 130, 246, 0.22)',
+                      }}
+                    >
+                      {guideStep.step}
+                    </div>
+                    <p className="text-base font-semibold text-white" style={{ marginTop: '10px' }}>
+                      {guideStep.title}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-gray-200">{guideStep.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="text-sm leading-relaxed text-cyan-100" style={{ marginTop: '10px' }}>
+              {t('dashboard.searchPanel.guideConclusion')}
+            </p>
           </div>
         </DialogContent>
       </Dialog>

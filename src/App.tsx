@@ -128,6 +128,67 @@ const normalizeRecoveryRouteFromHash = (): string => {
   return pathname;
 };
 
+const FullScreenLoadingState = ({ title, description }: { title: string; description: string }) => (
+  <div className="min-h-screen bg-[#0a0a0f] text-white">
+    <div
+      className="fixed inset-0"
+      style={{
+        background:
+          'radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.18), transparent 45%), radial-gradient(circle at 82% 88%, rgba(139, 92, 246, 0.16), transparent 44%)',
+      }}
+    />
+    <div className="fixed inset-0 opacity-[0.03] pointer-events-none">
+      <div
+        className="h-full w-full"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+        }}
+      />
+    </div>
+    <div className="relative z-10 flex min-h-screen items-center justify-center px-6">
+      <div
+        className="w-full max-w-lg rounded-2xl border p-8 backdrop-blur-sm"
+        style={{
+          borderColor: 'rgba(255, 255, 255, 0.14)',
+          background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.6))',
+          boxShadow:
+            '0 0 0 1px rgba(96, 165, 250, 0.22), 0 24px 70px rgba(2, 6, 23, 0.5), 0 0 54px rgba(59, 130, 246, 0.16)',
+        }}
+      >
+        <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-400/35 bg-blue-500/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-blue-200">
+          Loading
+        </div>
+        <h2 className="mb-2 text-2xl font-semibold text-white">{title}</h2>
+        <p className="mb-6 text-sm leading-relaxed text-gray-300">{description}</p>
+        <div
+          className="relative h-2 w-full overflow-hidden rounded-full"
+          style={{ background: 'rgba(148, 163, 184, 0.22)' }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '44%',
+              borderRadius: '9999px',
+              background: 'linear-gradient(90deg, rgba(56, 189, 248, 0.95), rgba(139, 92, 246, 0.95))',
+              boxShadow: '0 0 16px rgba(56, 189, 248, 0.5)',
+              animation: 'leadgen-loading-bar 1.5s ease-in-out infinite',
+            }}
+          />
+        </div>
+      </div>
+    </div>
+    <style>{`
+      @keyframes leadgen-loading-bar {
+        0% { transform: translateX(-115%); opacity: 0.35; }
+        50% { opacity: 1; }
+        100% { transform: translateX(245%); opacity: 0.35; }
+      }
+    `}</style>
+  </div>
+);
+
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
@@ -143,16 +204,23 @@ export default function App() {
     let isMounted = true;
 
     const loadAuthState = async () => {
-      const hasSession = await restoreSupabaseSession();
-      if (!isMounted) {
-        return;
-      }
+      try {
+        const hasSession = await restoreSupabaseSession();
+        if (!isMounted) {
+          return;
+        }
 
-      if (hasSession && getPendingCheckout()) {
-        setIsResumingPendingCheckout(true);
-      }
+        if (hasSession && getPendingCheckout()) {
+          setIsResumingPendingCheckout(true);
+        }
 
-      setIsAuthenticated(hasSession);
+        setIsAuthenticated(hasSession);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+        setIsAuthenticated(false);
+      }
       setIsAuthLoading(false);
     };
 
@@ -188,16 +256,20 @@ export default function App() {
     let isMounted = true;
 
     const refreshAuthFromStorage = async () => {
-      const hasSession = await restoreSupabaseSession();
-      if (!isMounted || !hasSession) {
-        return;
-      }
+      try {
+        const hasSession = await restoreSupabaseSession();
+        if (!isMounted || !hasSession) {
+          return;
+        }
 
-      if (getPendingCheckout()) {
-        setIsResumingPendingCheckout(true);
+        if (getPendingCheckout()) {
+          setIsResumingPendingCheckout(true);
+        }
+        setIsAuthenticated(true);
+        setIsLoginOpen(false);
+      } catch {
+        // Ignore transient auth refresh errors and keep current UI state.
       }
-      setIsAuthenticated(true);
-      setIsLoginOpen(false);
     };
 
     const handleFocus = () => {
@@ -406,15 +478,10 @@ export default function App() {
 
   if (isResumingPendingCheckout && isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] text-white">
-        <div
-          className="fixed inset-0"
-          style={{
-            background:
-              'radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.18), transparent 45%), radial-gradient(circle at 82% 88%, rgba(139, 92, 246, 0.16), transparent 44%)',
-          }}
-        />
-      </div>
+      <FullScreenLoadingState
+        title="Preparing your checkout"
+        description="We are connecting your account to Stripe and syncing your subscription session."
+      />
     );
   }
 
@@ -427,15 +494,10 @@ export default function App() {
       route === '/account-settings')
   ) {
     return (
-      <div className="min-h-screen bg-[#0a0a0f] text-white">
-        <div
-          className="fixed inset-0"
-          style={{
-            background:
-              'radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.18), transparent 45%), radial-gradient(circle at 82% 88%, rgba(139, 92, 246, 0.16), transparent 44%)',
-          }}
-        />
-      </div>
+      <FullScreenLoadingState
+        title="Loading your dashboard"
+        description="We are validating your account access and fetching your current billing status."
+      />
     );
   }
 

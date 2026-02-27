@@ -235,15 +235,21 @@ export function SearchConfigurationPanel({
             <p className="mt-1 text-xs text-gray-300">{t('dashboard.searchPanel.introDetail')}</p>
           </div>
 
-          <div className="rounded-xl border border-blue-400/35 bg-blue-500/10 p-4">
+          <div
+            className="rounded-xl border border-blue-400/35 bg-blue-500/10 p-4"
+            style={{ margin: '20px' }}
+          >
             <button
               type="button"
               onClick={() => setIsSearchGuideOpen((current) => !current)}
               className="flex w-full items-center justify-between gap-3 text-left"
+              style={{ padding: '8px' }}
             >
-              <div>
-                <p className="text-sm font-semibold text-blue-100">Guide</p>
-                <p className="mt-1 text-xs text-blue-200/90">
+              <div style={{ margin: '8px' }}>
+                <p className="text-sm font-semibold text-blue-100" style={{ margin: '8px' }}>
+                  Guide
+                </p>
+                <p className="text-xs text-blue-200/90" style={{ margin: '8px' }}>
                   Follow these 3 steps to get better lead quality from each search run.
                 </p>
               </div>
@@ -255,25 +261,78 @@ export function SearchConfigurationPanel({
             </button>
 
             {isSearchGuideOpen ? (
-              <ol className="mt-4 space-y-3 text-sm text-gray-100">
-                <li className="rounded-lg border border-white/10 bg-white/5 p-3">
-                  <span className="font-semibold text-white">1. Set your target carefully.</span>{' '}
-                  Fill out all fields and choose location and category wisely. Test different location
-                  levels such as city names, districts, neighborhoods, streets, and specific areas to
-                  surface different lead pools.
-                </li>
-                <li className="rounded-lg border border-white/10 bg-white/5 p-3">
-                  <span className="font-semibold text-white">2. Filter before saving.</span>{' '}
-                  The filtered lead view is exactly what gets saved when you click save leads. You can
-                  save only the leads you want by selecting a tier (Tier 1, Tier 2, Tier 3) or specific
-                  problems. Click each tier to review that result set before saving.
-                </li>
-                <li className="rounded-lg border border-white/10 bg-white/5 p-3">
-                  <span className="font-semibold text-white">3. Continue in Saved Searches.</span>{' '}
-                  Open Saved Searches to run website analyses, generate AI contact suggestions, manage
-                  lead status, and continue lead qualification from one place.
-                </li>
-              </ol>
+              <div style={{ margin: '20px' }}>
+                <div
+                  className="rounded-lg border border-blue-400/25 bg-white/[0.04] p-3"
+                  style={{ margin: '20px' }}
+                >
+                  <div className="flex items-start gap-3" style={{ margin: '8px' }}>
+                    <span
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/30 text-xs font-semibold text-blue-100"
+                      style={{ margin: '8px' }}
+                    >
+                      1
+                    </span>
+                    <div style={{ margin: '8px' }}>
+                      <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
+                        Set your target carefully
+                      </p>
+                      <p className="text-sm text-gray-200" style={{ margin: '8px' }}>
+                        Fill out all fields and choose location and category wisely. Test different
+                        location levels such as city names, districts, neighborhoods, streets, and
+                        specific areas to surface different lead pools.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
+                  style={{ margin: '20px' }}
+                >
+                  <div className="flex items-start gap-3" style={{ margin: '8px' }}>
+                    <span
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/30 text-xs font-semibold text-purple-100"
+                      style={{ margin: '8px' }}
+                    >
+                      2
+                    </span>
+                    <div style={{ margin: '8px' }}>
+                      <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
+                        Filter before saving
+                      </p>
+                      <p className="text-sm text-gray-200" style={{ margin: '8px' }}>
+                        The filtered lead view is exactly what gets saved when you click save leads.
+                        Save only the leads you want by selecting Tier 1, Tier 2, Tier 3, or specific
+                        problems. Click each tier to review that result set before saving.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className="rounded-lg border border-white/10 bg-white/[0.04] p-3"
+                  style={{ margin: '20px' }}
+                >
+                  <div className="flex items-start gap-3" style={{ margin: '8px' }}>
+                    <span
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/30 text-xs font-semibold text-cyan-100"
+                      style={{ margin: '8px' }}
+                    >
+                      3
+                    </span>
+                    <div style={{ margin: '8px' }}>
+                      <p className="text-sm font-semibold text-white" style={{ margin: '8px' }}>
+                        Continue in Saved Searches
+                      </p>
+                      <p className="text-sm text-gray-200" style={{ margin: '8px' }}>
+                        Open Saved Searches to run website analyses, generate AI contact suggestions,
+                        manage lead status, and continue lead qualification from one place.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : null}
           </div>
 

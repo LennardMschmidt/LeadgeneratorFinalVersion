@@ -764,7 +764,10 @@ export function BillingPage({
         hideDashboardButton={isBillingRestricted}
       />
 
-      <main className="billing-page relative mx-auto max-w-7xl px-6 py-24">
+      <main
+        className="billing-page relative mx-auto max-w-7xl px-6 py-24"
+        style={{ paddingBottom: 'calc(6rem + 20px)' }}
+      >
         <section>
           <h1 className="text-4xl font-bold" style={{ marginBottom: 20 }}>
             {t('billingPage.title')}

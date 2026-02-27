@@ -270,7 +270,7 @@ export function BusinessProfilePage({
         onLogout={onLogout}
       />
 
-      <main className="relative mx-auto max-w-7xl px-6 py-24">
+      <main className="relative mx-auto max-w-7xl px-6 py-24" style={{ paddingBottom: 'calc(6rem + 20px)' }}>
         <section className="mb-[20px]">
           <h1 className="text-4xl font-bold" style={{ marginBottom: '20px' }}>
             {t('dashboard.businessProfile.title')}

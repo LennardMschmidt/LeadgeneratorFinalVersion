@@ -3,7 +3,6 @@ import { KeyRound, Loader2, Mail } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import {
   AccountDetails,
-  cancelSubscriptionAndDeleteAccountInBackend,
   cancelSubscriptionAtPeriodEndInBackend,
   fetchAccountDetailsFromBackend,
 } from './api';
@@ -77,10 +76,8 @@ export function AccountSettingsPage({
   const [accountDetails, setAccountDetails] = useState<AccountDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-  const [isDeleteNowDialogOpen, setIsDeleteNowDialogOpen] = useState(false);
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
   const [isCancellingSubscription, setIsCancellingSubscription] = useState(false);
-  const [isDeletingAccountNow, setIsDeletingAccountNow] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -250,26 +247,6 @@ export function AccountSettingsPage({
     }
   };
 
-  const handleConfirmImmediateDeletion = async () => {
-    setErrorMessage(null);
-    setNoticeMessage(null);
-    setIsDeletingAccountNow(true);
-
-    try {
-      await cancelSubscriptionAndDeleteAccountInBackend('DELETE');
-      setIsDeleteNowDialogOpen(false);
-      onLogout();
-    } catch (error) {
-      if (error instanceof Error) {
-        setErrorMessage(toFriendlyErrorFromUnknown(error));
-      } else {
-        setErrorMessage(t('accountSettingsPage.errors.deleteNowFailed'));
-      }
-    } finally {
-      setIsDeletingAccountNow(false);
-    }
-  };
-
   return (
     <>
       <DashboardHeader
@@ -282,7 +259,7 @@ export function AccountSettingsPage({
         onLogout={onLogout}
       />
 
-      <main className="relative mx-auto max-w-7xl px-6 py-24">
+      <main className="relative mx-auto max-w-7xl px-6 py-24" style={{ paddingBottom: 'calc(6rem + 20px)' }}>
         <section>
           <h1 className="mb-[20px] text-4xl font-bold">{t('accountSettingsPage.title')}</h1>
           <p className="mb-2 text-gray-400">{t('accountSettingsPage.subtitle')}</p>
@@ -350,18 +327,10 @@ export function AccountSettingsPage({
           <button
             type="button"
             onClick={() => setIsCancelDialogOpen(true)}
-            disabled={isCancellingSubscription || isDeletingAccountNow}
+            disabled={isCancellingSubscription}
             className="inline-flex min-w-[220px] items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {t('accountSettingsPage.actions.cancelSubscription')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsDeleteNowDialogOpen(true)}
-            disabled={isCancellingSubscription || isDeletingAccountNow}
-            className="inline-flex min-w-[220px] items-center justify-center rounded-lg border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {t('accountSettingsPage.actions.tempDeleteAccount')}
           </button>
         </div>
       </main>
@@ -706,67 +675,6 @@ export function AccountSettingsPage({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isDeleteNowDialogOpen} onOpenChange={setIsDeleteNowDialogOpen}>
-        <AlertDialogContent className="border border-red-400/35 bg-[#151219] text-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('accountSettingsPage.deleteNow.dialogTitle')}</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-gray-300">
-              <span className="block">{t('accountSettingsPage.deleteNow.dialogDescription')}</span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter
-            className="!flex !flex-row !items-center !justify-center gap-3"
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.75rem',
-              width: '100%',
-              marginTop: '0.25rem',
-            }}
-          >
-            <AlertDialogCancel
-              className="min-w-[160px]"
-              style={{
-                minWidth: '160px',
-                borderRadius: '0.65rem',
-                border: '1px solid rgba(148, 163, 184, 0.42)',
-                backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                color: 'rgb(226, 232, 240)',
-                padding: '0.55rem 1rem',
-                textAlign: 'center',
-                fontWeight: 600,
-              }}
-            >
-              {t('accountSettingsPage.deleteNow.dialogCancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => void handleConfirmImmediateDeletion()}
-              className="inline-flex min-w-[200px] items-center justify-center gap-2"
-              style={{
-                minWidth: '200px',
-                borderRadius: '0.65rem',
-                border: '1px solid rgba(248, 113, 113, 0.62)',
-                backgroundColor: 'rgba(239, 68, 68, 0.22)',
-                color: 'rgb(254, 226, 226)',
-                padding: '0.55rem 1rem',
-                fontWeight: 600,
-                textAlign: 'center',
-              }}
-            >
-              {isDeletingAccountNow ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {t('accountSettingsPage.actions.deletingAccount')}
-                </>
-              ) : (
-                t('accountSettingsPage.deleteNow.dialogConfirm')
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <AppAlertToast
         message={errorMessage}
         onClose={() => setErrorMessage(null)}

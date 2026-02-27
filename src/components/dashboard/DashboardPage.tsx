@@ -12,6 +12,7 @@ import {
   saveLeadToBackend,
   saveVisibleLeadsToBackend,
 } from './api';
+import type { SearchJobUpdate } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { getProblemCategoriesForBusinessType } from './businessTypeProblemCatalog';
 import { exportRowsToExcel } from './exportUtils';
@@ -95,7 +96,17 @@ export function DashboardPage({
   const [canUseLinkedInSearch, setCanUseLinkedInSearch] = useState(false);
   const [canUseAiEvaluations, setCanUseAiEvaluations] = useState(false);
   const [isFirstRunGuideOpen, setIsFirstRunGuideOpen] = useState(false);
+  const [activeJobUpdate, setActiveJobUpdate] = useState<SearchJobUpdate | null>(null);
+  const [searchLogs, setSearchLogs] = useState<string[]>([]);
+  const [isSearchLogVisible, setIsSearchLogVisible] = useState(false);
+  const [isSearchLogMounted, setIsSearchLogMounted] = useState(false);
+  const [hasSearchLogSessionStarted, setHasSearchLogSessionStarted] = useState(false);
+  const [isSearchLogAutoFollowEnabled, setIsSearchLogAutoFollowEnabled] = useState(true);
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
+  const searchLogViewportRef = useRef<HTMLDivElement | null>(null);
+  const hideSearchLogTimeoutRef = useRef<number | null>(null);
+  const showSearchLogAnimationFrameRef = useRef<number | null>(null);
+  const latestQueuePositionRef = useRef<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -153,6 +164,88 @@ export function DashboardPage({
 
     return () => window.clearTimeout(clearHintTimeout);
   }, [saveSuccessHint]);
+
+  useEffect(() => {
+    return () => {
+      if (hideSearchLogTimeoutRef.current !== null) {
+        window.clearTimeout(hideSearchLogTimeoutRef.current);
+      }
+      if (showSearchLogAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(showSearchLogAnimationFrameRef.current);
+      }
+    };
+  }, []);
+
+  const openSearchLogPanel = () => {
+    if (hideSearchLogTimeoutRef.current !== null) {
+      window.clearTimeout(hideSearchLogTimeoutRef.current);
+      hideSearchLogTimeoutRef.current = null;
+    }
+
+    if (showSearchLogAnimationFrameRef.current !== null) {
+      window.cancelAnimationFrame(showSearchLogAnimationFrameRef.current);
+      showSearchLogAnimationFrameRef.current = null;
+    }
+
+    if (!isSearchLogMounted) {
+      setIsSearchLogMounted(true);
+      setIsSearchLogVisible(false);
+      showSearchLogAnimationFrameRef.current = window.requestAnimationFrame(() => {
+        showSearchLogAnimationFrameRef.current = window.requestAnimationFrame(() => {
+          setIsSearchLogVisible(true);
+          showSearchLogAnimationFrameRef.current = null;
+        });
+      });
+      return;
+    }
+
+    setIsSearchLogVisible(true);
+  };
+
+  const closeSearchLogPanel = () => {
+    if (showSearchLogAnimationFrameRef.current !== null) {
+      window.cancelAnimationFrame(showSearchLogAnimationFrameRef.current);
+      showSearchLogAnimationFrameRef.current = null;
+    }
+
+    if (hideSearchLogTimeoutRef.current !== null) {
+      window.clearTimeout(hideSearchLogTimeoutRef.current);
+    }
+
+    setIsSearchLogVisible(false);
+    hideSearchLogTimeoutRef.current = window.setTimeout(() => {
+      setIsSearchLogMounted(false);
+      setHasSearchLogSessionStarted(false);
+      hideSearchLogTimeoutRef.current = null;
+    }, 520);
+  };
+
+  useEffect(() => {
+    if (!hasSearchLogSessionStarted) {
+      setIsSearchLogVisible(false);
+      setIsSearchLogMounted(false);
+      return;
+    }
+
+    const status = activeJobUpdate?.status;
+    const isActiveStatus = status === 'queued' || status === 'running';
+
+    if (isRunningSearch || isActiveStatus) {
+      openSearchLogPanel();
+      return;
+    }
+
+    closeSearchLogPanel();
+  }, [activeJobUpdate?.status, hasSearchLogSessionStarted, isRunningSearch, isSearchLogMounted]);
+
+  useEffect(() => {
+    const viewport = searchLogViewportRef.current;
+    if (!viewport || !isSearchLogVisible || !isSearchLogAutoFollowEnabled) {
+      return;
+    }
+
+    viewport.scrollTop = viewport.scrollHeight;
+  }, [searchLogs, isSearchLogVisible, isSearchLogAutoFollowEnabled]);
 
   useEffect(() => {
     let isMounted = true;
@@ -351,6 +444,12 @@ export function DashboardPage({
     setSearchError(null);
     setSearchMeta(null);
     setActionNotice(null);
+    setSearchLogs([]);
+    latestQueuePositionRef.current = null;
+    setActiveJobUpdate(null);
+    setIsSearchLogAutoFollowEnabled(true);
+    setHasSearchLogSessionStarted(true);
+    openSearchLogPanel();
     const selectedProblemCount = isGoogleMapsSource
       ? new Set(
           currentConfig.problemFilters.map((item) => item.trim().toLowerCase()).filter(Boolean),
@@ -373,6 +472,34 @@ export function DashboardPage({
 
           if (status === 'running') {
             setActionNotice('Search is running now.');
+          }
+        },
+        onJobUpdate: (update) => {
+          setActiveJobUpdate(update);
+
+          const queuePositionChanged =
+            update.status === 'queued' &&
+            typeof update.queuePosition === 'number' &&
+            update.queuePosition !== latestQueuePositionRef.current;
+
+          setSearchLogs(() => {
+            const nextLogs = [...update.logs];
+            if (queuePositionChanged) {
+              nextLogs.push(
+                `[${new Date().toISOString()}] Queue position update: #${update.queuePosition}`,
+              );
+            }
+            return nextLogs;
+          });
+
+          if (update.status === 'queued' && typeof update.queuePosition === 'number') {
+            latestQueuePositionRef.current = update.queuePosition;
+          } else if (update.status !== 'queued') {
+            latestQueuePositionRef.current = null;
+          }
+
+          if (update.status === 'queued' && typeof update.queuePosition === 'number') {
+            setActionNotice(`Search queued. Position in queue: ${update.queuePosition}.`);
           }
         },
       });
@@ -422,6 +549,15 @@ export function DashboardPage({
     activeSearchAbortControllerRef.current?.abort();
     await cancelBackendSearch();
     setIsRunningSearch(false);
+    setActiveJobUpdate((current) =>
+      current
+        ? {
+            ...current,
+            status: 'cancelled',
+            queuePosition: null,
+          }
+        : null,
+    );
     setActionNotice(null);
     setSearchError(t('dashboard.errors.searchCancelled'));
   };
@@ -664,6 +800,38 @@ export function DashboardPage({
     }
   };
 
+  const getSearchLogLineClassName = (line: string): string => {
+    const normalized = line.toLowerCase();
+
+    if (normalized.includes('error') || normalized.includes('failed')) {
+      return 'text-rose-300';
+    }
+
+    if (normalized.includes('completed') || normalized.includes('success')) {
+      return 'text-emerald-300';
+    }
+
+    if (normalized.includes('queued') || normalized.includes('running')) {
+      return 'text-amber-200';
+    }
+
+    if (normalized.includes('[scrape') || normalized.includes('[worker')) {
+      return 'text-cyan-200';
+    }
+
+    return 'text-slate-200';
+  };
+
+  const handleSearchLogScroll = () => {
+    const viewport = searchLogViewportRef.current;
+    if (!viewport) {
+      return;
+    }
+
+    const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
+    setIsSearchLogAutoFollowEnabled(distanceFromBottom <= 24);
+  };
+
   return (
     <>
       <DashboardHeader
@@ -717,7 +885,99 @@ export function DashboardPage({
           />
         </section>
 
-        <section className="mt-24">
+        {isSearchLogMounted ? (
+          <section
+            className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSearchLogVisible ? 'mt-8 max-h-[420px] opacity-100 translate-y-0 scale-100 blur-0' : 'mt-0 max-h-0 opacity-0 -translate-y-3 scale-[0.98] blur-[2px] pointer-events-none'}`}
+            style={{ marginBottom: isSearchLogVisible ? '20px' : '0px' }}
+            aria-hidden={!isSearchLogVisible}
+          >
+            <div
+              className="rounded-2xl border border-white/10 bg-white/5 p-6"
+              style={{
+                boxShadow:
+                  '0 0 0 1px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 18px 36px rgba(2, 6, 23, 0.35)',
+                background:
+                  'linear-gradient(145deg, rgba(6, 78, 59, 0.3), rgba(7, 18, 24, 0.92) 46%, rgba(17, 24, 39, 0.95))',
+              }}
+            >
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-emerald-100">Search Log</h3>
+                <span
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium"
+                  style={{
+                    borderColor:
+                      activeJobUpdate?.status === 'failed'
+                        ? 'rgba(248, 113, 113, 0.45)'
+                        : activeJobUpdate?.status === 'completed'
+                          ? 'rgba(52, 211, 153, 0.45)'
+                          : 'rgba(96, 165, 250, 0.45)',
+                    backgroundColor:
+                      activeJobUpdate?.status === 'failed'
+                        ? 'rgba(239, 68, 68, 0.12)'
+                        : activeJobUpdate?.status === 'completed'
+                          ? 'rgba(16, 185, 129, 0.12)'
+                          : 'rgba(59, 130, 246, 0.12)',
+                    color:
+                      activeJobUpdate?.status === 'failed'
+                        ? 'rgb(254, 202, 202)'
+                        : activeJobUpdate?.status === 'completed'
+                          ? 'rgb(167, 243, 208)'
+                          : 'rgb(191, 219, 254)',
+                  }}
+                >
+                  {activeJobUpdate?.status === 'queued'
+                    ? `Queued${typeof activeJobUpdate.queuePosition === 'number' ? ` (#${activeJobUpdate.queuePosition})` : ''}`
+                    : activeJobUpdate?.status === 'running'
+                      ? 'Running'
+                      : activeJobUpdate?.status === 'completed'
+                        ? 'Completed'
+                        : activeJobUpdate?.status === 'failed'
+                          ? 'Failed'
+                          : activeJobUpdate?.status === 'cancelled'
+                            ? 'Cancelled'
+                            : 'Idle'}
+                </span>
+              </div>
+
+              <div
+                ref={searchLogViewportRef}
+                onScroll={handleSearchLogScroll}
+                className="h-64 min-h-64 max-h-64 overflow-y-auto overflow-x-hidden rounded-xl border border-emerald-400/25 bg-[#050b0f] p-4 text-[11px] leading-relaxed touch-pan-y sm:text-xs"
+                style={{
+                  height: '16rem',
+                  minHeight: '16rem',
+                  maxHeight: '16rem',
+                  overflowY: 'auto',
+                  pointerEvents: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  fontFamily:
+                    'SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+                }}
+              >
+                {searchLogs.length > 0 ? (
+                  searchLogs.map((line, index) => (
+                    <div
+                      key={`${index}-${line.slice(0, 18)}`}
+                      className={`mb-1 break-words ${getSearchLogLineClassName(line)}`}
+                    >
+                      {line}
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-slate-400">
+                    {activeJobUpdate?.status === 'queued'
+                      ? `You are almost there. Queue position: ${typeof activeJobUpdate.queuePosition === 'number' ? `#${activeJobUpdate.queuePosition}` : 'calculating...'}`
+                      : activeJobUpdate?.status === 'running'
+                        ? 'Scraper is starting up. Live logs will appear in a moment.'
+                        : 'Preparing your search job...'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="mt-16">
           <LeadManagementTable
             leads={filteredLeads}
             scoreDenominator={scoreDenominator}

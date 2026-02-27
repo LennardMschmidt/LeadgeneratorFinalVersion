@@ -470,6 +470,12 @@ const mapSavedLead = (item: BackendSavedLead): SavedLead | null => {
   const contactAiSuggestions = toStringRecord(
     item.contactAiSuggestions ?? item.contact_ai_suggestions,
   );
+  const websiteAnalysisCreatedAt =
+    typeof item.websiteAnalysisCreatedAt === 'string'
+      ? item.websiteAnalysisCreatedAt
+      : typeof item.website_analysis_created_at === 'string'
+        ? item.website_analysis_created_at
+        : undefined;
 
   const mapped: SavedLead = {
     savedLeadId,
@@ -493,12 +499,7 @@ const mapSavedLead = (item: BackendSavedLead): SavedLead | null => {
     !Array.isArray(item.websiteAnalysis ?? item.website_analysis)
       ? { websiteAnalysis: (item.websiteAnalysis ?? item.website_analysis) as Record<string, unknown> }
       : {}),
-    ...(typeof (item.websiteAnalysisCreatedAt ?? item.website_analysis_created_at) === 'string'
-      ? {
-          websiteAnalysisCreatedAt: item.websiteAnalysisCreatedAt ??
-            (item.website_analysis_created_at as string),
-        }
-      : {}),
+    ...(websiteAnalysisCreatedAt ? { websiteAnalysisCreatedAt } : {}),
     ...(typeof (item.websiteAiSummary ?? item.website_ai_summary) === 'string'
       ? {
           websiteAiSummary: (item.websiteAiSummary ?? item.website_ai_summary) as string,
@@ -929,11 +930,19 @@ const logLeadPayloads = (backendLeads: BackendLead[], mappedLeads: Lead[]): void
   console.groupEnd();
 };
 
+export type SearchJobUpdate = {
+  jobId: string;
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+  queuePosition: number | null;
+  logs: string[];
+};
+
 export const generateLeadsFromBackend = async (
   searchConfig: SearchConfiguration,
   options?: {
     signal?: AbortSignal;
     onJobStatusChange?: (status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled') => void;
+    onJobUpdate?: (update: SearchJobUpdate) => void;
   },
 ): Promise<{ leads: Lead[]; meta?: LeadSearchMeta }> => {
   const legacyGenerate = async (): Promise<{ leads: Lead[]; meta?: LeadSearchMeta }> => {
@@ -1022,6 +1031,8 @@ export const generateLeadsFromBackend = async (
     startedAt?: unknown;
     finishedAt?: unknown;
     error?: unknown;
+    queuePosition?: unknown;
+    logs?: unknown;
   };
   const isJobStatus = (
     value: unknown,
@@ -1067,6 +1078,12 @@ export const generateLeadsFromBackend = async (
 
     activeLeadSearchJobId = jobId;
     options?.onJobStatusChange?.('queued');
+    options?.onJobUpdate?.({
+      jobId,
+      status: 'queued',
+      queuePosition: null,
+      logs: [],
+    });
 
     while (true) {
       throwIfAborted();
@@ -1086,8 +1103,24 @@ export const generateLeadsFromBackend = async (
       if (!isJobStatus(statusPayload.status)) {
         throw new Error('Backend returned an invalid job status.');
       }
+      const queuePosition =
+        typeof statusPayload.queuePosition === 'number' && Number.isFinite(statusPayload.queuePosition)
+          ? Math.max(1, Math.floor(statusPayload.queuePosition))
+          : null;
+      const logs = Array.isArray(statusPayload.logs)
+        ? statusPayload.logs
+            .map((entry) => (typeof entry === 'string' ? entry : ''))
+            .map((entry) => entry.trim())
+            .filter((entry) => entry.length > 0)
+        : [];
 
       options?.onJobStatusChange?.(statusPayload.status);
+      options?.onJobUpdate?.({
+        jobId,
+        status: statusPayload.status,
+        queuePosition,
+        logs,
+      });
 
       if (statusPayload.status === 'failed') {
         const backendError =

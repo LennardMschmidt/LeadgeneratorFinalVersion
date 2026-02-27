@@ -485,9 +485,7 @@ export function DashboardPage({
           setSearchLogs(() => {
             const nextLogs = [...update.logs];
             if (queuePositionChanged) {
-              nextLogs.push(
-                `[${new Date().toISOString()}] Queue position update: #${update.queuePosition}`,
-              );
+              nextLogs.push(`[QUEUE] Position updated: #${update.queuePosition}.`);
             }
             return nextLogs;
           });
@@ -800,26 +798,118 @@ export function DashboardPage({
     }
   };
 
+  const getSearchLogTag = (line: string): string => {
+    const match = line.match(/^\[([A-Z]+)\]/);
+    return match?.[1] ?? 'INFO';
+  };
+
   const getSearchLogLineClassName = (line: string): string => {
-    const normalized = line.toLowerCase();
-
-    if (normalized.includes('error') || normalized.includes('failed')) {
-      return 'text-rose-300';
+    const tag = getSearchLogTag(line);
+    if (tag === 'QUEUE') {
+      return 'text-sky-300';
     }
-
-    if (normalized.includes('completed') || normalized.includes('success')) {
-      return 'text-emerald-300';
+    if (tag === 'RUNNING') {
+      return 'text-cyan-300';
     }
-
-    if (normalized.includes('queued') || normalized.includes('running')) {
+    if (tag === 'BATCH') {
+      return 'text-violet-300';
+    }
+    if (tag === 'PROGRESS') {
       return 'text-amber-200';
     }
+    if (tag === 'WARN') {
+      return 'text-orange-300';
+    }
+    if (tag === 'ERROR') {
+      return 'text-rose-300';
+    }
+    if (tag === 'DONE') {
+      return 'text-emerald-300';
+    }
+    return 'text-slate-200';
+  };
 
-    if (normalized.includes('[scrape') || normalized.includes('[worker')) {
-      return 'text-cyan-200';
+  const getSearchLogLineStyle = (
+    line: string,
+  ): { color: string; backgroundColor: string; borderLeftColor: string } => {
+    const tag = getSearchLogTag(line);
+
+    if (tag === 'QUEUE') {
+      return {
+        color: 'rgb(125, 211, 252)',
+        backgroundColor: 'rgba(14, 116, 144, 0.22)',
+        borderLeftColor: 'rgba(56, 189, 248, 0.95)',
+      };
     }
 
-    return 'text-slate-200';
+    if (tag === 'RUNNING') {
+      return {
+        color: 'rgb(103, 232, 249)',
+        backgroundColor: 'rgba(8, 145, 178, 0.2)',
+        borderLeftColor: 'rgba(6, 182, 212, 0.95)',
+      };
+    }
+
+    if (tag === 'BATCH') {
+      return {
+        color: 'rgb(196, 181, 253)',
+        backgroundColor: 'rgba(109, 40, 217, 0.2)',
+        borderLeftColor: 'rgba(139, 92, 246, 0.95)',
+      };
+    }
+
+    if (tag === 'PROGRESS') {
+      return {
+        color: 'rgb(253, 224, 71)',
+        backgroundColor: 'rgba(161, 98, 7, 0.22)',
+        borderLeftColor: 'rgba(245, 158, 11, 0.95)',
+      };
+    }
+
+    if (tag === 'WARN') {
+      return {
+        color: 'rgb(253, 186, 116)',
+        backgroundColor: 'rgba(154, 52, 18, 0.22)',
+        borderLeftColor: 'rgba(251, 146, 60, 0.95)',
+      };
+    }
+
+    if (tag === 'ERROR') {
+      return {
+        color: 'rgb(253, 164, 175)',
+        backgroundColor: 'rgba(159, 18, 57, 0.22)',
+        borderLeftColor: 'rgba(244, 63, 94, 0.95)',
+      };
+    }
+
+    if (tag === 'DONE') {
+      return {
+        color: 'rgb(110, 231, 183)',
+        backgroundColor: 'rgba(6, 95, 70, 0.22)',
+        borderLeftColor: 'rgba(16, 185, 129, 0.95)',
+      };
+    }
+
+    return {
+      color: 'rgb(226, 232, 240)',
+      backgroundColor: 'rgba(30, 41, 59, 0.26)',
+      borderLeftColor: 'rgba(100, 116, 139, 0.75)',
+    };
+  };
+
+  const renderSearchLogLine = (line: string) => {
+    const tagMatch = line.match(/^(\[[A-Z]+\])\s*(.*)$/);
+    if (!tagMatch) {
+      return line;
+    }
+
+    const [, tag, message] = tagMatch;
+    return (
+      <>
+        <span className="font-semibold tracking-wide">{tag}</span>
+        {message ? <span>{` ${message}`}</span> : null}
+      </>
+    );
   };
 
   const handleSearchLogScroll = () => {
@@ -958,9 +1048,10 @@ export function DashboardPage({
                   searchLogs.map((line, index) => (
                     <div
                       key={`${index}-${line.slice(0, 18)}`}
-                      className={`mb-1 break-words ${getSearchLogLineClassName(line)}`}
+                      className={`mb-1 break-words rounded-md border-l-2 px-2 py-1 ${getSearchLogLineClassName(line)}`}
+                      style={getSearchLogLineStyle(line)}
                     >
-                      {line}
+                      {renderSearchLogLine(line)}
                     </div>
                   ))
                 ) : (

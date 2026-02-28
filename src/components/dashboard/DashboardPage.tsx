@@ -106,6 +106,7 @@ export function DashboardPage({
   const hideSearchLogTimeoutRef = useRef<number | null>(null);
   const showSearchLogAnimationFrameRef = useRef<number | null>(null);
   const latestQueuePositionRef = useRef<number | null>(null);
+  const actionNoticeTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -160,8 +161,23 @@ export function DashboardPage({
       if (showSearchLogAnimationFrameRef.current !== null) {
         window.cancelAnimationFrame(showSearchLogAnimationFrameRef.current);
       }
+      if (actionNoticeTimeoutRef.current !== null) {
+        window.clearTimeout(actionNoticeTimeoutRef.current);
+      }
     };
   }, []);
+
+  const showActionNotice = (message: string) => {
+    if (actionNoticeTimeoutRef.current !== null) {
+      window.clearTimeout(actionNoticeTimeoutRef.current);
+      actionNoticeTimeoutRef.current = null;
+    }
+    setActionNotice(null);
+    actionNoticeTimeoutRef.current = window.setTimeout(() => {
+      setActionNotice(message);
+      actionNoticeTimeoutRef.current = null;
+    }, 0);
+  };
 
   const openSearchLogPanel = () => {
     if (hideSearchLogTimeoutRef.current !== null) {
@@ -666,7 +682,7 @@ export function DashboardPage({
     try {
       const summary = await saveVisibleLeadsToBackend(filteredLeads);
       setSearchError(null);
-      setActionNotice(
+      showActionNotice(
         t('dashboard.leadTable.savedHintWithCount', {
           count: summary.insertedOrUpdated,
         }),
@@ -713,7 +729,7 @@ export function DashboardPage({
         ),
       );
       setSearchError(null);
-      setActionNotice(t('dashboard.leadTable.savedHint'));
+      showActionNotice(t('dashboard.leadTable.savedHint'));
     } catch (error) {
       setActionNotice(null);
       if (error instanceof Error) {

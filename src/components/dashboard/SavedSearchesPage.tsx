@@ -403,14 +403,6 @@ export function SavedSearchesPage({
     } catch (error) {
       setNoticeMessage(null);
       if (error instanceof Error) {
-        const blockedPattern =
-          /blocked|forbidden|did not allow|didn't allow|access denied|captcha|challenge|security/i;
-        if (blockedPattern.test(error.message)) {
-          setWebsiteBlockedDialogMessage(
-            "Sorry, I couldn't reach this website. Its security was too strong and it didn't allow me in.",
-          );
-          setIsWebsiteBlockedDialogOpen(true);
-        }
         setErrorMessage(toFriendlyErrorFromUnknown(error));
       } else {
         setErrorMessage(t('dashboard.websiteAnalysis.failed'));

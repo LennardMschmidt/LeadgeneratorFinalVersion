@@ -22,6 +22,7 @@ export const translations = {
     header: {
       howItWorks: 'How it works',
       pricing: 'Pricing',
+      dashboard: 'Dashboard',
       logIn: 'Log in',
       tryFree: 'Try free',
     },
@@ -944,8 +945,8 @@ export const translations = {
         tier3Title: 'Raw Leads (Tier 3)',
         tier3Subtitle: 'Early-stage opportunities',
         tier3Definition: 'Lower current fit. Keep for later testing and nurture.',
-        infoPopulate: 'These counts are populated after you run searches.',
-        infoFilter: 'Click any tier card to filter the table by that tier only.',
+        infoPopulate: 'Counts update after each search.',
+        infoFilter: 'Click a tier card to filter.',
         totalLeads: 'Total leads',
       },
       businessProfile: {
@@ -1156,6 +1157,7 @@ export const translations = {
     header: {
       howItWorks: 'So funktioniert es',
       pricing: 'Preise',
+      dashboard: 'Dashboard',
       logIn: 'Einloggen',
       tryFree: 'Kostenlos testen',
     },
@@ -2087,8 +2089,8 @@ export const translations = {
         tier3Title: 'Roh-Leads (Tier 3)',
         tier3Subtitle: 'Frühe Chancen',
         tier3Definition: 'Aktuell niedriger Fit. Für spätere Tests und Nurturing behalten.',
-        infoPopulate: 'Diese Zahlen werden nach dem Start von Suchläufen automatisch gefüllt.',
-        infoFilter: 'Klicke auf eine Tier-Karte, um die Tabelle nur auf dieses Tier zu filtern.',
+        infoPopulate: 'Die Zahlen aktualisieren sich nach jeder Suche.',
+        infoFilter: 'Klicke auf eine Tier-Karte zum Filtern.',
         totalLeads: 'Gesamtanzahl Leads',
       },
       businessProfile: {

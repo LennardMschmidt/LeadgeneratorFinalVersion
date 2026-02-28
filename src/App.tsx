@@ -568,7 +568,11 @@ export default function App() {
         />
       ) : showBillingSuccess ? (
         <>
-          <Header onLoginClick={openLoginModal} />
+          <Header
+            onLoginClick={openLoginModal}
+            showDashboardShortcut={isAuthenticated}
+            onDashboardClick={() => navigate('/dashboard')}
+          />
           <StripeReturnPage
             variant="success"
             isAuthenticated={isAuthenticated}
@@ -584,7 +588,11 @@ export default function App() {
         </>
       ) : showBillingCancel ? (
         <>
-          <Header onLoginClick={openLoginModal} />
+          <Header
+            onLoginClick={openLoginModal}
+            showDashboardShortcut={isAuthenticated}
+            onDashboardClick={() => navigate('/dashboard')}
+          />
           <StripeReturnPage
             variant="cancel"
             isAuthenticated={isAuthenticated}
@@ -600,7 +608,11 @@ export default function App() {
         </>
       ) : showBillingPortalReturn ? (
         <>
-          <Header onLoginClick={openLoginModal} />
+          <Header
+            onLoginClick={openLoginModal}
+            showDashboardShortcut={isAuthenticated}
+            onDashboardClick={() => navigate('/dashboard')}
+          />
           <StripeReturnPage
             variant="portal"
             isAuthenticated={isAuthenticated}
@@ -633,7 +645,11 @@ export default function App() {
         />
       ) : showImpressum ? (
         <div className="flex min-h-screen flex-col">
-          <Header onLoginClick={openLoginModal} />
+          <Header
+            onLoginClick={openLoginModal}
+            showDashboardShortcut={isAuthenticated}
+            onDashboardClick={() => navigate('/dashboard')}
+          />
           <div className="flex-1">
             <ImpressumPage />
           </div>
@@ -644,7 +660,11 @@ export default function App() {
         </div>
       ) : showDatenschutz ? (
         <>
-          <Header onLoginClick={openLoginModal} />
+          <Header
+            onLoginClick={openLoginModal}
+            showDashboardShortcut={isAuthenticated}
+            onDashboardClick={() => navigate('/dashboard')}
+          />
           <DatenschutzPage />
           <Footer
             onNavigateDatenschutz={() => navigate('/datenschutz')}
@@ -653,7 +673,11 @@ export default function App() {
         </>
       ) : (
         <>
-          <Header onLoginClick={openLoginModal} />
+          <Header
+            onLoginClick={openLoginModal}
+            showDashboardShortcut={isAuthenticated}
+            onDashboardClick={() => navigate('/dashboard')}
+          />
 
           <main className="relative">
             <HeroSection onStartTrial={openRegisterModal} />

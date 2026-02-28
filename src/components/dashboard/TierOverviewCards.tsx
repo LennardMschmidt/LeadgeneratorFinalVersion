@@ -58,22 +58,26 @@ export function TierOverviewCards({
     LeadTier,
     {
       chip: string;
+      topTextColor: string;
       borderColor: string;
       glowRgb: string;
     }
   > = {
     'Tier 1': {
       chip: 'text-purple-300',
+      topTextColor: 'rgba(233, 213, 255, 0.82)',
       borderColor: '#c084fc',
       glowRgb: '168,85,247',
     },
     'Tier 2': {
       chip: 'text-blue-300',
+      topTextColor: 'rgba(191, 219, 254, 0.82)',
       borderColor: '#60a5fa',
       glowRgb: '59,130,246',
     },
     'Tier 3': {
       chip: 'text-cyan-300',
+      topTextColor: 'rgba(165, 243, 252, 0.82)',
       borderColor: '#67e8f9',
       glowRgb: '34,211,238',
     },
@@ -109,13 +113,20 @@ export function TierOverviewCards({
                   boxShadow: `inset 0 0 0 1px rgba(${tierStyles[tier].glowRgb}, ${isActive ? 0.7 : 0.35})`,
                 }}
               />
-              <p className="relative z-10 text-sm text-gray-400">{t(getTierSubtitleKey(tier))}</p>
-              <p className="relative z-10 mt-2 text-sm leading-relaxed text-gray-400">
+              <p className="relative z-10 text-sm" style={{ color: tierStyles[tier].topTextColor }}>
+                {t(getTierSubtitleKey(tier))}
+              </p>
+              <p
+                className="relative z-10 mt-2 text-sm leading-relaxed"
+                style={{ color: tierStyles[tier].topTextColor }}
+              >
                 {t(getTierDefinitionKey(tier))}
               </p>
               <p className={`relative z-10 mt-3 text-sm ${tierStyles[tier].chip}`}>{t(getTierTitleKey(tier))}</p>
-              <p className="relative z-10 text-4xl font-bold text-white">{counts[tier]}</p>
-              <p className="relative z-10 mt-2 text-sm leading-relaxed text-gray-400">
+              <div className="relative z-10 py-2">
+                <p className="text-4xl font-bold leading-none text-white">{counts[tier]}</p>
+              </div>
+              <p className="relative z-10 text-sm leading-relaxed text-gray-400">
                 {t('dashboard.tierCards.infoPopulate')}
               </p>
               <p className="relative z-10 mt-1 text-sm leading-relaxed text-gray-400">

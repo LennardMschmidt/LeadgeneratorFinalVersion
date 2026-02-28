@@ -12,6 +12,7 @@ import {
   fetchAccountDetailsFromBackend,
   fetchBillingPlansFromBackend,
   fetchBillingUsageFromBackend,
+  skipTrialNowInBackend,
 } from './api';
 import { DashboardHeader } from './DashboardHeader';
 import { toFriendlyErrorFromUnknown } from '../../lib/errorMessaging';
@@ -42,6 +43,11 @@ type PlanCode = 'STANDARD' | 'PRO' | 'EXPERT';
 type PlanChangeDirection = 'upgrade' | 'downgrade' | 'same' | 'unknown';
 
 const planOrder: PlanCode[] = ['STANDARD', 'PRO', 'EXPERT'];
+const fallbackDailyTokenLimits: Record<PlanCode, number> = {
+  STANDARD: 180,
+  PRO: 380,
+  EXPERT: 700,
+};
 
 type SubscriptionPlanVisual = {
   price: string;
@@ -287,6 +293,7 @@ function MetricCard({ label, value, variant = 'default' }: MetricCardProps) {
 interface CurrentPlanModuleLabels {
   currentPlanTitle: string;
   currentPlanDescription: string;
+  trialActiveTitle: string;
   dailyLimit: string;
   usedToday: string;
   remainingToday: string;
@@ -305,6 +312,7 @@ interface CurrentPlanModuleLabels {
 interface CurrentPlanModuleProps {
   usage: BillingUsage | null;
   planName: string;
+  trialTokenNotice: string | null;
   isLoading: boolean;
   labels: CurrentPlanModuleLabels;
 }
@@ -342,7 +350,13 @@ const getPlanChangeDirection = (
   return 'same';
 };
 
-function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanModuleProps) {
+function CurrentPlanModule({
+  usage,
+  planName,
+  trialTokenNotice,
+  isLoading,
+  labels,
+}: CurrentPlanModuleProps) {
   const dailyTokenLimit = usage?.dailyTokenLimit ?? 0;
   const tokensUsedToday = usage?.tokensUsedToday ?? 0;
   const tokensRemainingToday = usage?.tokensRemainingToday ?? Math.max(0, dailyTokenLimit - tokensUsedToday);
@@ -379,13 +393,34 @@ function CurrentPlanModule({ usage, planName, isLoading, labels }: CurrentPlanMo
 
       <div className="relative space-y-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div style={trialTokenNotice ? { paddingBottom: 10 } : undefined}>
             <h2 className="text-2xl text-[#F8FAFC]" style={{ marginBottom: 20 }}>
               {labels.currentPlanTitle}
             </h2>
             <p className="text-sm text-[#94A3B8]" style={{ marginBottom: 8 }}>
               {labels.currentPlanDescription}
             </p>
+            {trialTokenNotice ? (
+              <div
+                className="mt-3 mb-[10px] rounded-xl border px-4 py-3"
+                style={{
+                  marginBottom: '10px',
+                  borderColor: 'rgba(251, 191, 36, 0.35)',
+                  background:
+                    'linear-gradient(135deg, rgba(146, 64, 14, 0.25), rgba(15, 23, 42, 0.22))',
+                }}
+              >
+                <p
+                  className="text-xs font-semibold uppercase tracking-wide text-amber-200"
+                  style={{ marginBottom: 6 }}
+                >
+                  {labels.trialActiveTitle}
+                </p>
+                <p className="text-sm text-amber-100/90" style={{ marginBottom: 10 }}>
+                  {trialTokenNotice}
+                </p>
+              </div>
+            ) : null}
           </div>
           <div
             className="rounded-full px-4 py-2 text-sm backdrop-blur-sm"
@@ -487,6 +522,8 @@ export function BillingPage({
   const [isSettingUpPaymentMethod, setIsSettingUpPaymentMethod] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isCancellingSubscription, setIsCancellingSubscription] = useState(false);
+  const [isSkipTrialDialogOpen, setIsSkipTrialDialogOpen] = useState(false);
+  const [isSkippingTrial, setIsSkippingTrial] = useState(false);
   const [scheduledCancellationAt, setScheduledCancellationAt] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [noticeMessage, setNoticeMessage] = useState<string | null>(null);
@@ -670,6 +707,27 @@ export function BillingPage({
     }
   };
 
+  const handleSkipTrialNow = async () => {
+    setIsSkippingTrial(true);
+    setErrorMessage(null);
+    setNoticeMessage(null);
+
+    try {
+      await skipTrialNowInBackend();
+      await loadBillingData();
+      setNoticeMessage(t('billingPage.notices.trialSkipped'));
+      setIsSkipTrialDialogOpen(false);
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrorMessage(toFriendlyErrorFromUnknown(error));
+      } else {
+        setErrorMessage(t('billingPage.errors.skipTrialFailed'));
+      }
+    } finally {
+      setIsSkippingTrial(false);
+    }
+  };
+
   const currentPlan = usage ? plans.find((plan) => plan.code === usage.plan) ?? null : null;
   const currentPlanNameForDialog = currentPlan?.name ?? usage?.plan ?? '-';
   const planChangeDirectionLabel =
@@ -715,6 +773,7 @@ export function BillingPage({
   const currentPlanLabels: CurrentPlanModuleLabels = {
     currentPlanTitle: t('billingPage.currentPlan.title'),
     currentPlanDescription: t('billingPage.currentPlan.description'),
+    trialActiveTitle: t('billingPage.currentPlan.trialActiveTitle'),
     dailyLimit: t('billingPage.currentPlan.dailyLimit'),
     usedToday: t('billingPage.currentPlan.usedToday'),
     remainingToday: t('billingPage.currentPlan.remainingToday'),
@@ -749,6 +808,30 @@ export function BillingPage({
   }, [scheduledCancellationAt, usage]);
   const isBillingRestricted =
     billingAccessStatus === false || hasFeatureAccessFromUsage === false;
+  const isTrialingSubscription = usage?.subscriptionStatus.toLowerCase() === 'trialing';
+  const purchasedPlanDailyLimit = useMemo(() => {
+    if (!usage) {
+      return null;
+    }
+
+    const tokenLimitFromPlans = plans.find((plan) => plan.code === usage.plan)?.dailyTokenLimit;
+    if (typeof tokenLimitFromPlans === 'number' && Number.isFinite(tokenLimitFromPlans)) {
+      return tokenLimitFromPlans;
+    }
+
+    if (usage.plan === 'STANDARD' || usage.plan === 'PRO' || usage.plan === 'EXPERT') {
+      return fallbackDailyTokenLimits[usage.plan];
+    }
+
+    return null;
+  }, [plans, usage]);
+  const trialTokenNotice =
+    isTrialingSubscription && purchasedPlanDailyLimit
+      ? t('billingPage.currentPlan.trialTokenNotice', {
+          planName: currentPlan?.name ?? usage?.plan ?? 'STANDARD',
+          tokenLimit: purchasedPlanDailyLimit,
+        })
+      : null;
 
   return (
     <>
@@ -801,10 +884,19 @@ export function BillingPage({
             usage={usage}
             isLoading={isLoading}
             planName={currentPlan?.name ?? usage?.plan ?? '-'}
+            trialTokenNotice={trialTokenNotice}
             labels={currentPlanLabels}
           />
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <section
+            className="rounded-2xl border p-6"
+            style={{
+              borderColor: 'rgba(96, 165, 250, 0.25)',
+              background:
+                'linear-gradient(145deg, rgba(30, 41, 59, 0.76), rgba(15, 23, 42, 0.68) 42%, rgba(30, 27, 75, 0.56))',
+              boxShadow: '0 14px 36px rgba(2, 6, 23, 0.32)',
+            }}
+          >
             <h2 className="text-xl font-semibold text-white" style={{ marginBottom: 20 }}>
               {t('billingPage.changePlan.title')}
             </h2>
@@ -900,11 +992,24 @@ export function BillingPage({
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <section
+            className="rounded-2xl border p-6"
+            style={{
+              borderColor: 'rgba(45, 212, 191, 0.26)',
+              background:
+                'linear-gradient(145deg, rgba(15, 23, 42, 0.76), rgba(6, 78, 59, 0.2) 40%, rgba(8, 47, 73, 0.4))',
+            }}
+          >
             <h2 className="mb-[10px] text-xl font-semibold text-white">{t('billingPage.paymentMethod.title')}</h2>
             <p className="mb-[10px] text-sm text-gray-400">{t('billingPage.paymentMethod.description')}</p>
 
-            <div className="mt-6 flex flex-col items-start justify-between gap-4 rounded-xl border border-white/10 bg-black/20 p-4 md:flex-row md:items-center">
+            <div
+              className="mt-6 flex flex-col items-start justify-between gap-4 rounded-xl border p-4 md:flex-row md:items-center"
+              style={{
+                borderColor: 'rgba(45, 212, 191, 0.24)',
+                background: 'linear-gradient(135deg, rgba(8, 47, 73, 0.32), rgba(15, 23, 42, 0.5))',
+              }}
+            >
               <div className="inline-flex items-center gap-3 text-gray-200">
                 <CreditCard className="h-5 w-5" />
                 <span>{t('billingPage.paymentMethod.stripeManaged')}</span>
@@ -946,7 +1051,41 @@ export function BillingPage({
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          {isTrialingSubscription ? (
+            <section className="rounded-2xl border border-amber-300/25 bg-amber-500/5 p-6">
+              <h2 className="mb-[10px] text-xl font-semibold text-amber-100">
+                {t('billingPage.skipTrial.title')}
+              </h2>
+              <p className="mb-[10px] text-sm text-amber-50/90">
+                {t('billingPage.skipTrial.description')}
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsSkipTrialDialogOpen(true)}
+                disabled={isSkippingTrial}
+                className="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  borderColor: 'rgba(253, 186, 116, 0.55)',
+                  background:
+                    'linear-gradient(90deg, rgba(234, 88, 12, 0.9) 0%, rgba(249, 115, 22, 0.9) 100%)',
+                  boxShadow: '0 10px 24px rgba(194, 65, 12, 0.3)',
+                }}
+              >
+                {isSkippingTrial
+                  ? t('billingPage.skipTrial.processing')
+                  : t('billingPage.skipTrial.action')}
+              </button>
+            </section>
+          ) : null}
+
+          <section
+            className="rounded-2xl border p-6"
+            style={{
+              borderColor: 'rgba(251, 113, 133, 0.24)',
+              background:
+                'linear-gradient(145deg, rgba(15, 23, 42, 0.72), rgba(76, 5, 25, 0.28) 45%, rgba(51, 65, 85, 0.6))',
+            }}
+          >
             <h2 className="mb-[10px] text-xl font-semibold text-white">{t('billingPage.cancellation.title')}</h2>
             <p className="mb-[10px] text-sm text-gray-400">{t('billingPage.cancellation.description')}</p>
             {scheduledCancellationAt ? (
@@ -1176,6 +1315,100 @@ export function BillingPage({
               }}
             >
               {t('billingPage.changePlan.dialogConfirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isSkipTrialDialogOpen} onOpenChange={setIsSkipTrialDialogOpen}>
+        <AlertDialogContent
+          className="text-white"
+          style={{
+            border: '1px solid rgba(251, 191, 36, 0.34)',
+            background:
+              'linear-gradient(160deg, rgba(34, 20, 10, 0.98), rgba(16, 18, 30, 0.98))',
+            boxShadow:
+              '0 24px 70px rgba(2, 6, 23, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+          }}
+        >
+          <AlertDialogHeader style={{ display: 'grid', gap: 14 }}>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 'fit-content',
+                borderRadius: 9999,
+                border: '1px solid rgba(251, 191, 36, 0.48)',
+                background:
+                  'linear-gradient(135deg, rgba(146, 64, 14, 0.58), rgba(245, 158, 11, 0.26))',
+                color: 'rgb(253, 230, 138)',
+                padding: '7px 12px',
+                fontSize: 12,
+                letterSpacing: 0.25,
+                fontWeight: 700,
+              }}
+            >
+              {t('billingPage.skipTrial.title')}
+            </div>
+            <AlertDialogTitle style={{ fontSize: '1.32rem', lineHeight: 1.2, color: 'rgb(248, 250, 252)' }}>
+              {t('billingPage.skipTrial.dialogTitle')}
+            </AlertDialogTitle>
+            <AlertDialogDescription style={{ color: 'rgb(203, 213, 225)', lineHeight: 1.55 }}>
+              {t('billingPage.skipTrial.dialogDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter
+            className="!flex !flex-row !items-center !justify-center gap-3"
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+              width: '100%',
+              marginTop: '0.25rem',
+            }}
+          >
+            <AlertDialogCancel
+              className="min-w-[180px]"
+              style={{
+                minWidth: '180px',
+                borderRadius: '0.65rem',
+                border: '1px solid rgba(148, 163, 184, 0.42)',
+                backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                color: 'rgb(226, 232, 240)',
+                padding: '0.55rem 1rem',
+                textAlign: 'center',
+                fontWeight: 600,
+              }}
+            >
+              {t('billingPage.skipTrial.dialogCancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void handleSkipTrialNow();
+              }}
+              disabled={isSkippingTrial}
+              className="min-w-[180px]"
+              style={{
+                minWidth: '180px',
+                borderRadius: '0.65rem',
+                border: '1px solid rgba(251, 191, 36, 0.52)',
+                background:
+                  'linear-gradient(135deg, rgba(234, 88, 12, 0.9), rgba(249, 115, 22, 0.9))',
+                color: 'rgb(255, 255, 255)',
+                padding: '0.55rem 1rem',
+                textAlign: 'center',
+                fontWeight: 700,
+                boxShadow: '0 10px 30px rgba(194, 65, 12, 0.35)',
+                opacity: isSkippingTrial ? 0.7 : 1,
+              }}
+            >
+              {isSkippingTrial
+                ? t('billingPage.skipTrial.processing')
+                : t('billingPage.skipTrial.dialogConfirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

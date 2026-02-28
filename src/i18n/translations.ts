@@ -468,6 +468,9 @@ export const translations = {
       currentPlan: {
         title: 'Current Plan',
         description: 'Your daily token allowance resets automatically each day.',
+        trialActiveTitle: 'Free Trial Active',
+        trialTokenNotice:
+          'Your purchased {{planName}} package limit of {{tokenLimit}} search tokens/day starts automatically after your free trial ends.',
         dailyLimit: 'Daily Token Limit',
         usedToday: 'Used Today',
         remainingToday: 'Remaining Today',
@@ -513,6 +516,18 @@ export const translations = {
         addButton: 'Set Up Payment Method',
         updateButton: 'Open Billing Portal',
       },
+      skipTrial: {
+        title: 'Skip Trial, Start Subscription',
+        description:
+          'Need full limits now? End your trial immediately and start your paid subscription today.',
+        action: 'Skip Trial, Start Now',
+        processing: 'Processing...',
+        dialogTitle: 'End trial and charge now?',
+        dialogDescription:
+          'This ends your trial immediately and attempts to charge your saved payment method now. After confirmation, full plan limits are available.',
+        dialogCancel: 'Keep Trial',
+        dialogConfirm: 'Yes, start paid subscription',
+      },
       cancellation: {
         title: 'Cancel Subscription',
         description:
@@ -547,6 +562,7 @@ export const translations = {
         planUpdated: 'Plan updated successfully.',
         redirectingToCheckout: 'Redirecting to Stripe checkout...',
         redirectingToPortal: 'Redirecting to Stripe Billing Portal...',
+        trialSkipped: 'Trial ended. Paid subscription is now active.',
         cancellationScheduledWithDate: 'Subscription cancelled. Access remains active until {{date}}.',
         cancellationScheduled: 'Subscription cancelled at period end.',
       },
@@ -555,6 +571,7 @@ export const translations = {
         planUpdateFailed: 'Failed to update plan.',
         checkoutFailed: 'Failed to start Stripe checkout.',
         portalFailed: 'Failed to open Stripe Billing Portal.',
+        skipTrialFailed: 'Failed to end trial and start subscription.',
         cancelFailed: 'Failed to cancel subscription.',
         deleteAccountFailed: 'Failed to delete account.',
         deleteAccountConfirmMismatch: 'Please type DELETE to confirm account deletion.',
@@ -662,6 +679,8 @@ export const translations = {
         anyCategory: 'Any category',
         anyLocation: 'Any location',
         customSearch: 'Custom Search',
+        savedSuccess: 'Search saved successfully.',
+        saveFailed: 'Failed to save search.',
       },
       savedLeads: {
         title: 'Saved Leads',
@@ -860,6 +879,8 @@ export const translations = {
           'Problem categories are not available for LinkedIn searches.',
         expectedResultsLabel: 'Expected results',
         expectedResultsRange: 'Allowed range: 20-120 leads per search.',
+        expectedResultsRangeTrial:
+          'Free trial limit: up to 20 leads per search. Unlock up to 120 after trial.',
         recentRunsTitle: 'Recent Search Runs',
         recentRunsEmpty: 'No recent snapshots yet. Run a search to create one automatically.',
         recentRunApply: 'Apply config',
@@ -1605,6 +1626,9 @@ export const translations = {
       currentPlan: {
         title: 'Aktueller Tarif',
         description: 'Dein tägliches Token-Limit wird automatisch jeden Tag zurückgesetzt.',
+        trialActiveTitle: 'Kostenlose Testphase aktiv',
+        trialTokenNotice:
+          'Das gekaufte {{planName}}-Paket mit {{tokenLimit}} Such-Tokens/Tag startet automatisch nach dem Ende deiner Testphase.',
         dailyLimit: 'Tägliches Token-Limit',
         usedToday: 'Heute verbraucht',
         remainingToday: 'Heute verbleibend',
@@ -1650,6 +1674,18 @@ export const translations = {
         addButton: 'Zahlungsmethode einrichten',
         updateButton: 'Billing Portal öffnen',
       },
+      skipTrial: {
+        title: 'Testphase überspringen',
+        description:
+          'Du brauchst die vollen Limits sofort? Beende die Testphase direkt und starte jetzt dein bezahltes Abo.',
+        action: 'Testphase überspringen',
+        processing: 'Wird verarbeitet...',
+        dialogTitle: 'Testphase jetzt beenden?',
+        dialogDescription:
+          'Damit endet deine Testphase sofort und Stripe versucht direkt eine Belastung. Danach sind die vollen Tariflimits aktiv.',
+        dialogCancel: 'Testphase behalten',
+        dialogConfirm: 'Ja, bezahltes Abo starten',
+      },
       cancellation: {
         title: 'Abo kündigen',
         description:
@@ -1684,6 +1720,7 @@ export const translations = {
         planUpdated: 'Tarif erfolgreich aktualisiert.',
         redirectingToCheckout: 'Weiterleitung zum Stripe-Checkout...',
         redirectingToPortal: 'Weiterleitung zum Stripe Billing Portal...',
+        trialSkipped: 'Testphase beendet. Das bezahlte Abo ist jetzt aktiv.',
         cancellationScheduledWithDate: 'Abo gekündigt. Zugriff bleibt bis {{date}} aktiv.',
         cancellationScheduled: 'Abo zum Periodenende gekündigt.',
       },
@@ -1692,6 +1729,7 @@ export const translations = {
         planUpdateFailed: 'Tarif konnte nicht aktualisiert werden.',
         checkoutFailed: 'Stripe-Checkout konnte nicht gestartet werden.',
         portalFailed: 'Stripe Billing Portal konnte nicht geöffnet werden.',
+        skipTrialFailed: 'Testphase konnte nicht beendet werden.',
         cancelFailed: 'Abo konnte nicht gekündigt werden.',
         deleteAccountFailed: 'Konto konnte nicht gelöscht werden.',
         deleteAccountConfirmMismatch:
@@ -1803,6 +1841,8 @@ export const translations = {
         anyCategory: 'Beliebige Kategorie',
         anyLocation: 'Beliebiger Standort',
         customSearch: 'Benutzerdefinierte Suche',
+        savedSuccess: 'Suche erfolgreich gespeichert.',
+        saveFailed: 'Suche konnte nicht gespeichert werden.',
       },
       savedLeads: {
         title: 'Gespeicherte Leads',
@@ -2003,6 +2043,8 @@ export const translations = {
           'Problemkategorien sind für LinkedIn-Suchen nicht verfügbar.',
         expectedResultsLabel: 'Erwartete Ergebnisse',
         expectedResultsRange: 'Erlaubter Bereich: 20-120 Leads pro Suche.',
+        expectedResultsRangeTrial:
+          'Testphase-Limit: bis zu 20 Leads pro Suche. Nach der Testphase sind bis zu 120 verfügbar.',
         recentRunsTitle: 'Letzte Suchläufe',
         recentRunsEmpty:
           'Noch keine Snapshots vorhanden. Starte eine Suche, um automatisch einen Snapshot zu erstellen.',

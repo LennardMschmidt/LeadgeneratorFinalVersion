@@ -28,37 +28,21 @@ export function Header({
           <span className="text-xl font-semibold">{t('common.appName')}</span>
         </div>
 
-        <div className="hidden md:flex items-center gap-4 lg:gap-8">
+        <div className="hidden md:flex items-center gap-8">
           <a href="#how-it-works" className="text-sm text-gray-400 hover:text-white transition-colors">
             {t('header.howItWorks')}
           </a>
           <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
             {t('header.pricing')}
           </a>
-          {showDashboardShortcut && onDashboardClick ? (
-            <button
-              type="button"
-              onClick={onDashboardClick}
-              className="inline-flex items-center rounded-lg border border-blue-300/35 bg-gradient-to-r from-blue-500/80 to-purple-600/80 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-500 hover:to-purple-600 hover:shadow-blue-500/35"
-            >
-              {t('header.dashboard')}
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onLoginClick}
-            className="inline-flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-200 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white"
-          >
-            {t('header.logIn')}
-          </button>
         </div>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="flex items-center gap-2">
           {showDashboardShortcut && onDashboardClick ? (
             <button
               type="button"
               onClick={onDashboardClick}
-              className="px-4 py-2 rounded-lg border border-blue-300/35 bg-gradient-to-r from-blue-500/80 to-purple-600/80 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:from-blue-500 hover:to-purple-600 hover:shadow-blue-500/35"
+              className="inline-flex items-center rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-medium text-white transition-all shadow-xl shadow-blue-500/25 hover:from-blue-600 hover:to-purple-700 hover:shadow-blue-500/40"
             >
               {t('header.dashboard')}
             </button>

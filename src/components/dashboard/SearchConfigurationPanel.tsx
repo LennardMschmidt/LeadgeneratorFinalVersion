@@ -16,6 +16,7 @@ interface SearchConfigurationPanelProps {
   deletingSavedSearchId: string | null;
   isRunningSearch: boolean;
   isSavingSearch: boolean;
+  isTrialingLeadSearch?: boolean;
   canUseLinkedInSearch?: boolean;
   isGuideModalOpen?: boolean;
   onGuideModalOpenChange?: (open: boolean) => void;
@@ -37,6 +38,7 @@ export function SearchConfigurationPanel({
   deletingSavedSearchId,
   isRunningSearch,
   isSavingSearch,
+  isTrialingLeadSearch = false,
   canUseLinkedInSearch = false,
   isGuideModalOpen = false,
   onGuideModalOpenChange,
@@ -60,6 +62,7 @@ export function SearchConfigurationPanel({
   const noSearchSourceValue = '__none_search_source__';
   const [maxResultsDraft, setMaxResultsDraft] = useState(String(searchConfig.maxResults));
   const loadingSteps = raw<string[]>('dashboard.searchPanel.loadingSteps');
+  const maxResultsUpperBound = isTrialingLeadSearch ? 20 : 120;
   const isLinkedInSource = searchConfig.searchSource === 'linkedin';
   const isLinkedInLocked = !canUseLinkedInSearch;
   const normalizedBusinessTypeValue =
@@ -222,7 +225,9 @@ export function SearchConfigurationPanel({
     }
 
     const parsed = Number.parseInt(digitsOnly, 10);
-    const normalized = Number.isFinite(parsed) ? Math.min(120, parsed) : 20;
+    const normalized = Number.isFinite(parsed)
+      ? Math.min(maxResultsUpperBound, Math.max(20, parsed))
+      : 20;
     setMaxResultsDraft(String(normalized));
     onUpdateSearchConfig({
       ...searchConfig,
@@ -232,7 +237,9 @@ export function SearchConfigurationPanel({
 
   const commitMaxResults = () => {
     const parsed = Number.parseInt(maxResultsDraft, 10);
-    const normalized = Number.isFinite(parsed) ? Math.max(20, Math.min(120, parsed)) : 20;
+    const normalized = Number.isFinite(parsed)
+      ? Math.max(20, Math.min(maxResultsUpperBound, parsed))
+      : 20;
     setMaxResultsDraft(String(normalized));
     onUpdateSearchConfig({
       ...searchConfig,
@@ -253,10 +260,21 @@ export function SearchConfigurationPanel({
   `;
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5">
+    <section
+      className="rounded-2xl border"
+      style={{
+        borderColor: 'rgba(96, 165, 250, 0.26)',
+        background:
+          'linear-gradient(145deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.72) 42%, rgba(37, 99, 235, 0.14))',
+        boxShadow: '0 16px 38px rgba(2, 6, 23, 0.34)',
+      }}
+    >
       <style>{loadingAnimationStyles}</style>
-      <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-        <h2 className="text-lg font-semibold text-white">{t('dashboard.searchPanel.title')}</h2>
+      <div
+        className="flex items-center justify-between border-b px-6 py-4"
+        style={{ borderColor: 'rgba(96, 165, 250, 0.22)' }}
+      >
+        <h2 className="text-lg font-semibold text-blue-100">{t('dashboard.searchPanel.title')}</h2>
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -287,7 +305,22 @@ export function SearchConfigurationPanel({
           <button
             type="button"
             onClick={() => setIsOpen((current) => !current)}
-            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap text-sm leading-none text-gray-300 transition-colors hover:text-white"
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg border px-3 py-1.5 text-sm leading-none transition-colors"
+            style={{
+              borderColor: 'rgba(96, 165, 250, 0.38)',
+              backgroundColor: 'rgba(30, 58, 138, 0.2)',
+              color: 'rgb(191, 219, 254)',
+            }}
+            onMouseEnter={(event) => {
+              event.currentTarget.style.borderColor = 'rgba(147, 197, 253, 0.66)';
+              event.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.28)';
+              event.currentTarget.style.color = 'rgb(239, 246, 255)';
+            }}
+            onMouseLeave={(event) => {
+              event.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.38)';
+              event.currentTarget.style.backgroundColor = 'rgba(30, 58, 138, 0.2)';
+              event.currentTarget.style.color = 'rgb(191, 219, 254)';
+            }}
           >
             {isOpen ? t('dashboard.searchPanel.collapse') : t('dashboard.searchPanel.expand')}
             {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -297,9 +330,16 @@ export function SearchConfigurationPanel({
 
       {isOpen ? (
         <div className="p-6 space-y-6">
-          <div className="rounded-xl border border-blue-400/20 bg-blue-500/10 p-4">
-            <p className="text-sm text-gray-100">{t('dashboard.searchPanel.intro')}</p>
-            <p className="mt-1 text-xs text-gray-300">{t('dashboard.searchPanel.introDetail')}</p>
+          <div
+            className="rounded-xl border p-4"
+            style={{
+              borderColor: 'rgba(56, 189, 248, 0.32)',
+              background:
+                'linear-gradient(130deg, rgba(14, 116, 144, 0.26), rgba(30, 41, 59, 0.44) 48%, rgba(37, 99, 235, 0.2))',
+            }}
+          >
+            <p className="text-sm text-sky-50">{t('dashboard.searchPanel.intro')}</p>
+            <p className="mt-1 text-xs text-sky-100/80">{t('dashboard.searchPanel.introDetail')}</p>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -477,10 +517,17 @@ export function SearchConfigurationPanel({
                 </div>
               ) : null}
             </div>
-            <p className="text-xs text-gray-400">{t('dashboard.searchPanel.problemCategoriesOneLine')}</p>
+            <p className="text-xs text-sky-100/70">{t('dashboard.searchPanel.problemCategoriesOneLine')}</p>
 
             {isLinkedInSource ? (
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-gray-400">
+              <div
+                className="rounded-xl border px-4 py-3 text-sm"
+                style={{
+                  borderColor: 'rgba(148, 163, 184, 0.28)',
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(2, 6, 23, 0.28))',
+                  color: 'rgb(203, 213, 225)',
+                }}
+              >
                 {t('dashboard.searchPanel.linkedinProblemCategoriesUnavailable')}
               </div>
             ) : searchConfig.businessType ? (
@@ -528,7 +575,14 @@ export function SearchConfigurationPanel({
                 })}
               </div>
             ) : (
-              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-gray-400">
+              <div
+                className="rounded-xl border px-4 py-3 text-sm"
+                style={{
+                  borderColor: 'rgba(148, 163, 184, 0.28)',
+                  background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5), rgba(2, 6, 23, 0.28))',
+                  color: 'rgb(203, 213, 225)',
+                }}
+              >
                 {t('dashboard.searchPanel.selectBusinessTypeFirst')}
               </div>
             )}
@@ -542,24 +596,36 @@ export function SearchConfigurationPanel({
               id="search-max-results"
               type="number"
               min={20}
-              max={120}
+              max={maxResultsUpperBound}
               value={maxResultsDraft}
               onChange={(event) => setMaxResults(event.target.value)}
               onBlur={commitMaxResults}
+              disabled={isTrialingLeadSearch}
               className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80 focus:ring-2 focus:ring-blue-500/20"
             />
-            <p className="text-xs text-gray-500">{t('dashboard.searchPanel.expectedResultsRange')}</p>
+            <p className="text-xs text-gray-500">
+              {isTrialingLeadSearch
+                ? t('dashboard.searchPanel.expectedResultsRangeTrial')
+                : t('dashboard.searchPanel.expectedResultsRange')}
+            </p>
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={onSaveSearch}
-              disabled={isRunningSearch || isSavingSearch}
-              className="px-5 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium transition-colors"
-            >
-              {isSavingSearch ? 'Saving...' : t('dashboard.searchPanel.saveSearch')}
-            </button>
+            {!isRunningSearch ? (
+              <button
+                type="button"
+                onClick={onSaveSearch}
+                disabled={isSavingSearch}
+                className="rounded-lg border px-5 py-2 text-sm font-medium transition-colors"
+                style={{
+                  borderColor: 'rgba(45, 212, 191, 0.4)',
+                  background: 'rgba(13, 148, 136, 0.14)',
+                  color: 'rgb(204, 251, 241)',
+                }}
+              >
+                {isSavingSearch ? 'Saving...' : t('dashboard.searchPanel.saveSearch')}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => onRunSearch()}
@@ -635,19 +701,28 @@ export function SearchConfigurationPanel({
           </div>
 
           {shouldShowReliabilityTips ? (
-            <div className="rounded-xl border border-amber-300/20 bg-amber-500/10 p-4">
-              <p className="text-sm font-semibold text-amber-100">{t('dashboard.searchPanel.reliabilityTipsTitle')}</p>
-              <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
+            <div
+              className="rounded-xl border p-4"
+              style={{
+                borderColor: 'rgba(252, 211, 77, 0.62)',
+                background:
+                  'linear-gradient(140deg, rgba(180, 83, 9, 0.36), rgba(30, 41, 59, 0.62) 48%, rgba(146, 64, 14, 0.34))',
+                boxShadow:
+                  '0 0 0 1px rgba(251, 191, 36, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.06)',
+              }}
+            >
+              <p className="text-sm font-semibold text-amber-50">{t('dashboard.searchPanel.reliabilityTipsTitle')}</p>
+              <p className="mt-2 text-xs leading-relaxed text-amber-100">
                 {isGoogleMapsSource
                   ? t('dashboard.searchPanel.reliabilityTipsGoogleMapsLine1')
                   : t('dashboard.searchPanel.reliabilityTipsLinkedInLine1')}
               </p>
-              <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
+              <p className="mt-2 text-xs leading-relaxed text-amber-100">
                 {isGoogleMapsSource
                   ? t('dashboard.searchPanel.reliabilityTipsGoogleMapsLine2')
                   : t('dashboard.searchPanel.reliabilityTipsLinkedInLine2')}
               </p>
-              <p className="mt-2 text-xs leading-relaxed text-amber-100/90">
+              <p className="mt-2 text-xs leading-relaxed text-amber-100">
                 {isGoogleMapsSource
                   ? t('dashboard.searchPanel.reliabilityTipsGoogleMapsLine3')
                   : t('dashboard.searchPanel.reliabilityTipsLinkedInLine3')}

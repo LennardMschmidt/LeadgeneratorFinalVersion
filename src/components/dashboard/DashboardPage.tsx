@@ -94,6 +94,7 @@ export function DashboardPage({
   const [actionNotice, setActionNotice] = useState<string | null>(null);
   const [canUseLinkedInSearch, setCanUseLinkedInSearch] = useState(false);
   const [canUseAiEvaluations, setCanUseAiEvaluations] = useState(false);
+  const [isTrialingLeadSearch, setIsTrialingLeadSearch] = useState(false);
   const [isFirstRunGuideOpen, setIsFirstRunGuideOpen] = useState(false);
   const [activeJobUpdate, setActiveJobUpdate] = useState<SearchJobUpdate | null>(null);
   const [searchLogs, setSearchLogs] = useState<string[]>([]);
@@ -104,7 +105,7 @@ export function DashboardPage({
   const activeSearchAbortControllerRef = useRef<AbortController | null>(null);
   const searchLogViewportRef = useRef<HTMLDivElement | null>(null);
   const hideSearchLogTimeoutRef = useRef<number | null>(null);
-  const showSearchLogAnimationFrameRef = useRef<number | null>(null);
+  const showSearchLogEnterTimeoutRef = useRef<number | null>(null);
   const latestQueuePositionRef = useRef<number | null>(null);
   const actionNoticeTimeoutRef = useRef<number | null>(null);
 
@@ -158,8 +159,8 @@ export function DashboardPage({
       if (hideSearchLogTimeoutRef.current !== null) {
         window.clearTimeout(hideSearchLogTimeoutRef.current);
       }
-      if (showSearchLogAnimationFrameRef.current !== null) {
-        window.cancelAnimationFrame(showSearchLogAnimationFrameRef.current);
+      if (showSearchLogEnterTimeoutRef.current !== null) {
+        window.clearTimeout(showSearchLogEnterTimeoutRef.current);
       }
       if (actionNoticeTimeoutRef.current !== null) {
         window.clearTimeout(actionNoticeTimeoutRef.current);
@@ -185,20 +186,18 @@ export function DashboardPage({
       hideSearchLogTimeoutRef.current = null;
     }
 
-    if (showSearchLogAnimationFrameRef.current !== null) {
-      window.cancelAnimationFrame(showSearchLogAnimationFrameRef.current);
-      showSearchLogAnimationFrameRef.current = null;
+    if (showSearchLogEnterTimeoutRef.current !== null) {
+      window.clearTimeout(showSearchLogEnterTimeoutRef.current);
+      showSearchLogEnterTimeoutRef.current = null;
     }
 
     if (!isSearchLogMounted) {
       setIsSearchLogMounted(true);
       setIsSearchLogVisible(false);
-      showSearchLogAnimationFrameRef.current = window.requestAnimationFrame(() => {
-        showSearchLogAnimationFrameRef.current = window.requestAnimationFrame(() => {
-          setIsSearchLogVisible(true);
-          showSearchLogAnimationFrameRef.current = null;
-        });
-      });
+      showSearchLogEnterTimeoutRef.current = window.setTimeout(() => {
+        setIsSearchLogVisible(true);
+        showSearchLogEnterTimeoutRef.current = null;
+      }, 40);
       return;
     }
 
@@ -206,9 +205,9 @@ export function DashboardPage({
   };
 
   const closeSearchLogPanel = () => {
-    if (showSearchLogAnimationFrameRef.current !== null) {
-      window.cancelAnimationFrame(showSearchLogAnimationFrameRef.current);
-      showSearchLogAnimationFrameRef.current = null;
+    if (showSearchLogEnterTimeoutRef.current !== null) {
+      window.clearTimeout(showSearchLogEnterTimeoutRef.current);
+      showSearchLogEnterTimeoutRef.current = null;
     }
 
     if (hideSearchLogTimeoutRef.current !== null) {
@@ -241,6 +240,45 @@ export function DashboardPage({
     closeSearchLogPanel();
   }, [activeJobUpdate?.status, hasSearchLogSessionStarted, isRunningSearch, isSearchLogMounted]);
 
+  const sanitizeSearchLogLine = (input: string): string | null => {
+    const trimmed = input.trim();
+    if (trimmed.length === 0) {
+      return null;
+    }
+
+    const suppressedPatterns = [
+      /href samples/i,
+      /proxy endpoint/i,
+      /proxy identity/i,
+      /\bmb usage\b/i,
+      /html title=/i,
+      /\banchors=/i,
+      /\bendpoint=https?:\/\//i,
+    ];
+
+    if (suppressedPatterns.some((pattern) => pattern.test(trimmed))) {
+      return null;
+    }
+
+    return trimmed
+      .replace(/\bduckduckgo\b/gi, 'search engine')
+      .replace(/\bbing\b/gi, 'search engine')
+      .replace(/\bplaywright\b/gi, 'browser engine')
+      .replace(/\bchromium\b/gi, 'browser engine')
+      .replace(/\bprovider=([a-z0-9_-]+)/gi, 'provider=search engine')
+      .replace(/\bprovider_order=\[[^\]]*\]/gi, 'provider_order=[search engine]')
+      .replace(/\bmode=(direct|proxy)\b/gi, 'mode=managed')
+      .replace(/\bhttps?:\/\/\S+/gi, '[link]');
+  };
+
+  const visibleSearchLogs = useMemo(
+    () =>
+      searchLogs
+        .map((line) => sanitizeSearchLogLine(line))
+        .filter((line): line is string => typeof line === 'string' && line.length > 0),
+    [searchLogs],
+  );
+
   useEffect(() => {
     const viewport = searchLogViewportRef.current;
     if (!viewport || !isSearchLogVisible || !isSearchLogAutoFollowEnabled) {
@@ -248,7 +286,7 @@ export function DashboardPage({
     }
 
     viewport.scrollTop = viewport.scrollHeight;
-  }, [searchLogs, isSearchLogVisible, isSearchLogAutoFollowEnabled]);
+  }, [visibleSearchLogs, isSearchLogVisible, isSearchLogAutoFollowEnabled]);
 
   useEffect(() => {
     let isMounted = true;
@@ -262,12 +300,14 @@ export function DashboardPage({
 
         setCanUseLinkedInSearch(usage.entitlements.canUseLinkedInSearch);
         setCanUseAiEvaluations(usage.entitlements.canUseAiEvaluations);
+        setIsTrialingLeadSearch(usage.subscriptionStatus.toLowerCase() === 'trialing');
       } catch {
         if (!isMounted) {
           return;
         }
         setCanUseLinkedInSearch(false);
         setCanUseAiEvaluations(false);
+        setIsTrialingLeadSearch(false);
       }
     };
 
@@ -276,6 +316,21 @@ export function DashboardPage({
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isTrialingLeadSearch) {
+      return;
+    }
+
+    setSearchConfig((current) =>
+      current.maxResults === 20
+        ? current
+        : {
+            ...current,
+            maxResults: 20,
+          },
+    );
+  }, [isTrialingLeadSearch]);
 
   const tierCounts = useMemo(
     () => ({
@@ -417,7 +472,13 @@ export function DashboardPage({
   };
 
   const runSearch = async (configOverride?: SearchConfiguration) => {
-    const currentConfig = configOverride ?? searchConfig;
+    const initialConfig = configOverride ?? searchConfig;
+    const currentConfig = isTrialingLeadSearch
+      ? {
+          ...initialConfig,
+          maxResults: 20,
+        }
+      : initialConfig;
     const location = currentConfig.location.trim();
     const category = currentConfig.category.trim();
     const businessType = currentConfig.businessType.trim();
@@ -576,11 +637,14 @@ export function DashboardPage({
       const created = await createSavedSearchInBackend(name, searchConfig);
       setSavedSearches((currentSearches) => [created, ...currentSearches]);
       setSelectedSavedSearchId(created.id);
+      setSearchError(null);
+      showActionNotice(t('dashboard.saveSearch.savedSuccess'));
     } catch (error) {
+      setActionNotice(null);
       if (error instanceof Error) {
         setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
-        setSearchError('Failed to save search.');
+        setSearchError(t('dashboard.saveSearch.saveFailed'));
       }
     } finally {
       setIsSavingSearch(false);
@@ -617,7 +681,9 @@ export function DashboardPage({
         savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],
       problemFilters:
         savedSearch.config.problemCategoriesSelected ?? savedSearch.config.problemFilters ?? [],
-      maxResults: savedSearch.config.maxResults ?? 20,
+      maxResults: isTrialingLeadSearch
+        ? 20
+        : savedSearch.config.maxResults ?? 20,
     };
 
     setSearchConfig(normalizedConfig);
@@ -920,6 +986,16 @@ export function DashboardPage({
     setIsSearchLogAutoFollowEnabled(distanceFromBottom <= 24);
   };
 
+  const displayedQueuePosition =
+    activeJobUpdate?.status === 'queued'
+      ? typeof activeJobUpdate.queuePosition === 'number'
+        ? activeJobUpdate.queuePosition
+        : latestQueuePositionRef.current
+      : null;
+  const shouldShowQueuedState =
+    activeJobUpdate?.status === 'queued' || (isRunningSearch && !activeJobUpdate);
+  const shouldShowRunningState = activeJobUpdate?.status === 'running';
+
   return (
     <>
       <DashboardHeader
@@ -958,6 +1034,7 @@ export function DashboardPage({
             deletingSavedSearchId={deletingSavedSearchId}
             isRunningSearch={isRunningSearch}
             isSavingSearch={isSavingSearch}
+            isTrialingLeadSearch={isTrialingLeadSearch}
             canUseLinkedInSearch={canUseLinkedInSearch}
             isGuideModalOpen={isFirstRunGuideOpen}
             onGuideModalOpenChange={setGuideModalOpen}
@@ -975,7 +1052,7 @@ export function DashboardPage({
 
         {isSearchLogMounted ? (
           <section
-            className={`overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isSearchLogVisible ? 'mt-8 max-h-[420px] opacity-100 translate-y-0 scale-100 blur-0' : 'mt-0 max-h-0 opacity-0 -translate-y-3 scale-[0.98] blur-[2px] pointer-events-none'}`}
+            className={`transform-gpu overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[opacity,transform,max-height,margin] ${isSearchLogVisible ? 'mt-8 max-h-[420px] opacity-100 translate-y-0 scale-100 blur-0' : 'mt-0 max-h-0 opacity-0 -translate-y-3 scale-[0.98] blur-[2px] pointer-events-none'}`}
             style={{ marginBottom: isSearchLogVisible ? '20px' : '0px' }}
             aria-hidden={!isSearchLogVisible}
           >
@@ -1013,9 +1090,9 @@ export function DashboardPage({
                           : 'rgb(191, 219, 254)',
                   }}
                 >
-                  {activeJobUpdate?.status === 'queued'
-                    ? `Queued${typeof activeJobUpdate.queuePosition === 'number' ? ` (#${activeJobUpdate.queuePosition})` : ''}`
-                    : activeJobUpdate?.status === 'running'
+                  {activeJobUpdate?.status === 'queued' || shouldShowQueuedState
+                    ? `Queued${typeof displayedQueuePosition === 'number' ? ` (#${displayedQueuePosition})` : ''}`
+                    : activeJobUpdate?.status === 'running' || shouldShowRunningState
                       ? 'Running'
                       : activeJobUpdate?.status === 'completed'
                         ? 'Completed'
@@ -1042,8 +1119,8 @@ export function DashboardPage({
                     'SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
                 }}
               >
-                {searchLogs.length > 0 ? (
-                  searchLogs.map((line, index) => (
+                {visibleSearchLogs.length > 0 ? (
+                  visibleSearchLogs.map((line, index) => (
                     <div
                       key={`${index}-${line.slice(0, 18)}`}
                       className={`mb-1 break-words rounded-md border-l-2 px-2 py-1 ${getSearchLogLineClassName(line)}`}
@@ -1054,9 +1131,9 @@ export function DashboardPage({
                   ))
                 ) : (
                   <div className="text-slate-400">
-                    {activeJobUpdate?.status === 'queued'
-                      ? `You are almost there. Queue position: ${typeof activeJobUpdate.queuePosition === 'number' ? `#${activeJobUpdate.queuePosition}` : 'calculating...'}`
-                      : activeJobUpdate?.status === 'running'
+                    {shouldShowQueuedState
+                      ? `You are almost there. Queue position: ${typeof displayedQueuePosition === 'number' ? `#${displayedQueuePosition}` : 'calculating...'}`
+                      : shouldShowRunningState
                         ? 'Scraper is starting up. Live logs will appear in a moment.'
                         : 'Preparing your search job...'}
                   </div>

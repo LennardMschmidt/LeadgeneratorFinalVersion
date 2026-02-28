@@ -47,9 +47,9 @@ interface LeadManagementTableProps {
 }
 
 const CONTACT_BUTTON_CLASS =
-  'flex w-full items-start gap-2 rounded-lg bg-white/5 px-3 py-2 text-sm text-gray-300 transition-colors hover:bg-white/10 hover:text-white sm:min-w-[210px] sm:flex-1';
+  'flex w-full items-start gap-2 rounded-lg border px-3 py-2 text-sm text-slate-200 transition-colors hover:text-white sm:min-w-[210px] sm:flex-1';
 
-const CONTACT_VALUE_CLASS = 'mt-0.5 block text-xs text-gray-400 truncate';
+const CONTACT_VALUE_CLASS = 'mt-0.5 block text-xs text-slate-400 truncate';
 
 interface ParsedContactChannel {
   type: string;
@@ -252,11 +252,19 @@ export function LeadManagementTable({
   }, []);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/5 p-6 space-y-6">
+    <section
+      className="rounded-2xl border p-6 space-y-6"
+      style={{
+        borderColor: 'rgba(125, 211, 252, 0.22)',
+        background:
+          'linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.72) 44%, rgba(14, 116, 144, 0.14))',
+        boxShadow: '0 16px 36px rgba(2, 6, 23, 0.28)',
+      }}
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div>
-            <label htmlFor="filter-tier" className="mb-2 block text-xs uppercase tracking-wider text-gray-500">
+            <label htmlFor="filter-tier" className="mb-2 block text-xs uppercase tracking-wider text-sky-200/70">
               {t('dashboard.leadTable.filterByTier')}
             </label>
             <DashboardSelect
@@ -272,7 +280,7 @@ export function LeadManagementTable({
           </div>
 
           <div>
-            <label htmlFor="filter-status" className="mb-2 block text-xs uppercase tracking-wider text-gray-500">
+            <label htmlFor="filter-status" className="mb-2 block text-xs uppercase tracking-wider text-violet-200/70">
               {t('dashboard.leadTable.filterByStatus')}
             </label>
             <DashboardSelect
@@ -292,7 +300,7 @@ export function LeadManagementTable({
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-4 lg:justify-end">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-slate-300">
             {isLoading
               ? t('dashboard.leadTable.searchingLeads')
               : t('dashboard.leadTable.visibleLeads', { count: leads.length })}
@@ -303,7 +311,7 @@ export function LeadManagementTable({
               type="button"
               onClick={toggleAllLeads}
               disabled={!canExpandOrCollapse}
-              className="flex items-center rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center rounded-lg border border-sky-300/35 bg-sky-500/[0.12] px-4 py-2 text-sm text-sky-100 transition-colors enabled:hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {hasAnyExpandedLead ? t('dashboard.leadTable.collapseAll') : t('dashboard.leadTable.expandAll')}
             </button>
@@ -381,28 +389,40 @@ export function LeadManagementTable({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
-        <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+        <section
+          className="rounded-xl border p-4"
+          style={{
+            borderColor: 'rgba(56, 189, 248, 0.24)',
+            background: 'linear-gradient(135deg, rgba(8, 47, 73, 0.32), rgba(15, 23, 42, 0.56))',
+          }}
+        >
           <label
             htmlFor="dashboard-lead-search"
-            className="mb-2 block text-xs uppercase tracking-wider text-gray-500"
+            className="mb-2 block text-xs uppercase tracking-wider text-sky-100/70"
           >
             {t('dashboard.leadTable.searchLabel')}
           </label>
-          <div className="flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3">
-            <Search className="h-4 w-4 shrink-0 text-gray-500" />
+          <div className="flex h-11 items-center gap-2 rounded-lg border border-sky-300/20 bg-slate-900/50 px-3">
+            <Search className="h-4 w-4 shrink-0 text-sky-200/70" />
             <input
               id="dashboard-lead-search"
               value={searchQuery}
               onChange={(event) => onSearchQueryChange(event.target.value)}
               placeholder={t('dashboard.leadTable.searchPlaceholder')}
-              className="h-full w-full bg-transparent pr-1 text-sm leading-5 text-white placeholder:text-gray-500 outline-none"
+              className="h-full w-full bg-transparent pr-1 text-sm leading-5 text-white placeholder:text-slate-500 outline-none"
             />
           </div>
         </section>
 
-        <section className="rounded-xl border border-white/10 bg-black/20 p-4">
+        <section
+          className="rounded-xl border p-4"
+          style={{
+            borderColor: 'rgba(168, 85, 247, 0.24)',
+            background: 'linear-gradient(135deg, rgba(49, 46, 129, 0.2), rgba(15, 23, 42, 0.58))',
+          }}
+        >
           <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="text-xs uppercase tracking-wider text-gray-500">
+            <p className="text-xs uppercase tracking-wider text-violet-100/75">
               {t('dashboard.leadTable.problemFilterLabel')}
             </p>
             {selectedProblemCategories.length > 0 ? (
@@ -417,7 +437,7 @@ export function LeadManagementTable({
           </div>
 
           {sortedProblemCategoryOptions.length === 0 ? (
-            <p className="text-xs text-gray-500">{t('dashboard.leadTable.problemFilterEmpty')}</p>
+            <p className="text-xs text-slate-400">{t('dashboard.leadTable.problemFilterEmpty')}</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {sortedProblemCategoryOptions.map((problem) => {
@@ -503,9 +523,9 @@ export function LeadManagementTable({
             </div>
           </div>
         ) : leads.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 text-center">
-            <p className="text-base text-gray-200">{t('dashboard.leadTable.noLeadsTitle')}</p>
-            <p className="mt-2 text-sm text-gray-400">{t('dashboard.leadTable.noLeadsSubtitle')}</p>
+          <div className="rounded-2xl border border-slate-300/20 bg-slate-900/45 p-8 text-center">
+            <p className="text-base text-slate-100">{t('dashboard.leadTable.noLeadsTitle')}</p>
+            <p className="mt-2 text-sm text-slate-300">{t('dashboard.leadTable.noLeadsSubtitle')}</p>
           </div>
         ) : (
           leads.map((lead) => {
@@ -514,18 +534,35 @@ export function LeadManagementTable({
             return (
               <div
                 key={lead.id}
-                className="bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all group"
+                className="group rounded-2xl border-2 p-6 backdrop-blur-sm transition-all"
+                style={{
+                  borderColor: 'rgba(96, 165, 250, 0.82)',
+                  background:
+                    'linear-gradient(140deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8) 48%, rgba(12, 74, 110, 0.34))',
+                  boxShadow:
+                    '0 0 0 1px rgba(56, 189, 248, 0.36), 0 16px 32px rgba(2, 6, 23, 0.5)',
+                }}
                 onClick={(event) => handleLeadCardClick(lead.id, event)}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.borderColor = 'rgba(147, 197, 253, 0.98)';
+                  event.currentTarget.style.boxShadow =
+                    '0 0 0 1px rgba(125, 211, 252, 0.5), 0 18px 36px rgba(2, 6, 23, 0.56)';
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.82)';
+                  event.currentTarget.style.boxShadow =
+                    '0 0 0 1px rgba(56, 189, 248, 0.36), 0 16px 32px rgba(2, 6, 23, 0.5)';
+                }}
               >
                 <div className={`flex flex-wrap items-start justify-between gap-3 ${isExpanded ? 'mb-4' : ''}`}>
                   <div>
                     <h3 className="text-lg font-semibold mb-1">{lead.businessName}</h3>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-sm text-slate-300">
                       {lead.category} • {lead.location}
                     </p>
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-slate-400">
                       {t('dashboard.leadTable.source')}:{' '}
-                      <span className="text-gray-400">
+                      <span className="text-slate-300">
                         {lead.source ?? t('dashboard.leadTable.defaultSource')}
                       </span>
                     </p>
@@ -539,7 +576,12 @@ export function LeadManagementTable({
                       onClick={() => onSaveLead(lead.id)}
                       data-no-toggle="true"
                       disabled={!!savingLeadIds[lead.id]}
-                      className="inline-flex min-h-[2.5rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-gray-100 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-[2.5rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium text-emerald-100 transition-colors hover:bg-emerald-500/24 disabled:cursor-not-allowed disabled:opacity-50"
+                      style={{
+                        borderColor: 'rgba(110, 231, 183, 0.75)',
+                        background: 'rgba(16, 185, 129, 0.22)',
+                        boxShadow: 'inset 0 0 0 1px rgba(6, 95, 70, 0.34)',
+                      }}
                     >
                       {savingLeadIds[lead.id] ? (
                         <>
@@ -567,8 +609,8 @@ export function LeadManagementTable({
                       data-no-toggle="true"
                       className={`flex flex-row items-center justify-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium leading-none transition-all ${
                         isExpanded
-                          ? 'border-blue-400/40 bg-blue-500/10 text-blue-200 hover:bg-blue-500/20'
-                          : 'border-white/10 bg-white/5 text-gray-200 hover:border-white/20 hover:bg-white/10'
+                          ? 'border-blue-300/80 bg-blue-500/24 text-blue-100 hover:bg-blue-500/30'
+                          : 'border-slate-300/60 bg-slate-800/65 text-gray-200 hover:border-slate-200/85 hover:bg-slate-700/75'
                       }`}
                     >
                       <ChevronDown
@@ -585,30 +627,44 @@ export function LeadManagementTable({
                       {lead.problems.map((problem) => (
                         <span
                           key={`${lead.id}-${problem}`}
-                          className="px-3 py-1 rounded-lg bg-red-500/10 text-red-300 text-xs font-medium border border-red-500/20"
+                          className="px-3 py-1 rounded-lg border text-xs font-medium text-red-100"
+                          style={{
+                            borderColor: 'rgba(248, 113, 113, 0.78)',
+                            background: 'rgba(239, 68, 68, 0.22)',
+                            boxShadow: '0 0 0 1px rgba(127, 29, 29, 0.28)',
+                          }}
                         >
                           {tm('problemCategories', problem)}
                         </span>
                       ))}
                     </div>
 
-                    <div className="mb-4 p-4 rounded-lg bg-white/[0.02] border border-white/5">
+                    <div
+                      className="mb-4 rounded-lg border p-4"
+                      style={{
+                        borderColor: 'rgba(96, 165, 250, 0.66)',
+                        background: 'rgba(37, 99, 235, 0.16)',
+                      }}
+                    >
                       <div className="flex items-center gap-2 mb-2">
                         <Star className="w-4 h-4 text-blue-400" />
                         <span className="text-sm font-medium text-blue-400">{t('leadCard.reasonTitle')}</span>
                       </div>
-                      <p className="text-sm text-gray-300 leading-relaxed">{lead.explanation}</p>
+                      <p className="text-sm leading-relaxed text-slate-200">{lead.explanation}</p>
                     </div>
 
-                    <div className="pt-4 border-t border-white/5 space-y-3">
+                    <div
+                      className="space-y-3 border-t pt-4"
+                      style={{ borderTopColor: 'rgba(148, 163, 184, 0.52)' }}
+                    >
                       <div className="flex flex-wrap items-center gap-3">
-                        <div className="text-sm text-gray-300">
-                          <span className="text-gray-500 mr-2">{t('dashboard.leadTable.score')}</span>
+                        <div className="text-sm text-slate-200">
+                          <span className="mr-2 text-slate-400">{t('dashboard.leadTable.score')}</span>
                           <span className="font-medium text-white">{toDisplayScore(lead.score, scoreDenominator)}</span>
                         </div>
 
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-gray-500">{t('dashboard.leadTable.status')}</span>
+                          <span className="text-sm text-slate-400">{t('dashboard.leadTable.status')}</span>
                           <div data-no-toggle="true">
                             <DashboardSelect
                               value={lead.status}
@@ -628,18 +684,18 @@ export function LeadManagementTable({
                           </div>
                         </div>
 
-                        <div className="text-sm text-gray-300 flex items-center gap-2">
-                          <span className="text-gray-500">{t('dashboard.leadTable.rating')}</span>
+                        <div className="flex items-center gap-2 text-sm text-slate-200">
+                          <span className="text-slate-400">{t('dashboard.leadTable.rating')}</span>
                           {typeof lead.rating === 'number' ? (
                             <span className="font-medium text-white inline-flex items-center gap-1">
                               {lead.rating.toFixed(1)}/5
                               <Star className="h-4 w-4 text-amber-300" />
                               {typeof lead.reviewCount === 'number' ? (
-                                <span className="text-xs text-gray-400">({lead.reviewCount})</span>
+                                <span className="text-xs text-slate-400">({lead.reviewCount})</span>
                               ) : null}
                             </span>
                           ) : (
-                            <span className="text-gray-400">{t('common.notAvailable')}</span>
+                            <span className="text-slate-400">{t('common.notAvailable')}</span>
                           )}
                         </div>
                       </div>
@@ -665,6 +721,10 @@ export function LeadManagementTable({
                                 type="button"
                                 data-no-toggle="true"
                                 className={CONTACT_BUTTON_CLASS}
+                                style={{
+                                  borderColor: 'rgba(125, 211, 252, 0.58)',
+                                  background: 'rgba(15, 23, 42, 0.58)',
+                                }}
                               >
                                 <Icon className="mt-0.5 h-4 w-4 shrink-0" />
                                 <span className="min-w-0 text-left">
@@ -685,6 +745,10 @@ export function LeadManagementTable({
                               rel="noreferrer noopener"
                               data-no-toggle="true"
                               className={CONTACT_BUTTON_CLASS}
+                              style={{
+                                borderColor: 'rgba(125, 211, 252, 0.58)',
+                                background: 'rgba(15, 23, 42, 0.58)',
+                              }}
                             >
                               <Icon className="mt-0.5 h-4 w-4 shrink-0" />
                               <span className="min-w-0 text-left">

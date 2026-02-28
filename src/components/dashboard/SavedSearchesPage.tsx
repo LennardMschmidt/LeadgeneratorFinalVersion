@@ -639,11 +639,20 @@ export function SavedSearchesPage({
         style={{ paddingBottom: 'calc(5rem + 20px)' }}
       >
         <div className="space-y-8">
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <section
+            className="rounded-2xl border p-6"
+            style={{
+              marginTop: '20px',
+              borderColor: 'rgba(125, 211, 252, 0.25)',
+              background:
+                'linear-gradient(145deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.74) 46%, rgba(37, 99, 235, 0.16))',
+              boxShadow: '0 16px 36px rgba(2, 6, 23, 0.3)',
+            }}
+          >
             <div className="flex flex-wrap items-end justify-between gap-6">
               <div className="space-y-3">
                 <h1 className="text-4xl font-bold">{t('dashboard.savedLeads.title')}</h1>
-                <p className="text-sm text-gray-400">{t('dashboard.savedLeads.subtitle')}</p>
+                <p className="text-sm text-slate-300">{t('dashboard.savedLeads.subtitle')}</p>
               </div>
 
               <div className="flex w-full flex-wrap items-end justify-end gap-3 lg:w-auto">
@@ -780,29 +789,33 @@ export function SavedSearchesPage({
           </section>
 
           <section
-            className="rounded-2xl border border-white/10 bg-white/5 p-4"
-            style={{ marginBottom: '10px' }}
+            className="rounded-2xl border p-4"
+            style={{
+              marginBottom: '10px',
+              borderColor: 'rgba(56, 189, 248, 0.24)',
+              background: 'linear-gradient(145deg, rgba(15, 23, 42, 0.78), rgba(8, 47, 73, 0.32))',
+            }}
           >
             <label
               htmlFor="saved-lead-search"
-              className="mb-2 block text-xs uppercase tracking-wider text-gray-500"
+              className="mb-2 block text-xs uppercase tracking-wider text-sky-100/70"
             >
               {t('dashboard.savedLeads.searchLabel')}
             </label>
-            <div className="flex h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3">
-              <Search className="h-4 w-4 shrink-0 text-gray-500" />
+            <div className="flex h-11 items-center gap-2 rounded-lg border border-sky-300/20 bg-slate-900/50 px-3">
+              <Search className="h-4 w-4 shrink-0 text-sky-100/70" />
               <input
                 id="saved-lead-search"
                 value={queryDraft}
                 onChange={(event) => setQueryDraft(event.target.value)}
                 placeholder={t('dashboard.savedLeads.searchPlaceholder')}
-                className="h-full w-full bg-transparent pr-1 text-sm leading-5 text-white placeholder:text-gray-500 outline-none"
+                className="h-full w-full bg-transparent pr-1 text-sm leading-5 text-white placeholder:text-slate-500 outline-none"
               />
             </div>
 
             <div style={{ marginTop: '8px' }}>
               <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="text-xs uppercase tracking-wider text-gray-500">
+                <p className="text-xs uppercase tracking-wider text-violet-100/75">
                   {t('dashboard.savedLeads.problemFilterLabel')}
                 </p>
                 {problemAny.length > 0 ? (
@@ -816,7 +829,7 @@ export function SavedSearchesPage({
                 ) : null}
               </div>
               {sortedProblemOptions.length === 0 ? (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-400">
                   {t('dashboard.savedLeads.problemFilterEmpty')}
                 </p>
               ) : (
@@ -842,7 +855,7 @@ export function SavedSearchesPage({
                         }}
                       >
                         <span>{tm('problemCategories', problem)}</span>
-                        <span className="text-[11px] text-gray-400">({count})</span>
+                        <span className="text-[11px] text-slate-300/80">({count})</span>
                       </button>
                     );
                   })}
@@ -851,16 +864,23 @@ export function SavedSearchesPage({
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-white/5 p-6">
+          <section
+            className="rounded-2xl border p-6"
+            style={{
+              borderColor: 'rgba(148, 163, 184, 0.22)',
+              background:
+                'linear-gradient(145deg, rgba(15, 23, 42, 0.86), rgba(30, 41, 59, 0.68) 50%, rgba(76, 29, 149, 0.12))',
+            }}
+          >
             {isLoading ? (
-              <div className="flex items-center gap-3 py-10 text-sm text-gray-300">
+              <div className="flex items-center gap-3 py-10 text-sm text-slate-200">
                 <Loader2 className="spin-loader h-5 w-5" />
                 {t('dashboard.savedLeads.loading')}
               </div>
             ) : savedLeads.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-8 text-center">
-                <p className="text-base text-gray-200">{t('dashboard.savedLeads.emptyTitle')}</p>
-                <p className="mt-2 text-sm text-gray-400">{t('dashboard.savedLeads.emptySubtitle')}</p>
+              <div className="rounded-xl border border-slate-300/20 bg-slate-900/40 p-8 text-center">
+                <p className="text-base text-slate-100">{t('dashboard.savedLeads.emptyTitle')}</p>
+                <p className="mt-2 text-sm text-slate-300">{t('dashboard.savedLeads.emptySubtitle')}</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -991,9 +1011,16 @@ export function SavedSearchesPage({
             )}
           </section>
 
-          <section className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
+          <section
+            className="flex items-center justify-between rounded-xl border px-4 py-3"
+            style={{
+              marginTop: '10px',
+              borderColor: 'rgba(96, 165, 250, 0.24)',
+              background: 'linear-gradient(130deg, rgba(30, 41, 59, 0.52), rgba(37, 99, 235, 0.16))',
+            }}
+          >
             <div className="space-y-1">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-slate-300">
                 {t('dashboard.savedLeads.paginationSummary', {
                   total,
                   page: currentPage,
@@ -1001,7 +1028,7 @@ export function SavedSearchesPage({
                 })}
               </p>
               {queryApplied || problemAny.length > 0 ? (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-400">
                   {t('dashboard.savedLeads.searchMatchesOnPage', {
                     count: savedLeads.length,
                   })}
@@ -1014,7 +1041,7 @@ export function SavedSearchesPage({
                 type="button"
                 onClick={() => setOffset((current) => Math.max(0, current - PAGE_SIZE))}
                 disabled={!canGoPrevious || isLoading}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-sky-300/35 bg-sky-500/10 px-3 py-2 text-xs text-sky-100 transition-colors enabled:hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('dashboard.savedLeads.previousPage')}
               </button>
@@ -1022,7 +1049,7 @@ export function SavedSearchesPage({
                 type="button"
                 onClick={() => setOffset((current) => current + PAGE_SIZE)}
                 disabled={!canGoNext || isLoading}
-                className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-200 transition-colors enabled:hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-sky-300/35 bg-sky-500/10 px-3 py-2 text-xs text-sky-100 transition-colors enabled:hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {t('dashboard.savedLeads.nextPage')}
               </button>

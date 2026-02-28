@@ -1785,6 +1785,15 @@ type BillingCancelSubscriptionResponse = {
   } | null;
 };
 
+type BillingSkipTrialResponse = {
+  subscription?: {
+    plan?: unknown;
+    subscriptionStatus?: unknown;
+    currentPeriodEnd?: unknown;
+    cancelAtPeriodEnd?: unknown;
+  } | null;
+};
+
 type BillingCancelDeleteResponse = {
   success?: unknown;
   deletedUserId?: unknown;
@@ -2109,6 +2118,40 @@ export const cancelSubscriptionAtPeriodEndInBackend = async (): Promise<{
     subscriptionStatus:
       typeof subscription.subscriptionStatus === 'string' ? subscription.subscriptionStatus : 'inactive',
     currentPeriodEnd: typeof subscription.currentPeriodEnd === 'string' ? subscription.currentPeriodEnd : null,
+  };
+};
+
+export const skipTrialNowInBackend = async (): Promise<{
+  plan: BackendBillingPlanCode;
+  subscriptionStatus: string;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+}> => {
+  const requestUrl = buildApiUrl('/api/billing/skip-trial');
+  const authorization = await getAuthorizationHeader();
+  const response = await fetch(requestUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: authorization,
+    },
+  });
+
+  if (!response.ok) {
+    await throwBackendApiError(response);
+  }
+
+  const payload = (await response.json()) as BillingSkipTrialResponse;
+  const subscription = payload.subscription;
+  if (!subscription || !isBillingPlanCode(subscription.plan)) {
+    throw new Error('Skip trial response is invalid.');
+  }
+
+  return {
+    plan: subscription.plan,
+    subscriptionStatus:
+      typeof subscription.subscriptionStatus === 'string' ? subscription.subscriptionStatus : 'inactive',
+    currentPeriodEnd: typeof subscription.currentPeriodEnd === 'string' ? subscription.currentPeriodEnd : null,
+    cancelAtPeriodEnd: subscription.cancelAtPeriodEnd === true,
   };
 };
 

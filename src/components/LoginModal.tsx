@@ -243,7 +243,7 @@ export function LoginModal({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const [selectedPlan, setSelectedPlan] = useState<BillingPlanCode | null>('PRO');
+  const [selectedPlan, setSelectedPlan] = useState<BillingPlanCode | null>(null);
   const [availablePlans, setAvailablePlans] = useState<BillingPlan[]>(FALLBACK_PLANS);
 
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -302,7 +302,7 @@ export function LoginModal({
     setPassword('');
     setConfirmPassword('');
 
-    setSelectedPlan('PRO');
+    setSelectedPlan(null);
     setAvailablePlans(FALLBACK_PLANS);
 
     setStatusMessage(null);
@@ -1193,7 +1193,7 @@ export function LoginModal({
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            setSelectedPlan((current) => (current === code ? null : code));
+                                            setSelectedPlan(code);
                                             setStatusMessage(null);
                                           }}
                                           className={`w-full px-6 py-3 rounded-xl font-medium transition-all mb-8 ${

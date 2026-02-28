@@ -59,7 +59,13 @@ export function DashboardHeader({
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-lg bg-[#0a0a0f]/80 border-b border-white/5">
+    <header
+      className="sticky top-0 z-50 border-b backdrop-blur-lg"
+      style={{
+        borderColor: 'rgba(125, 211, 252, 0.18)',
+        background: '#0a0a0f',
+      }}
+    >
       <nav className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-3 sm:px-6 sm:py-4">
         <button type="button" onClick={onNavigateHome} className="flex min-w-0 items-center gap-2">
           <img
@@ -78,7 +84,7 @@ export function DashboardHeader({
             <button
               type="button"
               onClick={onNavigateDashboard}
-              className="hidden sm:flex px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-sm text-gray-200 transition-colors"
+              className="hidden sm:flex rounded-lg border border-sky-300/35 bg-sky-500/[0.12] px-4 py-2 text-sm text-sky-100 transition-colors hover:bg-sky-500/20"
             >
               {t('dashboardHeader.dashboard')}
             </button>
@@ -94,16 +100,16 @@ export function DashboardHeader({
                 aria-expanded={isAccountOpen}
                 className="flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20 sm:gap-3 sm:px-5 sm:py-3 sm:text-base"
                 style={{
-                  borderColor: 'rgba(255, 255, 255, 0.1)',
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  color: '#e5e7eb',
+                  borderColor: 'rgba(96, 165, 250, 0.34)',
+                  backgroundColor: 'rgba(30, 58, 138, 0.22)',
+                  color: 'rgb(219, 234, 254)',
                 }}
               >
                 {t('dashboardHeader.account')}
                 <ChevronDown
                   className="h-4 w-4 transition-transform duration-200"
                   style={{
-                    color: '#9ca3af',
+                    color: 'rgb(147, 197, 253)',
                     transform: isAccountOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                   }}
                 />

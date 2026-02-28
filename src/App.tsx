@@ -509,6 +509,13 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen w-full overflow-x-clip bg-[#0a0a0f] text-white">
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background:
+            'radial-gradient(circle at 10% 8%, rgba(34, 211, 238, 0.16), transparent 40%), radial-gradient(circle at 86% 18%, rgba(59, 130, 246, 0.15), transparent 42%), radial-gradient(circle at 74% 84%, rgba(168, 85, 247, 0.14), transparent 44%)',
+        }}
+      />
       {/* Background texture */}
       <div 
         className="fixed inset-0 opacity-[0.03] pointer-events-none"

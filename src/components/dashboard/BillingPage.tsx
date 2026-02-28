@@ -851,7 +851,7 @@ export function BillingPage({
         className="billing-page relative mx-auto w-full max-w-7xl overflow-x-clip px-3 py-16 sm:px-6 sm:py-24"
         style={{ paddingBottom: 'calc(6rem + 20px)' }}
       >
-        <section>
+        <section style={{ marginTop: '10px' }}>
           <h1 className="text-4xl font-bold" style={{ marginBottom: 20 }}>
             {t('billingPage.title')}
           </h1>

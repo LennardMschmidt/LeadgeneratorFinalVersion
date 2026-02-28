@@ -391,6 +391,9 @@ export function SearchConfigurationPanel({
                 placeholder={t('dashboard.searchPanel.locationPlaceholder')}
                 className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-gray-500 outline-none transition focus:border-blue-400/80"
               />
+              <p className="text-xs text-slate-400">
+                {t('dashboard.searchPanel.locationHint')}
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -431,6 +434,9 @@ export function SearchConfigurationPanel({
                   { value: '__more_to_come__', label: 'More to come', disabled: true },
                 ]}
               />
+              <p className="text-xs text-slate-400">
+                {t('dashboard.searchPanel.businessTypeHint')}
+              </p>
             </div>
 
             <div className="space-y-3">

@@ -42,6 +42,8 @@ interface DashboardPageProps {
 }
 
 const DASHBOARD_GUIDE_SEEN_STORAGE_KEY = 'dashboard_guide_seen_v1';
+const DASHBOARD_SAVED_SEARCHES_HINT_DISMISSED_STORAGE_KEY =
+  'dashboard_saved_searches_hint_dismissed_v1';
 
 const toDisplayScore = (score: number, maxScore: number): number => {
   if (!Number.isFinite(score) || !Number.isFinite(maxScore) || maxScore <= 0) {
@@ -96,6 +98,7 @@ export function DashboardPage({
   const [canUseAiEvaluations, setCanUseAiEvaluations] = useState(false);
   const [isTrialingLeadSearch, setIsTrialingLeadSearch] = useState(false);
   const [isFirstRunGuideOpen, setIsFirstRunGuideOpen] = useState(false);
+  const [isSavedSearchesHintDismissed, setIsSavedSearchesHintDismissed] = useState(false);
   const [activeJobUpdate, setActiveJobUpdate] = useState<SearchJobUpdate | null>(null);
   const [searchLogs, setSearchLogs] = useState<string[]>([]);
   const [isSearchLogVisible, setIsSearchLogVisible] = useState(false);
@@ -151,6 +154,22 @@ export function DashboardPage({
       }
     } catch {
       setIsFirstRunGuideOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const dismissed =
+        window.localStorage.getItem(
+          DASHBOARD_SAVED_SEARCHES_HINT_DISMISSED_STORAGE_KEY,
+        ) === 'true';
+      setIsSavedSearchesHintDismissed(dismissed);
+    } catch {
+      setIsSavedSearchesHintDismissed(false);
     }
   }, []);
 
@@ -437,6 +456,22 @@ export function DashboardPage({
 
     try {
       window.localStorage.setItem(DASHBOARD_GUIDE_SEEN_STORAGE_KEY, 'true');
+    } catch {
+      // Ignore localStorage errors in restricted environments.
+    }
+  };
+
+  const dismissSavedSearchesHint = () => {
+    setIsSavedSearchesHintDismissed(true);
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        DASHBOARD_SAVED_SEARCHES_HINT_DISMISSED_STORAGE_KEY,
+        'true',
+      );
     } catch {
       // Ignore localStorage errors in restricted environments.
     }
@@ -995,6 +1030,8 @@ export function DashboardPage({
   const shouldShowQueuedState =
     activeJobUpdate?.status === 'queued' || (isRunningSearch && !activeJobUpdate);
   const shouldShowRunningState = activeJobUpdate?.status === 'running';
+  const shouldShowSavedSearchesHint =
+    !isSavedSearchesHintDismissed && (savedSearches.length > 0 || leads.length > 0);
 
   return (
     <>
@@ -1049,6 +1086,74 @@ export function DashboardPage({
             onCancelSearch={cancelSearch}
           />
         </section>
+
+        {shouldShowSavedSearchesHint ? (
+          <section className="mt-3" style={{ marginBottom: '20px' }}>
+            <div
+              className="rounded-2xl border"
+              style={{
+                borderColor: 'rgba(96, 165, 250, 0.34)',
+                background:
+                  'linear-gradient(140deg, rgba(30, 64, 175, 0.22), rgba(15, 23, 42, 0.78) 52%, rgba(6, 182, 212, 0.18))',
+                boxShadow:
+                  '0 0 0 1px rgba(59, 130, 246, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 34px rgba(2, 6, 23, 0.3)',
+                padding: '10px',
+              }}
+            >
+              <div
+                className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03]"
+                style={{ padding: '10px' }}
+              >
+                <div className="min-w-0 flex-1" style={{ margin: '10px' }}>
+                  <p className="text-sm font-semibold text-sky-100" style={{ margin: 0 }}>
+                    {t('dashboard.savedSearchesHint.title')}
+                  </p>
+                  <p className="text-xs leading-relaxed text-slate-200" style={{ marginTop: '10px', marginBottom: 0 }}>
+                    {t('dashboard.savedSearchesHint.description')}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2" style={{ margin: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={onNavigateSavedSearches}
+                    className="inline-flex cursor-pointer items-center rounded-lg border border-sky-300/55 bg-sky-500/20 px-3 py-2 text-xs font-medium text-sky-100 transition-all duration-200 hover:border-sky-200/90 hover:bg-sky-500/35 hover:text-white"
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={(event) => {
+                      event.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.4)';
+                      event.currentTarget.style.borderColor = 'rgba(186, 230, 253, 0.95)';
+                      event.currentTarget.style.color = 'rgb(255, 255, 255)';
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.backgroundColor = 'rgba(14, 116, 144, 0.2)';
+                      event.currentTarget.style.borderColor = 'rgba(125, 211, 252, 0.55)';
+                      event.currentTarget.style.color = 'rgb(186, 230, 253)';
+                    }}
+                  >
+                    {t('dashboard.leadTable.openSavedSearches')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissSavedSearchesHint}
+                    className="inline-flex cursor-pointer items-center rounded-lg border border-white/20 bg-white/5 px-3 py-2 text-xs text-slate-200 transition-all duration-200 hover:border-white/45 hover:bg-white/15 hover:text-white"
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={(event) => {
+                      event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.16)';
+                      event.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.52)';
+                      event.currentTarget.style.color = 'rgb(255, 255, 255)';
+                    }}
+                    onMouseLeave={(event) => {
+                      event.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                      event.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.20)';
+                      event.currentTarget.style.color = 'rgb(226, 232, 240)';
+                    }}
+                  >
+                    {t('dashboard.savedSearchesHint.dismiss')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
 
         {isSearchLogMounted ? (
           <section

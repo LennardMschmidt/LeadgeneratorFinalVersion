@@ -263,7 +263,7 @@ export function AccountSettingsPage({
         className="relative mx-auto w-full max-w-7xl overflow-x-clip px-3 py-16 sm:px-6 sm:py-24"
         style={{ paddingBottom: 'calc(6rem + 20px)' }}
       >
-        <section>
+        <section style={{ marginTop: '20px' }}>
           <h1 className="mb-[20px] text-4xl font-bold">{t('accountSettingsPage.title')}</h1>
           <p className="mb-2 text-slate-300">{t('accountSettingsPage.subtitle')}</p>
         </section>
@@ -287,15 +287,39 @@ export function AccountSettingsPage({
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl border border-sky-300/20 bg-sky-950/30 p-4">
+              <div
+                className="rounded-xl border p-4"
+                style={{
+                  borderColor: 'rgba(125, 211, 252, 0.66)',
+                  background:
+                    'linear-gradient(145deg, rgba(8, 47, 73, 0.42), rgba(15, 23, 42, 0.62))',
+                  boxShadow: '0 0 0 1px rgba(125, 211, 252, 0.18)',
+                }}
+              >
                 <p className="mb-2 text-xs uppercase tracking-wider text-sky-100/70">{t('accountSettingsPage.details.email')}</p>
                 <p className="mt-2 mb-2 break-all text-base text-white">{accountDetails?.email ?? t('common.notAvailable')}</p>
               </div>
-              <div className="rounded-xl border border-violet-300/20 bg-violet-950/20 p-4">
+              <div
+                className="rounded-xl border p-4"
+                style={{
+                  borderColor: 'rgba(196, 181, 253, 0.62)',
+                  background:
+                    'linear-gradient(145deg, rgba(76, 29, 149, 0.32), rgba(15, 23, 42, 0.62))',
+                  boxShadow: '0 0 0 1px rgba(196, 181, 253, 0.16)',
+                }}
+              >
                 <p className="mb-2 text-xs uppercase tracking-wider text-violet-100/70">{t('accountSettingsPage.details.plan')}</p>
                 <p className="mt-2 mb-2 text-base text-white">{accountDetails?.plan ?? t('common.notAvailable')}</p>
               </div>
-              <div className="rounded-xl border border-emerald-300/20 bg-emerald-950/20 p-4">
+              <div
+                className="rounded-xl border p-4"
+                style={{
+                  borderColor: 'rgba(110, 231, 183, 0.62)',
+                  background:
+                    'linear-gradient(145deg, rgba(6, 78, 59, 0.34), rgba(15, 23, 42, 0.62))',
+                  boxShadow: '0 0 0 1px rgba(110, 231, 183, 0.14)',
+                }}
+              >
                 <p className="mb-2 text-xs uppercase tracking-wider text-gray-500">
                   {t('accountSettingsPage.details.subscriptionStatus')}
                 </p>
@@ -303,7 +327,15 @@ export function AccountSettingsPage({
                   {accountDetails ? formatSubscriptionStatus(accountDetails.subscriptionStatus) : t('common.notAvailable')}
                 </p>
               </div>
-              <div className="rounded-xl border border-cyan-300/20 bg-cyan-950/20 p-4">
+              <div
+                className="rounded-xl border p-4"
+                style={{
+                  borderColor: 'rgba(103, 232, 249, 0.62)',
+                  background:
+                    'linear-gradient(145deg, rgba(8, 51, 68, 0.36), rgba(15, 23, 42, 0.62))',
+                  boxShadow: '0 0 0 1px rgba(103, 232, 249, 0.14)',
+                }}
+              >
                 <p className="mb-2 text-xs uppercase tracking-wider text-gray-500">
                   {t('accountSettingsPage.details.currentPeriodEnd')}
                 </p>
@@ -311,7 +343,15 @@ export function AccountSettingsPage({
                   {currentPeriodEndLabel ?? t('accountSettingsPage.details.notAvailable')}
                 </p>
               </div>
-              <div className="rounded-xl border border-slate-300/20 bg-slate-900/40 p-4 sm:col-span-2">
+              <div
+                className="rounded-xl border p-4 sm:col-span-2"
+                style={{
+                  borderColor: 'rgba(148, 163, 184, 0.56)',
+                  background:
+                    'linear-gradient(145deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.62))',
+                  boxShadow: '0 0 0 1px rgba(148, 163, 184, 0.12)',
+                }}
+              >
                 <p className="mb-2 text-xs uppercase tracking-wider text-gray-500">
                   {t('accountSettingsPage.details.accountCreated')}
                 </p>
@@ -325,7 +365,23 @@ export function AccountSettingsPage({
               <button
                 type="button"
                 onClick={handleChangePassword}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-sky-300/35 bg-sky-500/15 px-4 py-2 text-sm font-medium text-sky-100 transition hover:bg-sky-500/25"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition"
+                style={{
+                  borderColor: 'rgba(125, 211, 252, 0.58)',
+                  backgroundColor: 'rgba(14, 116, 144, 0.22)',
+                  color: 'rgb(224, 242, 254)',
+                  boxShadow: '0 10px 24px rgba(14, 116, 144, 0.24)',
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.backgroundColor = 'rgba(14, 116, 144, 0.34)';
+                  event.currentTarget.style.borderColor = 'rgba(186, 230, 253, 0.82)';
+                  event.currentTarget.style.color = 'rgb(255, 255, 255)';
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.backgroundColor = 'rgba(14, 116, 144, 0.22)';
+                  event.currentTarget.style.borderColor = 'rgba(125, 211, 252, 0.58)';
+                  event.currentTarget.style.color = 'rgb(224, 242, 254)';
+                }}
               >
                 <KeyRound className="h-4 w-4" />
                 {t('accountSettingsPage.actions.changePassword')}
@@ -339,7 +395,23 @@ export function AccountSettingsPage({
             type="button"
             onClick={() => setIsCancelDialogOpen(true)}
             disabled={isCancellingSubscription}
-            className="inline-flex min-w-[220px] items-center justify-center rounded-lg border border-rose-300/40 bg-rose-500/15 px-4 py-2 text-sm font-medium text-rose-100 transition hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex min-w-[220px] items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60"
+            style={{
+              borderColor: 'rgba(252, 165, 165, 0.45)',
+              backgroundColor: 'rgba(239, 68, 68, 0.18)',
+              color: 'rgb(254, 226, 226)',
+              boxShadow: '0 10px 24px rgba(239, 68, 68, 0.22)',
+            }}
+            onMouseEnter={(event) => {
+              event.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.3)';
+              event.currentTarget.style.borderColor = 'rgba(254, 202, 202, 0.68)';
+              event.currentTarget.style.color = 'rgb(255, 255, 255)';
+            }}
+            onMouseLeave={(event) => {
+              event.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.18)';
+              event.currentTarget.style.borderColor = 'rgba(252, 165, 165, 0.45)';
+              event.currentTarget.style.color = 'rgb(254, 226, 226)';
+            }}
           >
             {t('accountSettingsPage.actions.cancelSubscription')}
           </button>

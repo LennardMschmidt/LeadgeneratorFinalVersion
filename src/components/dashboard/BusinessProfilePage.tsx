@@ -274,7 +274,7 @@ export function BusinessProfilePage({
         className="relative mx-auto w-full max-w-7xl overflow-x-clip px-3 py-16 sm:px-6 sm:py-24"
         style={{ paddingBottom: 'calc(6rem + 20px)' }}
       >
-        <section className="mb-[20px]">
+        <section className="mb-[20px]" style={{ marginTop: '10px' }}>
           <h1 className="text-4xl font-bold" style={{ marginBottom: '20px' }}>
             {t('dashboard.businessProfile.title')}
           </h1>
@@ -435,7 +435,7 @@ export function BusinessProfilePage({
                   void handleSaveProfile();
                 }}
                 disabled={isSavingProfile || isResettingProfile}
-                className="rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2.5 text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex min-h-[2.5rem] items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-5 py-2 text-sm font-medium shadow-lg shadow-blue-500/20 transition-all hover:from-blue-600 hover:to-purple-700 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSavingProfile ? t('common.loading') : t('dashboard.businessProfile.saveProfile')}
               </button>
@@ -445,7 +445,7 @@ export function BusinessProfilePage({
                   void handleResetProfile();
                 }}
                 disabled={isSavingProfile || isResettingProfile}
-                className="rounded-lg border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-gray-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex min-h-[2.5rem] items-center justify-center rounded-lg border border-white/10 bg-white/5 px-5 py-2 text-sm font-medium text-gray-200 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isResettingProfile ? t('common.loading') : t('dashboard.businessProfile.reset')}
               </button>

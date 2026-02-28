@@ -682,6 +682,12 @@ export const translations = {
         savedSuccess: 'Search saved successfully.',
         saveFailed: 'Failed to save search.',
       },
+      savedSearchesHint: {
+        title: 'Continue in Saved Searches',
+        description:
+          'Open Saved Searches to run website analysis, generate AI contact suggestions, and manage your saved leads in one place.',
+        dismiss: 'Not now',
+      },
       savedLeads: {
         title: 'Saved Leads',
         subtitle: 'Manage all leads you saved from your dashboard searches.',
@@ -823,10 +829,13 @@ export const translations = {
         removingSavedSearch: 'Removing...',
         locationLabel: 'Location',
         locationPlaceholder: 'City, State',
+        locationHint: 'Postal codes do not work for Google Maps search.',
         businessCategoryLabel: 'Business category',
         businessCategoryPlaceholder: 'Category',
         businessTypeLabel: 'Business Type',
         selectBusinessType: 'Select business type',
+        businessTypeHint:
+          'Describes your business type to give you problem categories you might solve.',
         searchSourceLabel: 'Search source',
         selectSearchSource: 'Select search source',
         searchSourceLinkedIn: 'LinkedIn',
@@ -1844,6 +1853,12 @@ export const translations = {
         savedSuccess: 'Suche erfolgreich gespeichert.',
         saveFailed: 'Suche konnte nicht gespeichert werden.',
       },
+      savedSearchesHint: {
+        title: 'In Gespeicherten Suchen weiterarbeiten',
+        description:
+          'Öffne Gespeicherte Suchen für Website-Analysen, KI-Kontaktvorschläge und das Verwalten deiner gespeicherten Leads an einem Ort.',
+        dismiss: 'Später',
+      },
       savedLeads: {
         title: 'Gespeicherte Leads',
         subtitle: 'Verwalte alle Leads, die du im Dashboard gespeichert hast.',
@@ -1985,10 +2000,13 @@ export const translations = {
         removingSavedSearch: 'Entferne...',
         locationLabel: 'Standort',
         locationPlaceholder: 'Stadt, Bundesland',
+        locationHint: 'Postleitzahlen funktionieren bei der Google-Maps-Suche nicht.',
         businessCategoryLabel: 'Unternehmenskategorie',
         businessCategoryPlaceholder: 'Kategorie',
         businessTypeLabel: 'Business Type',
         selectBusinessType: 'Business Type auswählen',
+        businessTypeHint:
+          'Beschreibt deinen Business Type, damit passende Problemkategorien geladen werden.',
         searchSourceLabel: 'Suchquelle',
         selectSearchSource: 'Suchquelle auswählen',
         searchSourceLinkedIn: 'LinkedIn',

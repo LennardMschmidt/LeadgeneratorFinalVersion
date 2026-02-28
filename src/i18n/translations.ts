@@ -60,28 +60,69 @@ export const translations = {
       ],
       exampleLeads: [
         {
-          businessName: 'Summit Coffee Roasters',
+          businessName: 'Café del Puerto',
           category: 'Cafe',
-          city: 'Seattle, WA',
+          city: 'Valencia, ES',
           problems: ['No website', 'Low rating (3.2★)'],
           explanation:
             'Active business with regular customers but no online ordering. Recent reviews mention difficulty placing orders.',
+          tier: 'Probable',
+          score: 44,
+          contacts: [
+            { type: 'phone', value: '+34 96 555 0142' },
+          ],
         },
         {
-          businessName: 'Precision Auto Repair',
+          businessName: 'Atelier Auto Lumiere',
           category: 'Auto Service',
-          city: 'Austin, TX',
+          city: 'Lyon, FR',
           problems: ['No social presence'],
           explanation:
             'Established shop with good reputation but zero social media presence. Missing appointment booking system.',
+          tier: 'Probable',
+          score: 39,
+          contacts: [
+            { type: 'phone', value: '+33 4 55 50 1998' },
+          ],
         },
         {
-          businessName: 'Bloom Floral Design',
+          businessName: 'Blumenhaus Morgenrot',
           category: 'Florist',
-          city: 'Portland, OR',
+          city: 'Hamburg, DE',
           problems: ['Outdated website', 'No booking system'],
           explanation:
             'Popular florist with a website from 2015. No online ordering despite high demand for delivery services.',
+          tier: 'Most Valuable',
+          score: 82,
+          contacts: [
+            { type: 'phone', value: '+49 40 555 0114' },
+          ],
+        },
+        {
+          businessName: 'Sakura Yoga Studio',
+          category: 'Dental Clinic',
+          city: 'Osaka, JP',
+          problems: [],
+          explanation:
+            'Strong overall profile and high local trust, but still a relevant target for premium conversion optimization and funnel upgrades.',
+          tier: 'Probable',
+          score: 58,
+          contacts: [
+            { type: 'phone', value: '+81 6 5550 0130' },
+          ],
+        },
+        {
+          businessName: 'Studio Dentale Aurora',
+          category: 'Yoga Studio',
+          city: 'Milan, IT',
+          problems: ['No booking system', 'No website', 'No social presence'],
+          explanation:
+            'Busy neighborhood studio running mostly offline. High intent local audience but weak digital conversion paths.',
+          tier: 'Most Valuable',
+          score: 88,
+          contacts: [
+            { type: 'phone', value: '+39 02 555 0176' },
+          ],
         },
       ],
     },
@@ -654,6 +695,7 @@ export const translations = {
       email: 'Email',
       phone: 'Phone',
       website: 'Website',
+      noActiveProblems: 'No active problems detected',
       tiers: {
         'Most Valuable': 'Most Valuable',
         Probable: 'Probable',
@@ -1225,28 +1267,69 @@ export const translations = {
       ],
       exampleLeads: [
         {
-          businessName: 'Summit Coffee Roasters',
+          businessName: 'Café del Puerto',
           category: 'Café',
-          city: 'Seattle, WA',
+          city: 'Valencia, ES',
           problems: ['Keine Website', 'Niedrige Bewertung (3,2★)'],
           explanation:
             'Aktives Unternehmen mit regelmäßiger Kundschaft, aber ohne Online-Bestellung. In aktuellen Bewertungen wird explizit erwähnt, dass Bestellen schwierig ist.',
+          tier: 'Probable',
+          score: 44,
+          contacts: [
+            { type: 'phone', value: '+34 96 555 0142' },
+          ],
         },
         {
-          businessName: 'Precision Auto Repair',
+          businessName: 'Atelier Auto Lumiere',
           category: 'Autoservice',
-          city: 'Austin, TX',
+          city: 'Lyon, FR',
           problems: ['Keine Social-Media-Präsenz'],
           explanation:
             'Etablierte Werkstatt mit gutem Ruf, aber ohne Social-Media-Präsenz. Es fehlt ein Buchungssystem für Termine.',
+          tier: 'Probable',
+          score: 39,
+          contacts: [
+            { type: 'phone', value: '+33 4 55 50 1998' },
+          ],
         },
         {
-          businessName: 'Bloom Floral Design',
+          businessName: 'Blumenhaus Morgenrot',
           category: 'Floristik',
-          city: 'Portland, OR',
+          city: 'Hamburg, DE',
           problems: ['Veraltete Website', 'Kein Buchungssystem'],
           explanation:
             'Beliebte Floristik mit einer Website von 2015. Trotz hoher Nachfrage nach Lieferungen gibt es keine Online-Bestellung.',
+          tier: 'Most Valuable',
+          score: 82,
+          contacts: [
+            { type: 'phone', value: '+49 40 555 0114' },
+          ],
+        },
+        {
+          businessName: 'Sakura Yoga Studio',
+          category: 'Zahnarztpraxis',
+          city: 'Osaka, JP',
+          problems: [],
+          explanation:
+            'Sehr starke Grundpräsenz und hohes lokales Vertrauen, aber weiterhin relevant für Conversion-Optimierung und besseren Funnel.',
+          tier: 'Probable',
+          score: 58,
+          contacts: [
+            { type: 'phone', value: '+81 6 5550 0130' },
+          ],
+        },
+        {
+          businessName: 'Studio Dentale Aurora',
+          category: 'Yogastudio',
+          city: 'Milan, IT',
+          problems: ['Kein Buchungssystem', 'Keine Website', 'Keine Social-Media-Präsenz'],
+          explanation:
+            'Beliebtes Studio mit starkem lokalen Interesse, aber sehr schwachen digitalen Kontakt- und Buchungswegen.',
+          tier: 'Most Valuable',
+          score: 88,
+          contacts: [
+            { type: 'phone', value: '+39 02 555 0176' },
+          ],
         },
       ],
     },
@@ -1824,6 +1907,7 @@ export const translations = {
       email: 'E-Mail',
       phone: 'Telefon',
       website: 'Website',
+      noActiveProblems: 'Keine aktiven Probleme erkannt',
       tiers: {
         'Most Valuable': 'Sehr wertvoll',
         Probable: 'Wahrscheinlich',

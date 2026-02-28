@@ -884,34 +884,34 @@ export function SavedSearchesPage({
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full border-separate border-spacing-0">
+                <table className="saved-leads-table min-w-full border-separate border-spacing-0">
                   <thead>
                     <tr>
                       <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.business')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="col-category border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.category')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="col-location border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.location')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="col-source border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.source')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="col-tier border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.tier')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="col-score border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.score')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="col-status border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.status')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="col-saved-at border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.savedAt')}
                       </th>
-                      <th className="border-b border-white/10 px-3 py-3 text-left text-xs uppercase tracking-wider text-gray-500">
+                      <th className="border-b border-white/10 px-3 py-3 text-center text-xs uppercase tracking-wider text-gray-500">
                         {t('dashboard.savedLeads.columns.actions')}
                       </th>
                     </tr>
@@ -926,22 +926,22 @@ export function SavedSearchesPage({
                           setIsDetailOpen(true);
                         }}
                       >
-                        <td className="border-b border-white/5 px-3 py-4 text-sm text-gray-100">
+                        <td className="max-w-[280px] border-b border-white/5 px-3 py-4 text-sm text-gray-100">
                           {lead.businessName}
                         </td>
-                        <td className="border-b border-white/5 px-3 py-4 text-sm text-gray-300">{lead.category}</td>
-                        <td className="border-b border-white/5 px-3 py-4 text-sm text-gray-300">{lead.location}</td>
-                        <td className="border-b border-white/5 px-3 py-4 text-sm text-gray-300">
+                        <td className="col-category border-b border-white/5 px-3 py-4 text-sm text-gray-300">{lead.category}</td>
+                        <td className="col-location border-b border-white/5 px-3 py-4 text-sm text-gray-300">{lead.location}</td>
+                        <td className="col-source border-b border-white/5 px-3 py-4 text-sm text-gray-300">
                           {lead.source || t('dashboard.leadTable.defaultSource')}
                         </td>
-                        <td className="border-b border-white/5 px-3 py-4 text-sm text-gray-300">
+                        <td className="col-tier border-b border-white/5 px-3 py-4 text-sm text-gray-300">
                           <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${TIER_BADGE_STYLES[lead.tier]}`}>
                             {tm('leadTierLabels', lead.tier)} ({tm('leadTiers', lead.tier)})
                           </span>
                         </td>
-                        <td className="border-b border-white/5 px-3 py-4 text-sm text-gray-300">{lead.score}</td>
+                        <td className="col-score border-b border-white/5 px-3 py-4 text-sm text-gray-300">{lead.score}</td>
                         <td
-                          className="border-b border-white/5 px-3 py-4 text-sm text-gray-300"
+                          className="col-status border-b border-white/5 px-3 py-4 text-sm text-gray-300"
                           onClick={(event) => event.stopPropagation()}
                           onMouseDown={(event) => event.stopPropagation()}
                         >
@@ -964,11 +964,11 @@ export function SavedSearchesPage({
                             <div className="mt-1 text-xs text-gray-500">{t('dashboard.savedLeads.updatingStatus')}</div>
                           ) : null}
                         </td>
-                        <td className="border-b border-white/5 px-3 py-4 text-sm text-gray-300">
+                        <td className="col-saved-at border-b border-white/5 px-3 py-4 text-sm text-gray-300">
                           {formatSavedAt(lead.savedAt)}
                         </td>
                         <td
-                          className="border-b border-white/5 px-3 py-4 text-sm text-gray-300"
+                          className="border-b border-white/5 px-3 py-4 text-center text-sm text-gray-300"
                           onClick={(event) => event.stopPropagation()}
                         >
                           <button
@@ -1010,6 +1010,45 @@ export function SavedSearchesPage({
               </div>
             )}
           </section>
+
+          <style>{`
+            .saved-leads-table .col-category,
+            .saved-leads-table .col-location,
+            .saved-leads-table .col-source,
+            .saved-leads-table .col-tier,
+            .saved-leads-table .col-score,
+            .saved-leads-table .col-status,
+            .saved-leads-table .col-saved-at {
+              display: none;
+            }
+
+            @media (min-width: 640px) {
+              .saved-leads-table .col-category,
+              .saved-leads-table .col-tier {
+                display: table-cell;
+              }
+            }
+
+            @media (min-width: 768px) {
+              .saved-leads-table .col-location,
+              .saved-leads-table .col-score {
+                display: table-cell;
+              }
+            }
+
+            @media (min-width: 1024px) {
+              .saved-leads-table .col-source,
+              .saved-leads-table .col-status {
+                display: table-cell;
+              }
+            }
+
+            @media (min-width: 1280px) {
+              .saved-leads-table .col-saved-at {
+                display: table-cell;
+              }
+            }
+          `}</style>
 
           <section
             className="flex items-center justify-between rounded-xl border px-4 py-3"

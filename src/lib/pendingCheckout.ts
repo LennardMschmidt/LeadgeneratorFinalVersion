@@ -8,6 +8,8 @@ type PendingCheckoutRecord = {
 
 const PENDING_CHECKOUT_STORAGE_KEY = 'leadgen.billing.pending_checkout';
 const PENDING_CHECKOUT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PENDING_CHECKOUT_PLAN_PARAM = 'pending_checkout_plan';
+const PENDING_CHECKOUT_EMAIL_PARAM = 'pending_checkout_email';
 
 const isBrowser = typeof window !== 'undefined';
 
@@ -39,6 +41,31 @@ export const clearPendingCheckout = (): void => {
   }
 
   window.localStorage.removeItem(PENDING_CHECKOUT_STORAGE_KEY);
+};
+
+export const capturePendingCheckoutFromUrl = (): void => {
+  if (!isBrowser) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const planRaw = params.get(PENDING_CHECKOUT_PLAN_PARAM);
+  const emailRaw = params.get(PENDING_CHECKOUT_EMAIL_PARAM);
+
+  if (!isPlanCode(planRaw) || typeof emailRaw !== 'string' || emailRaw.trim().length === 0) {
+    return;
+  }
+
+  savePendingCheckout({
+    plan: planRaw,
+    email: emailRaw,
+  });
+
+  params.delete(PENDING_CHECKOUT_PLAN_PARAM);
+  params.delete(PENDING_CHECKOUT_EMAIL_PARAM);
+  const nextSearch = params.toString();
+  const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', nextUrl);
 };
 
 export const getPendingCheckout = (): PendingCheckoutRecord | null => {

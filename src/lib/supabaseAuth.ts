@@ -152,6 +152,33 @@ const clearUrlHash = (): void => {
   window.history.replaceState({}, '', cleanUrl);
 };
 
+const clearAuthQueryParams = (): void => {
+  if (!isBrowser || !window.location.search) {
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const before = params.toString();
+  const AUTH_QUERY_PARAMS = [
+    'token',
+    'token_hash',
+    'type',
+    'code',
+    'redirect_to',
+    'next',
+  ] as const;
+
+  AUTH_QUERY_PARAMS.forEach((param) => params.delete(param));
+  const after = params.toString();
+
+  if (before === after) {
+    return;
+  }
+
+  const nextUrl = `${window.location.pathname}${after ? `?${after}` : ''}${window.location.hash}`;
+  window.history.replaceState({}, '', nextUrl);
+};
+
 const readOAuthHashSession = (): StoredSession | null => {
   if (!isBrowser || !window.location.hash || window.location.hash.length <= 1) {
     return null;
@@ -190,6 +217,24 @@ const readOAuthHashSession = (): StoredSession | null => {
       email: null,
     },
   };
+};
+
+const readAuthQueryParams = (): {
+  tokenHash: string;
+  type: string;
+} | null => {
+  if (!isBrowser || !window.location.search) {
+    return null;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const tokenHash = params.get('token_hash') ?? params.get('token');
+  const type = params.get('type');
+  if (!tokenHash || !type) {
+    return null;
+  }
+
+  return { tokenHash, type };
 };
 
 type SupabaseAuthResponse = {
@@ -401,6 +446,24 @@ export const restoreSupabaseSession = async (): Promise<boolean> => {
   if (oauthSession) {
     writeStoredSession(oauthSession, getSessionStorageMode());
     clearUrlHash();
+  } else {
+    const authQuery = readAuthQueryParams();
+    if (authQuery) {
+      const response = await authRequest('verify', {
+        body: {
+          token_hash: authQuery.tokenHash,
+          type: authQuery.type,
+        },
+      });
+
+      if (response.ok && response.payload) {
+        const verifiedSession = toStoredSession(response.payload);
+        if (verifiedSession) {
+          writeStoredSession(verifiedSession, getSessionStorageMode());
+          clearAuthQueryParams();
+        }
+      }
+    }
   }
 
   const existing = readStoredSession();

@@ -25,7 +25,11 @@ import {
   createCheckoutSessionInBackend,
   fetchAccountDetailsFromBackend,
 } from './components/dashboard/api';
-import { clearPendingCheckout, getPendingCheckout } from './lib/pendingCheckout';
+import {
+  capturePendingCheckoutFromUrl,
+  clearPendingCheckout,
+  getPendingCheckout,
+} from './lib/pendingCheckout';
 import {
   getSupabaseSessionUser,
   restoreSupabaseSession,
@@ -206,6 +210,7 @@ export default function App() {
 
     const loadAuthState = async () => {
       try {
+        capturePendingCheckoutFromUrl();
         const hasSession = await restoreSupabaseSession();
         if (!isMounted) {
           return;

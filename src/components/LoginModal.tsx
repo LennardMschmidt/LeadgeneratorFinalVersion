@@ -510,9 +510,14 @@ export function LoginModal({
     setIsSubmitting(true);
 
     try {
+      const normalizedEmail = email.trim().toLowerCase();
+      const postConfirmRedirectPath = `/dashboard?pending_checkout_plan=${selectedPlan}&pending_checkout_email=${encodeURIComponent(
+        normalizedEmail,
+      )}`;
+
       const result = await signUpWithEmail(email.trim(), password, {
         name: fullName.trim(),
-        redirectPath: '/dashboard',
+        redirectPath: postConfirmRedirectPath,
       });
 
       if (!result.ok) {
@@ -537,9 +542,9 @@ export function LoginModal({
       if (result.requiresEmailConfirmation) {
         savePendingCheckout({
           plan: selectedPlan,
-          email: email.trim(),
+          email: normalizedEmail,
         });
-        setEmailConfirmationNotice({ email: email.trim() });
+        setEmailConfirmationNotice({ email: normalizedEmail });
         setStatusMessage(null);
         setInlineErrors({});
         return;

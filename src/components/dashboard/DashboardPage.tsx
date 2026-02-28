@@ -92,7 +92,6 @@ export function DashboardPage({
   const [websiteAnalysisModalLeadId, setWebsiteAnalysisModalLeadId] = useState<string | null>(null);
   const [websiteAiSummaryLoadingLeadId, setWebsiteAiSummaryLoadingLeadId] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [saveSuccessHint, setSaveSuccessHint] = useState<string | null>(null);
   const [canUseLinkedInSearch, setCanUseLinkedInSearch] = useState(false);
   const [canUseAiEvaluations, setCanUseAiEvaluations] = useState(false);
   const [isFirstRunGuideOpen, setIsFirstRunGuideOpen] = useState(false);
@@ -152,18 +151,6 @@ export function DashboardPage({
       setIsFirstRunGuideOpen(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (!saveSuccessHint) {
-      return;
-    }
-
-    const clearHintTimeout = window.setTimeout(() => {
-      setSaveSuccessHint(null);
-    }, 4000);
-
-    return () => window.clearTimeout(clearHintTimeout);
-  }, [saveSuccessHint]);
 
   useEffect(() => {
     return () => {
@@ -671,7 +658,6 @@ export function DashboardPage({
 
     if (filteredLeads.length === 0) {
       setActionNotice(null);
-      setSaveSuccessHint(null);
       setSearchError(t('dashboard.savedLeads.noLeadsToSave'));
       return;
     }
@@ -680,15 +666,13 @@ export function DashboardPage({
     try {
       const summary = await saveVisibleLeadsToBackend(filteredLeads);
       setSearchError(null);
-      setActionNotice(null);
-      setSaveSuccessHint(
+      setActionNotice(
         t('dashboard.leadTable.savedHintWithCount', {
           count: summary.insertedOrUpdated,
         }),
       );
     } catch (error) {
       setActionNotice(null);
-      setSaveSuccessHint(null);
       if (error instanceof Error) {
         setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
@@ -729,11 +713,9 @@ export function DashboardPage({
         ),
       );
       setSearchError(null);
-      setActionNotice(null);
-      setSaveSuccessHint(t('dashboard.leadTable.savedHint'));
+      setActionNotice(t('dashboard.leadTable.savedHint'));
     } catch (error) {
       setActionNotice(null);
-      setSaveSuccessHint(null);
       if (error instanceof Error) {
         setSearchError(toFriendlyErrorFromUnknown(error));
       } else {
@@ -1083,8 +1065,6 @@ export function DashboardPage({
             onViewWebsiteAnalysis={viewWebsiteAnalysis}
             isSavingVisibleLeads={isSavingVisibleLeads}
             savingLeadIds={savingLeadIds}
-            saveSuccessHint={saveSuccessHint}
-            onNavigateSavedSearches={onNavigateSavedSearches}
             searchQuery={dashboardSearchQuery}
             onSearchQueryChange={setDashboardSearchQuery}
             problemCategoryOptions={availableDashboardProblemCategories}

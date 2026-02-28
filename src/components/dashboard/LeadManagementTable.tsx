@@ -36,10 +36,8 @@ interface LeadManagementTableProps {
   onSaveVisibleLeads: () => void;
   onSaveLead: (leadId: string) => void;
   onViewWebsiteAnalysis: (leadId: string) => void;
-  onNavigateSavedSearches: () => void;
   isSavingVisibleLeads?: boolean;
   savingLeadIds?: Record<string, boolean>;
-  saveSuccessHint?: string | null;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   problemCategoryOptions: string[];
@@ -136,10 +134,8 @@ export function LeadManagementTable({
   onSaveVisibleLeads,
   onSaveLead,
   onViewWebsiteAnalysis,
-  onNavigateSavedSearches,
   isSavingVisibleLeads = false,
   savingLeadIds = {},
-  saveSuccessHint = null,
   searchQuery,
   onSearchQueryChange,
   problemCategoryOptions,
@@ -312,7 +308,7 @@ export function LeadManagementTable({
               {hasAnyExpandedLead ? t('dashboard.leadTable.collapseAll') : t('dashboard.leadTable.expandAll')}
             </button>
 
-            <div className="relative flex flex-col items-start">
+            <div className="flex flex-col items-start">
               <button
                 type="button"
                 onClick={onSaveVisibleLeads}
@@ -328,22 +324,6 @@ export function LeadManagementTable({
                   t('dashboard.leadTable.saveLeads')
                 )}
               </button>
-
-              {saveSuccessHint ? (
-                <p
-                  className="absolute left-0 z-10 text-xs text-emerald-200"
-                  style={{ top: '100%', marginTop: '8px', maxWidth: '280px' }}
-                >
-                  {saveSuccessHint}{' '}
-                  <button
-                    type="button"
-                    onClick={onNavigateSavedSearches}
-                    className="font-semibold text-cyan-300 underline decoration-cyan-300/80 underline-offset-2 transition-colors hover:text-cyan-200"
-                  >
-                    {t('dashboard.leadTable.openSavedSearches')}
-                  </button>
-                </p>
-              ) : null}
             </div>
 
             <div ref={exportMenuRef} className="relative">
